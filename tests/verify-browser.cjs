@@ -88,7 +88,7 @@ const root = path.resolve(__dirname, '..');
  const beforeDuration=(await flowState('main_home')).rate;
  await page.evaluate(()=>{card.setConfig({...config,appearance:{duration:6}});refresh()});
  assert.equal((await flowState('main_home')).rate,beforeDuration/2);await page.evaluate(()=>{card.setConfig(config);refresh()});
- assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .input .value').textContent),'330 Вт');
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .input .value').textContent),'330 W');
  assert.deepEqual(await page.evaluate(()=>['.main .solar_1','.main .solar_2','.home .power'].map(selector=>card.shadowRoot.querySelector(selector+' .label').textContent)),['XT60(1)','XT60(2)','Вхід']);
  // Each battery follows its own charge sensor, including empty, full and unknown states.
  const batteries=await page.evaluateHandle(()=>['auxiliary_1','auxiliary_2','main'].map(key=>card.shadowRoot.querySelector('.'+key+' .icon svg')));
@@ -136,7 +136,7 @@ const root = path.resolve(__dirname, '..');
  await page.evaluate(()=>{states['sensor.main_ac'].state='3.1';refresh()});
  assert((await page.evaluate(()=>active())).includes('grid_main'));
  await page.evaluate(()=>{delete config.main.input_power;card.setConfig(config);states['sensor.main_ac'].state='100';states['sensor.main_pv'].state='200';refresh()});
- assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .input .value').textContent),'300 Вт');
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .input .value').textContent),'300 W');
  await page.evaluate(()=>{states['sensor.main_pv'].attributes.unit_of_measurement='Wh';refresh()});
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .solar_1 .value').textContent),'—');
  await page.evaluate(()=>{window.more=null;card.addEventListener('hass-more-info',e=>window.more=e.detail.entityId);card.shadowRoot.querySelector('.main .output .value').click()});
@@ -198,29 +198,29 @@ const root = path.resolve(__dirname, '..');
  assert.equal(await field('main','name').inputValue(),'Нова назва');assert.equal(await field('appearance','main_color').inputValue(),'red');assert.equal(await field('main','solar_input_power_2').inputValue(),'sensor.pv2');
  await page.evaluate(()=>{editor.remove();card.setConfig(config);refresh()});
  await page.evaluate(()=>{delete config.home.power;states['binary_sensor.source'].state='on';states['binary_sensor.grid_available'].state='on';states['sensor.grid'].state='1000';states['sensor.a_in'].state='100';states['sensor.b_in'].state='200';states['sensor.main_ac'].state='300';card.setConfig(config);refresh()});
- assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'400 Вт');
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'400 W');
  assert((await page.evaluate(()=>active())).includes('grid_home'));
  assert(!(await page.evaluate(()=>active())).includes('main_home'));
  await page.evaluate(()=>{states['sensor.b_in'].state='unavailable';refresh()});
- assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'600 Вт');
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'600 W');
  assert((await page.evaluate(()=>active())).includes('grid_home'));
  await page.evaluate(()=>{states['sensor.a_in'].state='unavailable';states['sensor.main_ac'].state='unavailable';states['sensor.grid'].state='285';refresh()});
- assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'285 Вт');
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'285 W');
  assert((await page.evaluate(()=>active())).includes('grid_home'));
  assert(!(await page.evaluate(()=>active())).includes('main_home'));
  await page.evaluate(()=>{states['sensor.a_in'].state='50';refresh()});
- assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'235 Вт');
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'235 W');
  await page.evaluate(()=>{states['binary_sensor.grid_available'].state='off';refresh()});
- assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'320 Вт');
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'320 W');
  assert((await page.evaluate(()=>active())).includes('main_home'));
  await page.evaluate(()=>{config.home.power='sensor.home';card.setConfig(config);refresh()});
  await page.evaluate(()=>{
   config.main.solar_input_power_2='sensor.pv2';states['sensor.main_ac'].state='100';states['sensor.main_pv'].state='200';states['sensor.main_pv'].attributes.unit_of_measurement='W';states['sensor.pv2']={state:'150',attributes:{unit_of_measurement:'W'}};
   config.appearance={grid_color:'#1166cc',main_color:'#22cc88',auxiliary_1_color:'#aa44dd',auxiliary_2_color:'#ff8800'};states['sensor.a_out'].state='0';states['sensor.b_out'].state='350';card.setConfig(config);refresh();
  });
- assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .input .value').textContent),'450 Вт');
- assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .solar_1 .value').textContent),'200 Вт');
- assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .solar_2 .value').textContent),'150 Вт');
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .input .value').textContent),'450 W');
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .solar_1 .value').textContent),'200 W');
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .solar_2 .value').textContent),'150 W');
  assert((await page.evaluate(()=>active())).includes('auxiliary_2_main'));assert(!(await page.evaluate(()=>active())).includes('auxiliary_1_main'));
  const colors=await page.evaluate(()=>{
   const border=key=>getComputedStyle(card.shadowRoot.querySelector('.node.'+key)).borderTopColor;
@@ -231,7 +231,7 @@ const root = path.resolve(__dirname, '..');
  await page.evaluate(()=>{card.shadowRoot.querySelector('.main .solar_2 .value').click()});assert.equal(await page.evaluate(()=>more),'sensor.pv2');
  await page.evaluate(()=>{states['sensor.main_pv'].state='unavailable';refresh()});
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .input .value').textContent),'—');
- assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .solar_2 .value').textContent),'150 Вт');assert((await page.evaluate(()=>active())).includes('auxiliary_2_main'));
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .solar_2 .value').textContent),'150 W');assert((await page.evaluate(()=>active())).includes('auxiliary_2_main'));
  await page.evaluate(()=>{states['binary_sensor.grid_available'].state='on';refresh()});
  assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('.home')).borderTopColor),'rgb(17, 102, 204)');
  await page.evaluate(()=>{states['binary_sensor.grid_available'].state='unavailable';refresh()});
@@ -246,9 +246,10 @@ const root = path.resolve(__dirname, '..');
  await page.evaluate(()=>{document.body.style.margin='8px';for(const [name,value]of Object.entries({'--ha-card-background':'linear-gradient(135deg, #ece7f2, #b9d9ed)','--primary-text-color':'#172239','--secondary-text-color':'#4d5666','--divider-color':'#888d9b'}))card.style.setProperty(name,value)});
  await page.waitForTimeout(100);
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .source')),null);
+ await page.evaluate(()=>{window.layoutStates=JSON.parse(JSON.stringify(states))});
  for(const language of ['uk','en']){
   await page.evaluate(language=>{card.setConfig({...config,language});refresh()},language);
-  for(const [watts,expected] of [[999,language==='uk'?'999 Вт':'999 W'],[1000,language==='uk'?'1 кВт':'1 kW'],[2468,language==='uk'?'2,47 кВт':'2.47 kW'],[12345,language==='uk'?'12,35 кВт':'12.35 kW'],[99999,language==='uk'?'100 кВт':'100 kW']]){
+  for(const [watts,expected] of [[999,'999 W'],[1000,'1 kW'],[2468,language==='uk'?'2,47 kW':'2.47 kW'],[12345,language==='uk'?'12,35 kW':'12.35 kW'],[99999,'100 kW']]){
    await page.evaluate(watts=>{states['sensor.grid'].state=String(watts);refresh()},watts);
    assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.grid .value').textContent),expected);
    for(const width of [320,352,390,422]){
@@ -258,12 +259,18 @@ const root = path.resolve(__dirname, '..');
     const fit=await page.evaluate(()=>{const row=card.shadowRoot.querySelector('.grid .row'),v=row.querySelector('.value'),range=document.createRange();range.selectNodeContents(v);const bounds=range.getBoundingClientRect(),label=row.querySelector('.label');range.selectNodeContents(label);const caption=range.getBoundingClientRect();return {available:row.getBoundingClientRect().width,needed:bounds.width+caption.width+parseFloat(getComputedStyle(row).columnGap),height:bounds.height,lineHeight:parseFloat(getComputedStyle(v).lineHeight),sameLine:Math.abs(bounds.bottom-caption.bottom)<2}});
     assert(fit.needed<=fit.available+.5,`${language}: ${expected} too wide at ${width}px: ${JSON.stringify(fit)}`);
     assert(fit.height<=fit.lineHeight+1&&fit.sameLine,`Wrapped grid output row at ${width}px: ${JSON.stringify(fit)}`);
-    if(language==='uk'&&watts===2468&&width===390) await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-mobile.png')});
+    await page.evaluate(watts=>{for(const id of ['sensor.a_in','sensor.a_out','sensor.b_in','sensor.b_out','sensor.main_in','sensor.main_ac','sensor.main_pv','sensor.pv2','sensor.main_out','sensor.home']){states[id].state=String(watts);states[id].attributes.unit_of_measurement='W'}refresh()},watts);
+    const rows=await page.evaluate(()=>[...card.shadowRoot.querySelectorAll('.row')].map(row=>{const range=document.createRange();range.selectNodeContents(row.querySelector('.label'));const label=range.getBoundingClientRect();range.selectNodeContents(row.querySelector('.value'));const value=range.getBoundingClientRect();return {key:row.parentElement.dataset.key+'.'+row.className,text:row.textContent,available:row.clientWidth,needed:label.width+value.width+parseFloat(getComputedStyle(row).columnGap),sameLine:Math.abs(label.bottom-value.bottom)<2}}));
+    for(const row of rows){assert(row.needed<=row.available+.5,`${language}, ${width}px: overflow ${JSON.stringify(row)}`);assert(row.sameLine,`${language}, ${width}px: wrapped ${JSON.stringify(row)}`)}
+    if(language==='uk'&&watts===2468&&width===390){
+     await page.evaluate(()=>{states['sensor.a_in'].state='999';states['sensor.a_out'].state='100';states['sensor.b_in'].state='111';states['sensor.b_out'].state='999';states['sensor.main_in'].state='184';states['sensor.main_ac'].state='185';states['sensor.main_pv'].state='0';states['sensor.pv2'].state='0';states['sensor.main_out'].state='0';states['sensor.home'].state='216';states['binary_sensor.grid_available'].state='on';refresh()});
+     await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-mobile.png')});
+    }
    }
   }
  }
  await page.setViewportSize({width:390,height:800});
- await page.evaluate(()=>{states['sensor.grid'].state='0';card.setConfig(config);refresh()});
+ await page.evaluate(()=>{states=layoutStates;states['sensor.grid'].state='0';card.setConfig(config);refresh()});
  const layout=await page.evaluate(()=>{
   const d=card.shadowRoot.querySelector('.diagram').getBoundingClientRect();const nodes=[...card.shadowRoot.querySelectorAll('.node')];
   return{overflows:nodes.filter(n=>n.scrollWidth>n.clientWidth+1 || n.scrollHeight>n.clientHeight+1).map(n=>n.dataset.key),outside:nodes.filter(n=>{const r=n.getBoundingClientRect();return r.left<d.left-.1||r.right>d.right+.1||r.top<d.top-.1||r.bottom>d.bottom+.1}).map(n=>n.dataset.key),rects:nodes.map(n=>({key:n.dataset.key,rect:n.getBoundingClientRect().toJSON()}))};
@@ -286,6 +293,6 @@ const root = path.resolve(__dirname, '..');
  await page.evaluate(()=>document.querySelector('#host').append(card));await page.waitForFunction(()=>card._flows.main_home._animation.playState==='running');
  await page.evaluate(()=>{const card2=document.createElement('suris-ecoflow-flow-card');card2.setConfig({type:'custom:suris-ecoflow-flow-card'});document.body.append(card2)});
  assert.deepEqual(errors,[]);
- console.log('PASS: source switching, seven orthogonal flows, correct endpoints, matching dash paths and wattage-dependent speed, straight first-station transfer, one-corner home feed, unavailable data, kW conversion, unsupported units, threshold, XT60 labels, independent battery charge levels, unavailable charge, transparent light/dark/gradient themes, home input without approximation symbol, named/HEX/RGB/HSL colors, total input, editor clearing and typing, focus and cursor, draft validation, configuration feedback, saved selections, stable preview, more-info, mobile bounds, reduced motion, empty configuration.');
+ console.log('PASS: source switching, seven orthogonal flows, correct endpoints, matching dash paths and wattage-dependent speed, straight first-station transfer, one-corner home feed, unavailable data, kW conversion, unsupported units, threshold, XT60 labels, independent battery charge levels, unavailable charge, transparent light/dark/gradient themes, home input without approximation symbol, named/HEX/RGB/HSL colors, total input, editor clearing and typing, focus and cursor, draft validation, configuration feedback, saved selections, stable preview, more-info, all rows on one line at mobile widths, W/kW in both languages, mobile bounds, reduced motion, empty configuration.');
  await browser.close();
 })().catch(error=>{console.error(error);process.exit(1)});
