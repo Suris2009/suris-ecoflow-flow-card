@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v0.1.9 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v0.1.10 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '0.1.9';
+  const VERSION = '0.1.10';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -130,7 +130,7 @@
     .row{display:flex;align-items:baseline;justify-content:space-between;gap:4px;font-size:clamp(11px,1.6cqw,17px);line-height:1.35;min-width:0}.label{color:var(--secondary-text-color,#aaa);overflow-wrap:anywhere}.value{font:inherit;color:inherit;font-weight:600;text-align:right;white-space:nowrap;background:none;border:0;padding:0;min-width:0}.value[data-entity]{cursor:pointer}.value:focus-visible{outline:2px solid var(--flow-main);outline-offset:2px}.value:disabled{opacity:1}
     .grid{left:0;top:37%;width:22%}.home{right:0;top:37%;width:22%}.auxiliary_1{left:29%;top:3%;width:22%}.auxiliary_2{left:55%;top:3%;width:22%}.main{left:36%;bottom:1%;width:28%;min-height:max(220px,28cqw)}
     .status{margin-top:8px;color:var(--secondary-text-color,#aaa);font-size:12px;min-height:16px;text-align:center}.status:empty{display:none}
-    @container(max-width:520px){.diagram{height:540px}.node{padding:8px 5px;gap:6px;border-radius:9px;min-height:137px}.node h3{font-size:12px}.node .icon{height:29px;margin:0}.row{font-size:11px;flex-wrap:wrap;gap:0 3px}.row .value{margin-left:auto}.grid .row{flex-wrap:nowrap;gap:2px;font-size:clamp(8px,2.9cqw,11px)}.grid .row .label{white-space:nowrap}.grid .value{flex-shrink:0}.grid,.home{width:24%;top:38%}.grid{width:32%}.home .power .label{font-size:clamp(8px,2.8cqw,11px);overflow-wrap:normal}.auxiliary_1{left:26%;width:25%;top:5%}.auxiliary_2{left:54%;width:25%;top:5%}.main{left:33%;width:34%;min-height:202px}}
+    @container(max-width:520px){.diagram{height:540px}.node{padding:8px 5px;gap:6px;border-radius:9px;min-height:137px}.node h3{font-size:12px}.node .icon{height:29px;margin:0}.row{font-size:11px;flex-wrap:wrap;gap:0 3px}.row .value{margin-left:auto}.grid .row{flex-wrap:nowrap;gap:2px}.grid .row .label{white-space:nowrap}.grid .value{flex-shrink:0}.grid,.home{width:24%;top:38%}.home .power .label{font-size:clamp(8px,2.8cqw,11px);overflow-wrap:normal}.auxiliary_1{left:26%;width:25%;top:5%}.auxiliary_2{left:54%;width:25%;top:5%}.main{left:33%;width:34%;min-height:202px}}
     @media(prefers-reduced-motion:reduce){.flow .flow-dashes{display:none}.flow.active .flow-track{stroke-width:3;opacity:.92}}
   `;
   class SurisEcoFlowFlowCard extends HTMLElement {
@@ -237,6 +237,7 @@
         button.title = entity ? `${entity}: ${this._states[entity]?.state ?? text.unavailable}` : node === 'home' && field === 'power' ? text.homeDerived : text.select;
         button.setAttribute('aria-label', `${this._nodes[node].querySelector('h3').textContent}, ${button.previousSibling.textContent}: ${value}`);
       }
+      this._fitGridPower();
       for (const key of ['auxiliary_1', 'auxiliary_2', 'main']) {
         const soc = data[key].soc, battery = this._nodes[key].querySelector('.icon svg');
         const known = soc != null && soc >= 0 && soc <= 100;
@@ -262,8 +263,28 @@
         } else if (animation.playState !== 'paused') animation.pause();
       }
     }
+    _fitGridPower() {
+      const row = this._values?.['grid.output']?.parentElement;
+      if (!row || !this.isConnected || !row.clientWidth) return;
+      row.style.removeProperty('font-size');
+      const label = row.querySelector('.label'), value = row.querySelector('.value');
+      const range = document.createRange();
+      const width = (element) => { range.selectNodeContents(element); return range.getBoundingClientRect().width; };
+      const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+      const available = row.clientWidth - gap - 1;
+      const needed = () => width(label) + width(value);
+      const naturalWidth = needed();
+      if (naturalWidth <= available) return;
+      let size = Math.floor(parseFloat(getComputedStyle(row).fontSize) * available / naturalWidth * 10) / 10;
+      row.style.fontSize = `${size}px`;
+      while (needed() > available && size > 1) {
+        size = Math.max(1, Math.round((size - .1) * 10) / 10);
+        row.style.fontSize = `${size}px`;
+      }
+    }
     _drawPaths() {
       if (!this._diagram || !this.isConnected) return;
+      this._fitGridPower();
       const base = this._diagram.getBoundingClientRect(); if (!base.width || !base.height) return;
       const rect = (key) => { const r = this._nodes[key].getBoundingClientRect(); return { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height, right: r.right - base.left, bottom: r.bottom - base.top }; };
       const g = rect('grid'), a = rect('auxiliary_1'), b = rect('auxiliary_2'), m = rect('main'), h = rect('home');

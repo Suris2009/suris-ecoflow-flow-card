@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.10
+
+- Restore the original city grid block width to match the home block on mobile.
+- Fit the grid output label, value and unit inside the existing block by reducing only overflowing row text.
+- Retain kW formatting and the simplified home block.
+
 ## 0.1.9
 
 - Remove the home source text row; retain source-based border colors and flow logic.
