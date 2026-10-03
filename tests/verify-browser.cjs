@@ -31,6 +31,37 @@ const root = path.resolve(__dirname, '..');
   window.active=()=>[...card.shadowRoot.querySelectorAll('.flow.active')].map(x=>x.dataset.flow).sort();
  });
  await page.waitForFunction(()=>card.shadowRoot.querySelectorAll('.flow').length===7);
+ const verifyRoutes=async label=>{
+  const geometry=await page.evaluate(()=>{
+   const diagram=card.shadowRoot.querySelector('.diagram').getBoundingClientRect();
+   const nodes=Object.fromEntries([...card.shadowRoot.querySelectorAll('.node')].map(node=>{const r=node.getBoundingClientRect();return[node.dataset.key,{left:r.left-diagram.left,right:r.right-diagram.left,top:r.top-diagram.top,bottom:r.bottom-diagram.top}]}));
+   const paths=[...card.shadowRoot.querySelectorAll('.flow')].map(flow=>{
+    const path=flow.querySelector('path'),d=path.getAttribute('d'),length=path.getTotalLength();
+    const point=distance=>{const p=path.getPointAtLength(distance);return{x:p.x,y:p.y}};
+    return{name:flow.dataset.flow,d,length,start:point(0),end:point(length),samples:Array.from({length:31},(_,i)=>point(length*i/30)),animationMatches:[...flow.querySelectorAll('animateMotion')].every(motion=>motion.getAttribute('path')===d)};
+   });
+   return{width:diagram.width,height:diagram.height,nodes,paths};
+  });
+  const connections={grid_auxiliary_1:['grid','auxiliary_1'],grid_auxiliary_2:['grid','auxiliary_2'],grid_main:['grid','main'],grid_home:['grid','home'],auxiliary_1_main:['auxiliary_1','main'],auxiliary_2_main:['auxiliary_2','main'],main_home:['main','home']};
+  const onBorder=(p,r)=>p.x>=r.left-.25&&p.x<=r.right+.25&&p.y>=r.top-.25&&p.y<=r.bottom+.25&&Math.min(Math.abs(p.x-r.left),Math.abs(p.x-r.right),Math.abs(p.y-r.top),Math.abs(p.y-r.bottom))<.25;
+  assert.equal(geometry.paths.length,7,`${label}: missing flow`);
+  for(const route of geometry.paths){
+   assert((route.d.match(/[A-Za-z]/g)||[]).every(command=>['M','H','V'].includes(command)),`${label}: diagonal or curved ${route.name}`);
+   assert(route.animationMatches,`${label}: dots leave ${route.name}`);
+   const [source,target]=connections[route.name];
+   assert(onBorder(route.start,geometry.nodes[source])&&onBorder(route.end,geometry.nodes[target]),`${label}: incorrect endpoints ${route.name}`);
+   for(const p of route.samples){
+    assert(Number.isFinite(p.x)&&Number.isFinite(p.y)&&p.x>=-.25&&p.y>=-.25&&p.x<=geometry.width+.25&&p.y<=geometry.height+.25,`${label}: clipped ${route.name}`);
+    for(const [key,r]of Object.entries(geometry.nodes))if(key!==source&&key!==target)assert(!(p.x>r.left+.25&&p.x<r.right-.25&&p.y>r.top+.25&&p.y<r.bottom-.25),`${label}: ${route.name} passes through ${key}`);
+   }
+  }
+  const transfer=geometry.paths.find(route=>route.name==='auxiliary_1_main'),home=geometry.paths.find(route=>route.name==='main_home');
+  assert.equal(transfer.start.x,transfer.end.x,`${label}: first station transfer is not vertical`);
+  assert.equal((transfer.d.match(/[HV]/g)||[]).length,1,`${label}: first station transfer has extra bends`);
+  assert.equal((home.d.match(/[HV]/g)||[]).length,2,`${label}: main-to-home flow must have one corner`);
+  assert(Math.abs(home.length-Math.abs(home.end.x-home.start.x)-Math.abs(home.end.y-home.start.y))<.25,`${label}: main-to-home flow has a detour`);
+ };
+ await verifyRoutes('desktop');
  assert.deepEqual(await page.evaluate(()=>active()),['auxiliary_1_main','auxiliary_2_main','main_home']);
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .input .value').textContent),'330 Вт');
  assert.deepEqual(await page.evaluate(()=>['.main .solar_1','.main .solar_2','.home .power'].map(selector=>card.shadowRoot.querySelector(selector+' .label').textContent)),['XT60(1)','XT60(2)','Вхід']);
@@ -183,7 +214,8 @@ const root = path.resolve(__dirname, '..');
  const invalid=await page.evaluate(()=>{
   try{card.setConfig({...config,appearance:{...config.appearance,threshold:-1}});return false}catch{return true}
  });assert(invalid);
- await page.evaluate(()=>{states['sensor.main_pv'].attributes.unit_of_measurement='W';states['binary_sensor.source'].state='off';states['binary_sensor.grid_available'].state='off';states['sensor.a_in'].state='0';states['sensor.b_in'].state='0';states['sensor.main_ac'].state='0';states['sensor.main_pv'].state='230';states['sensor.pv2'].state='100';states['sensor.grid'].state='0';card.setConfig(config);refresh()});
+ await page.evaluate(()=>{states['sensor.main_pv'].attributes.unit_of_measurement='W';states['binary_sensor.source'].state='off';states['binary_sensor.grid_available'].state='off';states['sensor.a_in'].state='0';states['sensor.b_in'].state='0';states['sensor.a_out'].state='100';states['sensor.b_out'].state='0';states['sensor.main_ac'].state='0';states['sensor.main_pv'].state='100';states['sensor.pv2'].state='0';states['sensor.main_out'].state='449';states['sensor.home'].state='449';states['sensor.grid'].state='0';config.auxiliary_1.name='Delta';config.auxiliary_2.name='River';config.main.name='Delta 2';config.appearance={...config.appearance,grid_color:'blue',auxiliary_1_color:'green',auxiliary_2_color:'orange',main_color:'red'};card.setConfig(config);refresh()});
+ await verifyRoutes('updated desktop');
  await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-desktop.png')});
  await page.setViewportSize({width:390,height:800});
  await page.evaluate(()=>{document.body.style.margin='8px';for(const [name,value]of Object.entries({'--ha-card-background':'linear-gradient(135deg, #ece7f2, #b9d9ed)','--primary-text-color':'#172239','--secondary-text-color':'#4d5666','--divider-color':'#888d9b'}))card.style.setProperty(name,value)});
@@ -194,16 +226,18 @@ const root = path.resolve(__dirname, '..');
  });
  assert.deepEqual(layout.overflows,[]);assert.deepEqual(layout.outside,[]);
  for(let i=0;i<layout.rects.length;i++)for(let j=i+1;j<layout.rects.length;j++){const a=layout.rects[i].rect,b=layout.rects[j].rect;assert(!(a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top),`Overlapping nodes ${layout.rects[i].key}, ${layout.rects[j].key}`)}
+ await verifyRoutes('mobile');
  await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-mobile.png')});
  for (const width of [320, 768]) {
   await page.setViewportSize({width,height:900});await page.waitForTimeout(60);
   const problems=await page.evaluate(()=>[...card.shadowRoot.querySelectorAll('.node')].filter(n=>n.scrollWidth>n.clientWidth+1||n.scrollHeight>n.clientHeight+1).map(n=>n.dataset.key));
   assert.deepEqual(problems,[],`Content overflow at ${width}px`);
+  await verifyRoutes(`${width}px`);
  }
  await page.emulateMedia({reducedMotion:'reduce'});
  assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('.flow circle')).display),'none');
  await page.evaluate(()=>{const card2=document.createElement('suris-ecoflow-flow-card');card2.setConfig({type:'custom:suris-ecoflow-flow-card'});document.body.append(card2)});
  assert.deepEqual(errors,[]);
- console.log('PASS: source switching, seven flows, unavailable data, kW conversion, unsupported units, threshold, XT60 labels, independent battery charge levels, unavailable charge, transparent light/dark/gradient themes, home input without approximation symbol, named/HEX/RGB/HSL colors, total input, editor clearing and typing, focus and cursor, draft validation, configuration feedback, saved selections, stable preview, more-info, mobile bounds, reduced motion, empty configuration.');
+ console.log('PASS: source switching, seven orthogonal flows, correct endpoints, matching dot paths, straight first-station transfer, one-corner home feed, unavailable data, kW conversion, unsupported units, threshold, XT60 labels, independent battery charge levels, unavailable charge, transparent light/dark/gradient themes, home input without approximation symbol, named/HEX/RGB/HSL colors, total input, editor clearing and typing, focus and cursor, draft validation, configuration feedback, saved selections, stable preview, more-info, mobile bounds, reduced motion, empty configuration.');
  await browser.close();
 })().catch(error=>{console.error(error);process.exit(1)});
