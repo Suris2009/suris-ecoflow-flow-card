@@ -1,0 +1,18 @@
+const fs = require('node:fs');
+const path = require('node:path');
+const assert = require('node:assert/strict');
+const root = path.resolve(__dirname, '..');
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const manifest = JSON.parse(fs.readFileSync(path.join(root, 'hacs.json'), 'utf8'));
+const source = fs.readFileSync(path.join(root, manifest.filename), 'utf8');
+assert(/^[0-9]+\.[0-9]+\.[0-9]+$/.test(pkg.version), 'Expected a stable semantic version');
+assert.equal(manifest.filename, `${pkg.name}.js`);
+assert.equal(manifest.content_in_root, true);
+assert.equal(manifest.render_readme, true);
+assert(source.includes(`const VERSION = '${pkg.version}';`), 'JS version must match package version');
+assert(source.includes(`v${pkg.version} |`), 'JS header must match package version');
+if (process.env.REQUESTED_VERSION) assert.equal(process.env.REQUESTED_VERSION, pkg.version, 'Requested version must match source');
+if (process.env.GITHUB_REF?.startsWith('refs/tags/')) assert.equal(process.env.GITHUB_REF, `refs/tags/v${pkg.version}`, 'Tag must match source');
+assert(fs.existsSync(path.join(root, 'README.md')));
+assert(fs.existsSync(path.join(root, 'LICENSE')));
+console.log(`PASS: HACS manifest and release version ${pkg.version}`);
