@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.1
+
+- Home consumption no longer requires a dedicated sensor.
+- When on grid, estimate home consumption by subtracting all three station charging powers from total grid power.
+- When on the main EcoFlow, use its home feed power or total output.
+- Drive home flow animation from the same displayed power.
+- Keep unavailable readings unknown and mark grid-derived consumption with ≈.
+
 ## 0.1.0
 
 - Initial release of the Home Assistant dashboard card.
