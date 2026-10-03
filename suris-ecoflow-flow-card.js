@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v0.1.4 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v0.1.5 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '0.1.4';
+  const VERSION = '0.1.5';
   const NS = 'http://www.w3.org/2000/svg';
   const DEFAULTS = {
     type: `custom:${TAG}`, title: 'Енергопотоки', language: 'uk',
@@ -17,20 +17,30 @@
     en: { grid: 'City grid', main: 'Main EcoFlow', home: 'Home', title: 'Energy flows', input: 'Input', output: 'Output', soc: 'Charge', ac: 'Grid', solar: 'Solar', power: 'Consumption', source: 'Source', unknown: 'Unknown', unavailable: 'Unavailable', select: 'Select entities in the card editor', settings: 'Settings', homePowerLabel: 'Home consumption (optional)', homeDerived: 'Without a separate sensor: grid power minus the three station charging powers when on grid; main station output when on EcoFlow. Missing or unavailable station inputs count as zero in this calculation. ≈ marks an estimated value.', sourceHint: 'Grid available — home powered by grid. Grid absent — home powered by the main EcoFlow. Select the grid availability sensor in the city grid section.', flowHint: 'Lines show animation only. A flow is active above the threshold. Missing or unavailable readings appear as —.', mainHint: 'A separate AC input power entity is required for grid → main EcoFlow. Total input is never treated as AC input.', auxHint: 'Transfer power: use DC output if total output includes other loads. When empty, total output is used.', editorError: 'The Home Assistant editor is still loading. Close and reopen the card editor.', more: 'More information', watts: 'W', mismatch: 'Unrecognized grid availability state', setup: 'Select the grid availability sensor' }
   };
   const t = (config) => TEXT[config?.language] || TEXT.uk;
-  const merge = (config = {}) => {
+  const draftConfig = (config = {}) => {
     const result = { ...DEFAULTS, ...config };
     for (const key of ['grid', 'auxiliary_1', 'auxiliary_2', 'main', 'home', 'appearance']) {
       if (config[key] != null && (typeof config[key] !== 'object' || Array.isArray(config[key]))) throw new Error(`${key} must be an object`);
       result[key] = { ...DEFAULTS[key], ...config[key] };
     }
     const a = result.appearance;
-    a.auxiliary_1_color = a.auxiliary_1_color || a.solar_color;
-    a.auxiliary_2_color = a.auxiliary_2_color || a.solar_color;
-    a.threshold = Number(a.threshold); a.duration = Number(a.duration);
+    a.auxiliary_1_color ??= a.solar_color;
+    a.auxiliary_2_color ??= a.solar_color;
+    return result;
+  };
+  const merge = (config = {}) => {
+    const result = draftConfig(config), a = result.appearance;
+    result.title ??= DEFAULTS.title;
+    result.language = result.language === 'en' ? 'en' : 'uk';
+    for (const key of ['grid', 'auxiliary_1', 'auxiliary_2', 'main', 'home']) result[key].name ||= DEFAULTS[key].name;
+    const number = (key) => a[key] == null || a[key] === '' ? DEFAULTS.appearance[key] : Number(a[key]);
+    a.threshold = number('threshold'); a.duration = number('duration');
     if (!Number.isFinite(a.threshold) || a.threshold < 0) throw new Error('Flow threshold must be a non-negative number');
     if (!Number.isFinite(a.duration) || a.duration < 0.5 || a.duration > 20) throw new Error('Animation duration must be between 0.5 and 20 seconds');
     for (const key of ['grid_color', 'solar_color', 'main_color', 'auxiliary_1_color', 'auxiliary_2_color']) {
-      if (!/^#[0-9a-f]{6}$/i.test(a[key])) throw new Error(`${key} must be a six-digit hex color`);
+      const color = String(a[key] ?? '').trim();
+      a[key] = color || (key.startsWith('auxiliary_') ? a.solar_color : DEFAULTS.appearance[key]);
+      if (!/^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(a[key]) && !globalThis.CSS?.supports('color', a[key])) throw new Error(`${key}: enter a CSS color such as red, #ff0000 or rgb(255, 0, 0)`);
     }
     return result;
   };
@@ -124,7 +134,12 @@
     }
     static getStubConfig() { return JSON.parse(JSON.stringify(DEFAULTS)); }
     setConfig(config) {
-      this._config = merge(config); this._signature = ''; this._build(); this._update();
+      const next = merge(config);
+      if (JSON.stringify(next) === JSON.stringify(this._config)) return;
+      const rebuild = !this._nodes || next.language !== this._config?.language;
+      this._config = next; this._signature = '';
+      if (rebuild) this._build(); else this._applyConfig();
+      this._update(); this._drawPaths();
     }
     set hass(hass) { this._hass = hass; this._states = hass?.states || {}; this._update(); }
     get hass() { return this._hass; }
@@ -172,6 +187,12 @@
       }
       if (this.isConnected) { this._resize.observe(this._diagram); for (const node of Object.values(this._nodes)) this._resize.observe(node); }
       this._drawPaths();
+    }
+    _applyConfig() {
+      const c = this._config, text = t(c);
+      this.shadowRoot.querySelector('h2').textContent = c.title;
+      for (const key of ['grid', 'auxiliary_1', 'auxiliary_2', 'main']) this.style.setProperty(`--flow-${key}`, c.appearance[`${key}_color`]);
+      for (const [key, node] of Object.entries(this._nodes)) node.querySelector('h3').textContent = c[key].name || text[key] || key;
     }
     _update() {
       if (!this._config || !this._values) return;
@@ -246,58 +267,89 @@
     } catch (error) { console.debug(`${TAG}: form preload`, error); }
   }
   const FIELD_LABELS = {
-    uk: { title: 'Заголовок', language: 'Мова', name: 'Назва', power: 'Потужність', input_power: 'Загальна вхідна потужність', output_power: 'Загальна вихідна потужність', soc: 'Заряд батареї (%)', ac_input_power: 'Потужність входу від міської мережі (AC)', solar_input_power: 'Потужність сонячного входу 1 (DC)', solar_input_power_2: 'Потужність сонячного входу 2 (DC)', grid_charge_power: 'Потужність заряджання від мережі (необов’язково)', transfer_power: 'Потужність передачі на головну EcoFlow (необов’язково)', home_feed_power: 'Потужність виходу на дім (необов’язково)', available_entity: 'Наявність міської мережі', available_state: 'Стан «мережа є»', source_entity: 'Сутність джерела живлення дому', grid_state: 'Стан «дім від міської мережі»', main_state: 'Стан «дім від головної EcoFlow»', grid_color: 'Колір мережі: рамка та потоки (#RRGGBB)', auxiliary_1_color: 'Колір EcoFlow №2: рамка та потік (#RRGGBB)', auxiliary_2_color: 'Колір EcoFlow №3: рамка та потік (#RRGGBB)', solar_color: 'Колір передачі між станціями (#RRGGBB)', main_color: 'Колір головної EcoFlow: рамка та потік (#RRGGBB)', threshold: 'Поріг активного потоку (Вт)', duration: 'Час проходження точки (с)' },
-    en: { title: 'Title', language: 'Language', name: 'Name', power: 'Power', input_power: 'Total input power', output_power: 'Total output power', soc: 'Battery charge (%)', ac_input_power: 'City grid input power (AC)', solar_input_power: 'Solar input 1 power (DC)', solar_input_power_2: 'Solar input 2 power (DC)', grid_charge_power: 'Grid charging power (optional)', transfer_power: 'Transfer power to main EcoFlow (optional)', home_feed_power: 'Output power to home (optional)', available_entity: 'Grid availability', available_state: 'Grid available state', source_entity: 'Home power source entity', grid_state: 'State: home powered by grid', main_state: 'State: home powered by main EcoFlow', grid_color: 'Grid border and flow color (#RRGGBB)', auxiliary_1_color: 'EcoFlow #2 border and flow color (#RRGGBB)', auxiliary_2_color: 'EcoFlow #3 border and flow color (#RRGGBB)', solar_color: 'Station transfer color (#RRGGBB)', main_color: 'Main EcoFlow border and flow color (#RRGGBB)', threshold: 'Active flow threshold (W)', duration: 'Dot travel duration (s)' }
+    uk: { title: 'Заголовок', language: 'Мова', name: 'Назва', power: 'Потужність', input_power: 'Загальна вхідна потужність', output_power: 'Загальна вихідна потужність', soc: 'Заряд батареї (%)', ac_input_power: 'Потужність входу від міської мережі (AC)', solar_input_power: 'Потужність сонячного входу 1 (DC)', solar_input_power_2: 'Потужність сонячного входу 2 (DC)', grid_charge_power: 'Потужність заряджання від мережі (необов’язково)', transfer_power: 'Потужність передачі на головну EcoFlow (необов’язково)', home_feed_power: 'Потужність виходу на дім (необов’язково)', available_entity: 'Наявність міської мережі', available_state: 'Стан «мережа є»', source_entity: 'Сутність джерела живлення дому', grid_state: 'Стан «дім від міської мережі»', main_state: 'Стан «дім від головної EcoFlow»', grid_color: 'Колір мережі: рамка та потоки', auxiliary_1_color: 'Колір EcoFlow №2: рамка та потік', auxiliary_2_color: 'Колір EcoFlow №3: рамка та потік', solar_color: 'Колір передачі між станціями', main_color: 'Колір головної EcoFlow: рамка та потік', threshold: 'Поріг активного потоку (Вт)', duration: 'Час проходження точки (с)' },
+    en: { title: 'Title', language: 'Language', name: 'Name', power: 'Power', input_power: 'Total input power', output_power: 'Total output power', soc: 'Battery charge (%)', ac_input_power: 'City grid input power (AC)', solar_input_power: 'Solar input 1 power (DC)', solar_input_power_2: 'Solar input 2 power (DC)', grid_charge_power: 'Grid charging power (optional)', transfer_power: 'Transfer power to main EcoFlow (optional)', home_feed_power: 'Output power to home (optional)', available_entity: 'Grid availability', available_state: 'Grid available state', source_entity: 'Home power source entity', grid_state: 'State: home powered by grid', main_state: 'State: home powered by main EcoFlow', grid_color: 'Grid border and flow color', auxiliary_1_color: 'EcoFlow #2 border and flow color', auxiliary_2_color: 'EcoFlow #3 border and flow color', solar_color: 'Station transfer color', main_color: 'Main EcoFlow border and flow color', threshold: 'Active flow threshold (W)', duration: 'Dot travel duration (s)' }
   };
   const entityField = (name, power = true) => ({ name, selector: { entity: power ? { domain: 'sensor' } : {} } });
   const textField = (name) => ({ name, selector: { text: {} } });
   class SurisEcoFlowFlowEditor extends HTMLElement {
     constructor() { super(); this.attachShadow({ mode: 'open' }); this._forms = []; }
     setConfig(config) {
-      const next = merge(config);
-      if (JSON.stringify(next) === JSON.stringify(this._config)) return;
-      this._config = next; this._build();
+      const serialized = JSON.stringify(config);
+      if (serialized === JSON.stringify(this._config) || serialized === this._lastPublished) return;
+      this._config = draftConfig(config);
+      this._refreshForms(); this._validateDraft();
     }
     set hass(hass) { this._hass = hass; for (const form of this._forms) form.hass = hass; }
     get hass() { return this._hass; }
     connectedCallback() { if (this._config && !this._forms.length) this._build(); }
+    _formData(section) { return section ? this._config[section] : { title: this._config.title, language: this._config.language }; }
+    _refreshForms() {
+      const language = this._config.language === 'en' ? 'en' : 'uk';
+      if (!this._forms.length || language !== this._schemaLanguage) { this._build(); return; }
+      for (const form of this._forms) {
+        const section = form.dataset.section, data = this._formData(section);
+        if (JSON.stringify(form.data) !== JSON.stringify(data)) form.data = data;
+        if (section === 'auxiliary_1' || section === 'auxiliary_2') form.parentNode.querySelector('summary').textContent = data.name || DEFAULTS[section].name;
+      }
+    }
+    _validateDraft() {
+      let valid = true;
+      try { merge(this._config); } catch { valid = false; }
+      if (this._validation) {
+        this._validation.hidden = valid;
+        this._validation.textContent = valid ? '' : this._config.language === 'en'
+          ? 'Complete the color or number before it is applied. Colors: red, green, #ff0000, rgb(255, 0, 0).'
+          : 'Допиши колір або числове значення, щоб застосувати зміну. Кольори: red, green, #ff0000, rgb(255, 0, 0).';
+      }
+      return valid;
+    }
+    _publishConfig() {
+      if (!this._validateDraft()) return;
+      const config = structuredClone(this._config), serialized = JSON.stringify(config);
+      if (serialized === this._lastPublished) return;
+      this._lastPublished = serialized;
+      this.dispatchEvent(new CustomEvent('config-changed', { bubbles: true, composed: true, detail: { config } }));
+    }
     _build() {
       if (!this._config) return;
-      const c = this._config, text = t(c); this._forms = [];
+      const openSections = new Set([...this.shadowRoot.querySelectorAll('details[open]')].map(details => details.dataset.section));
+      const c = this._config, text = t(c); this._forms = []; this._validation = null;
+      this._schemaLanguage = c.language === 'en' ? 'en' : 'uk';
       this.shadowRoot.innerHTML = '<style>:host{display:block}details{border:1px solid var(--divider-color,#777);border-radius:10px;padding:12px;margin:12px 0}summary{cursor:pointer;font-weight:600;padding:4px 0}ha-form{display:block;margin-top:12px}p{font-size:13px;color:var(--secondary-text-color);line-height:1.5}.error{color:var(--error-color,#d44)}</style>';
       if (!customElements.get('ha-form')) {
         const warning = document.createElement('p'); warning.className = 'error'; warning.textContent = text.editorError; this.shadowRoot.append(warning);
-        ensureForm().then(() => { if (this.isConnected && customElements.get('ha-form')) this._build(); });
+        ensureForm().then(() => { if (this.isConnected && !this._forms.length && customElements.get('ha-form')) this._build(); });
         return;
       }
       const stationSchema = [textField('name'), entityField('soc'), entityField('input_power'), entityField('output_power')];
       const sections = [
         ['', text.settings, [textField('title'), { name: 'language', selector: { select: { options: [{ value: 'uk', label: 'Українська' }, { value: 'en', label: 'English' }], mode: 'dropdown' } } }], ''],
         ['grid', text.grid, [textField('name'), entityField('power'), entityField('available_entity', false), textField('available_state')], ''],
-        ['auxiliary_1', c.auxiliary_1.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
-        ['auxiliary_2', c.auxiliary_2.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
+        ['auxiliary_1', c.auxiliary_1.name || DEFAULTS.auxiliary_1.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
+        ['auxiliary_2', c.auxiliary_2.name || DEFAULTS.auxiliary_2.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
         ['main', text.main, [...stationSchema, entityField('ac_input_power'), entityField('solar_input_power'), entityField('solar_input_power_2'), entityField('home_feed_power')], text.mainHint],
         ['home', text.home, [textField('name'), entityField('power')], `${text.sourceHint} ${text.homeDerived}`],
-        ['appearance', c.language === 'en' ? 'Flow appearance' : 'Вигляд потоків', [textField('grid_color'), textField('auxiliary_1_color'), textField('auxiliary_2_color'), textField('main_color'), { name: 'threshold', selector: { number: { min: 0, max: 1000, step: 1, mode: 'box', unit_of_measurement: text.watts } } }, { name: 'duration', selector: { number: { min: .5, max: 20, step: .5, mode: 'box', unit_of_measurement: 's' } } }], `${text.flowHint} ${c.language === 'en' ? 'Each source color applies to its border and outgoing flows. Home uses its active source color.' : 'Колір джерела застосовується до його рамки та вихідних потоків. Рамка дому має колір активного джерела.'}`]
+        ['appearance', c.language === 'en' ? 'Flow appearance' : 'Вигляд потоків', [textField('grid_color'), textField('auxiliary_1_color'), textField('auxiliary_2_color'), textField('main_color'), { name: 'threshold', selector: { number: { min: 0, max: 1000, step: 1, mode: 'box', unit_of_measurement: text.watts } } }, { name: 'duration', selector: { number: { min: .5, max: 20, step: .5, mode: 'box', unit_of_measurement: 's' } } }], `${text.flowHint} ${c.language === 'en' ? 'Each source color applies to its border and outgoing flows. Home uses its active source color. Colors: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). An empty field restores the default color.' : 'Колір джерела застосовується до його рамки та вихідних потоків. Рамка дому має колір активного джерела. Кольори: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). Порожнє поле повертає типовий колір.'}`]
       ];
       for (const [section, label, schema, hint] of sections) {
-        const details = document.createElement('details'); details.open = !section;
+        const details = document.createElement('details'); details.dataset.section = section; details.open = !section || openSections.has(section);
         const summary = document.createElement('summary'); summary.textContent = label; details.append(summary);
         if (hint) { const p = document.createElement('p'); p.textContent = hint; details.append(p); }
         const form = document.createElement('ha-form'); form.hass = this._hass; form.schema = schema;
-        form.data = section ? c[section] : { title: c.title, language: c.language };
+        form.dataset.section = section; form.data = this._formData(section);
         form.computeLabel = (field) => section === 'home' && field.name === 'power' ? t(this._config).homePowerLabel : (FIELD_LABELS[this._config.language] || FIELD_LABELS.uk)[field.name] || field.name;
         form.addEventListener('value-changed', (event) => {
           event.stopPropagation();
-          if (!event.detail?.value) return;
-          const previousLanguage = this._config.language;
-          const next = section ? { ...this._config, [section]: { ...this._config[section], ...event.detail.value } } : { ...this._config, ...event.detail.value };
-          this._config = next; form.data = section ? next[section] : { title: next.title, language: next.language };
-          this.dispatchEvent(new CustomEvent('config-changed', { bubbles: true, composed: true, detail: { config: structuredClone(next) } }));
-          if (previousLanguage !== next.language) this._build();
+          const value = event.detail?.value;
+          if (!value || typeof value !== 'object' || Array.isArray(value)) return;
+          this._config = section ? { ...this._config, [section]: { ...this._config[section], ...value } } : { ...this._config, ...value };
+          this._refreshForms(); this._publishConfig();
         });
         this._forms.push(form); details.append(form); this.shadowRoot.append(details);
       }
+      this._validation = document.createElement('p'); this._validation.setAttribute('role', 'status'); this._validation.hidden = true; this.shadowRoot.append(this._validation);
+      this._validateDraft();
     }
   }
   if (!customElements.get(TAG)) customElements.define(TAG, SurisEcoFlowFlowCard);

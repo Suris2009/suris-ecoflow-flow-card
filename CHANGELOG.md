@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.5
+
+- Keep visual editor fields, focus, cursor and expanded sections while changing configuration.
+- Preserve empty and incomplete draft values separately from display defaults; apply changes only once colors and numbers are valid.
+- Accept CSS color names, short and alpha HEX, RGB/RGBA and HSL/HSLA values; clearing a color restores its default.
+- Update card names, entities and colors in place without rebuilding the preview.
+- Add browser regression checks for clearing and typing into fields with Home Assistant-style configuration feedback.
+
 ## 0.1.4
 
 - Show two independent solar inputs on the main EcoFlow and add a visual entity selector for each port.
