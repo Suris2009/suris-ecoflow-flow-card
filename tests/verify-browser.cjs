@@ -56,6 +56,17 @@ const root = path.resolve(__dirname, '..');
   return{count:forms.length,events:events.length,home:final.home.power,transfer:final.auxiliary_1.transfer_power,stable};
  });
  assert.deepEqual(result,{count:7,events:2,home:'sensor.new_home',transfer:'sensor.a_dc',stable:true});
+ await page.evaluate(()=>{delete config.home.power;states['binary_sensor.source'].state='on';states['binary_sensor.grid_available'].state='on';states['sensor.grid'].state='1000';states['sensor.a_in'].state='100';states['sensor.b_in'].state='200';states['sensor.main_ac'].state='300';card.setConfig(config);refresh()});
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'≈ 400 Вт');
+ assert((await page.evaluate(()=>active())).includes('grid_home'));
+ assert(!(await page.evaluate(()=>active())).includes('main_home'));
+ await page.evaluate(()=>{states['sensor.b_in'].state='unavailable';refresh()});
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'—');
+ assert(!(await page.evaluate(()=>active())).includes('grid_home'));
+ await page.evaluate(()=>{states['binary_sensor.source'].state='off';refresh()});
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'320 Вт');
+ assert((await page.evaluate(()=>active())).includes('main_home'));
+ await page.evaluate(()=>{config.home.power='sensor.home';card.setConfig(config);refresh()});
  const invalid=await page.evaluate(()=>{
   try{card.setConfig({...config,home:{...config.home,main_state:'on'}});return false}catch{return true}
  });assert(invalid);
