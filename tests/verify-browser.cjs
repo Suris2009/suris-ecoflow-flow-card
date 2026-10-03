@@ -27,9 +27,9 @@ const root = path.resolve(__dirname, '..');
  await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-desktop.png')});
  await page.evaluate(()=>{states['binary_sensor.source'].state='on';states['binary_sensor.grid_available'].state='on';states['sensor.grid'].state='800';states['sensor.a_in'].state='200';states['sensor.b_in'].state='180';states['sensor.main_ac'].state='100';refresh()});
  assert.deepEqual(await page.evaluate(()=>active()),['auxiliary_1_main','auxiliary_2_main','grid_auxiliary_1','grid_auxiliary_2','grid_home','grid_main']);
- await page.evaluate(()=>{states['binary_sensor.source'].state='unavailable';refresh()});
+ await page.evaluate(()=>{states['binary_sensor.grid_available'].state='unavailable';refresh()});
  assert(!(await page.evaluate(()=>active())).some(x=>x.endsWith('_home')));
- await page.evaluate(()=>{states['sensor.main_ac'].state='unavailable';states['sensor.main_pv'].state='unavailable';states['sensor.a_in'].state='unknown';refresh()});
+ await page.evaluate(()=>{states['binary_sensor.grid_available'].state='on';states['sensor.main_ac'].state='unavailable';states['sensor.main_pv'].state='unavailable';states['sensor.a_in'].state='unknown';refresh()});
  assert(!(await page.evaluate(()=>active())).includes('grid_main'));
  assert(!(await page.evaluate(()=>active())).includes('grid_auxiliary_1'));
  assert(!(await page.evaluate(()=>active())).includes('auxiliary_1_main'));
@@ -52,7 +52,7 @@ const root = path.resolve(__dirname, '..');
   forms[2].dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...forms[2].data,transfer_power:'sensor.a_dc'}},bubbles:true,composed:true}));
   editor.setConfig(events.at(-1));
   const stable=editor.shadowRoot.querySelector('ha-form')===forms[0];
-  const final=events.at(-1);editor.remove();
+  const final=events.at(-1);if(forms[5].schema.some(field=>field.name==='source_entity'))throw new Error('Legacy source control remains');editor.remove();
   return{count:forms.length,events:events.length,home:final.home.power,transfer:final.auxiliary_1.transfer_power,stable};
  });
  assert.deepEqual(result,{count:7,events:2,home:'sensor.new_home',transfer:'sensor.a_dc',stable:true});
@@ -63,12 +63,12 @@ const root = path.resolve(__dirname, '..');
  await page.evaluate(()=>{states['sensor.b_in'].state='unavailable';refresh()});
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'—');
  assert(!(await page.evaluate(()=>active())).includes('grid_home'));
- await page.evaluate(()=>{states['binary_sensor.source'].state='off';refresh()});
+ await page.evaluate(()=>{states['binary_sensor.grid_available'].state='off';refresh()});
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'320 Вт');
  assert((await page.evaluate(()=>active())).includes('main_home'));
  await page.evaluate(()=>{config.home.power='sensor.home';card.setConfig(config);refresh()});
  const invalid=await page.evaluate(()=>{
-  try{card.setConfig({...config,home:{...config.home,main_state:'on'}});return false}catch{return true}
+  try{card.setConfig({...config,appearance:{...config.appearance,threshold:-1}});return false}catch{return true}
  });assert(invalid);
  await page.evaluate(()=>{states['sensor.main_pv'].attributes.unit_of_measurement='W';states['binary_sensor.source'].state='off';states['binary_sensor.grid_available'].state='off';states['sensor.a_in'].state='0';states['sensor.b_in'].state='0';states['sensor.main_ac'].state='0';states['sensor.main_pv'].state='330';states['sensor.grid'].state='0';card.setConfig(config);refresh()});
  await page.setViewportSize({width:390,height:800});

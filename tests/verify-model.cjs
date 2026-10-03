@@ -19,8 +19,8 @@ assert.deepEqual(flow(),{grid_auxiliary_1:false,grid_auxiliary_2:false,grid_main
 assert.equal(model(config,states).main.input,330);
 set('binary_sensor.source','on');set('binary_sensor.grid','on');set('sensor.a_in',100);set('sensor.b_in',200);set('sensor.m_ac',300);
 assert(flow().grid_home);assert(!flow().main_home);assert(flow().grid_main);assert(flow().grid_auxiliary_1);assert(flow().grid_auxiliary_2);
-for(const state of ['unknown','unavailable','unexpected','']){set('binary_sensor.source',state);assert(!flow().grid_home);assert(!flow().main_home)}
-set('binary_sensor.source','off');set('sensor.m_pv','unavailable');assert(!flow().auxiliary_1_main);assert(!flow().auxiliary_2_main);
+for(const state of ['unknown','unavailable','unexpected','']){set('binary_sensor.grid',state);assert(!flow().grid_home);assert(!flow().main_home)}
+set('binary_sensor.grid','on');set('sensor.m_pv','unavailable');assert(!flow().auxiliary_1_main);assert(!flow().auxiliary_2_main);
 set('sensor.m_ac','unavailable');assert(!flow().grid_main);assert.equal(model(config,states).main.ac,null);
 set('sensor.a_in','unknown');assert(!flow().grid_auxiliary_1);
 set('sensor.m_ac',3);assert(!flow().grid_main);set('sensor.m_ac',3.01);assert(flow().grid_main);
@@ -31,8 +31,8 @@ set('sensor.m_ac',1000,'mW');assert.equal(model(config,states).main.ac,1);
 set('sensor.m_ac',.001,'MW');assert.equal(model(config,states).main.ac,1000);
 set('sensor.a_in','');assert.equal(readNumber(states,'sensor.a_in',true),null);
 set('sensor.a_in',-10);assert(!flow().grid_auxiliary_1);
-delete config.home.power;assert(flow().main_home);config.home.power='sensor.home';set('sensor.home','unavailable');assert(!flow().main_home);
-assert.throws(()=>merge({home:{grid_state:'on',main_state:'on'}}));
+set('binary_sensor.grid','off');delete config.home.power;assert(flow().main_home);config.home.power='sensor.home';set('sensor.home','unavailable');assert(!flow().main_home);
+assert.doesNotThrow(()=>merge({home:{grid_state:'on',main_state:'on'}}));
 assert.throws(()=>merge({appearance:{threshold:-1}}));assert.throws(()=>merge({appearance:{duration:0}}));assert.throws(()=>merge({appearance:{grid_color:'red'}}));
 delete config.home.power;
 set('binary_sensor.source','on');set('binary_sensor.grid','on');set('sensor.grid',1,'kW');
@@ -41,12 +41,20 @@ assert.equal(model(config,states).home.power,400);assert.equal(model(config,stat
 assert(flow().grid_home);assert(!flow().main_home);
 set('sensor.b_in','unavailable');assert.equal(model(config,states).home.power,null);assert(!flow().grid_home);
 set('sensor.b_in',200);set('sensor.grid',100);assert.equal(model(config,states).home.power,0);assert(!flow().grid_home);
-set('binary_sensor.source','off');set('sensor.m_out',320);assert.equal(model(config,states).home.power,320);assert(flow().main_home);
+set('binary_sensor.grid','off');set('sensor.m_out',320);assert.equal(model(config,states).home.power,320);assert(flow().main_home);
 config.main.home_feed_power='sensor.feed';set('sensor.feed',275);assert.equal(model(config,states).home.power,275);
 set('sensor.feed','unavailable');assert.equal(model(config,states).home.power,null);assert(!flow().main_home);
-set('binary_sensor.source','unexpected');assert.equal(model(config,states).home.power,null);assert(!flow().main_home);assert(!flow().grid_home);
+set('binary_sensor.grid','unexpected');assert.equal(model(config,states).home.power,null);assert(!flow().main_home);assert(!flow().grid_home);
 config.home.power='sensor.home';set('sensor.home',123);assert.equal(model(config,states).home.power,123);assert.equal(model(config,states).home.power_origin,'sensor');
 set('sensor.home','unavailable');assert.equal(model(config,states).home.power,null);
+delete config.home.power;delete config.main.home_feed_power;
+set('binary_sensor.grid','off');assert.equal(model(config,states).home.source,'main');
+config.grid.available_state='off';assert.equal(model(config,states).home.source,'grid');
+set('binary_sensor.grid','on');assert.equal(model(config,states).home.source,'main');
+config.grid.available_state='on';set('binary_sensor.grid','on');assert.equal(model(config,states).home.source,'grid');
+set('sensor.grid',0);assert.equal(model(config,states).home.source,'grid');
+for(const value of ['unknown','unavailable','']){set('binary_sensor.grid',value);assert.equal(model(config,states).home.source,'unknown')}
+delete config.grid.available_entity;assert.equal(model(config,states).home.source,'unknown');
 const blank=model(merge({}),{});assert(Object.values(blank.flows).every(value=>!value));
 assert.equal(context.window.customCards.length,1);
 vm.runInContext(source,context);assert.equal(context.window.customCards.length,1);
