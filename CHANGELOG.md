@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.4
+
+- Show two independent solar inputs on the main EcoFlow and add a visual entity selector for each port.
+- Sum configured AC and solar inputs when no total input sensor is selected; preserve the existing solar sensor as port 1.
+- Determine auxiliary transfer flows only from their own output readings, independently of the main solar ports.
+- Add separate colors for each auxiliary station and match source borders, battery icons and outgoing flows.
+- Match the home border to its active source color and preserve previous color settings.
+
 ## 0.1.3
 
 - Keep home consumption and the grid-to-home flow active when EcoFlow charging inputs are missing or unavailable.
