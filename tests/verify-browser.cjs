@@ -245,6 +245,22 @@ const root = path.resolve(__dirname, '..');
  await page.setViewportSize({width:390,height:800});
  await page.evaluate(()=>{document.body.style.margin='8px';for(const [name,value]of Object.entries({'--ha-card-background':'linear-gradient(135deg, #ece7f2, #b9d9ed)','--primary-text-color':'#172239','--secondary-text-color':'#4d5666','--divider-color':'#888d9b'}))card.style.setProperty(name,value)});
  await page.waitForTimeout(100);
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .source')),null);
+ for(const language of ['uk','en']){
+  await page.evaluate(language=>{card.setConfig({...config,language});refresh()},language);
+  for(const [watts,expected] of [[999,language==='uk'?'999 Вт':'999 W'],[1000,language==='uk'?'1 кВт':'1 kW'],[2468,language==='uk'?'2,47 кВт':'2.47 kW'],[12345,language==='uk'?'12,35 кВт':'12.35 kW'],[99999,language==='uk'?'100 кВт':'100 kW']]){
+   await page.evaluate(watts=>{states['sensor.grid'].state=String(watts);refresh()},watts);
+   assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.grid .value').textContent),expected);
+   for(const width of [320,352,390,422]){
+    await page.setViewportSize({width,height:800});
+    const fit=await page.evaluate(()=>{const row=card.shadowRoot.querySelector('.grid .row'),v=row.querySelector('.value'),range=document.createRange();range.selectNodeContents(v);const bounds=range.getBoundingClientRect(),label=row.querySelector('.label');range.selectNodeContents(label);const caption=range.getBoundingClientRect();return {available:row.getBoundingClientRect().width,needed:bounds.width+caption.width+parseFloat(getComputedStyle(row).columnGap),height:bounds.height,lineHeight:parseFloat(getComputedStyle(v).lineHeight),sameLine:Math.abs(bounds.bottom-caption.bottom)<2}});
+    assert(fit.needed<=fit.available+.5,`${language}: ${expected} too wide at ${width}px: ${JSON.stringify(fit)}`);
+    assert(fit.height<=fit.lineHeight+1&&fit.sameLine,`Wrapped grid output row at ${width}px: ${JSON.stringify(fit)}`);
+   }
+  }
+ }
+ await page.setViewportSize({width:390,height:800});
+ await page.evaluate(()=>{states['sensor.grid'].state='0';card.setConfig(config);refresh()});
  const layout=await page.evaluate(()=>{
   const d=card.shadowRoot.querySelector('.diagram').getBoundingClientRect();const nodes=[...card.shadowRoot.querySelectorAll('.node')];
   return{overflows:nodes.filter(n=>n.scrollWidth>n.clientWidth+1 || n.scrollHeight>n.clientHeight+1).map(n=>n.dataset.key),outside:nodes.filter(n=>{const r=n.getBoundingClientRect();return r.left<d.left-.1||r.right>d.right+.1||r.top<d.top-.1||r.bottom>d.bottom+.1}).map(n=>n.dataset.key),rects:nodes.map(n=>({key:n.dataset.key,rect:n.getBoundingClientRect().toJSON()}))};
