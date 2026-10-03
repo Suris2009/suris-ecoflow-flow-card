@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.9
+
+- Remove the home source text row; retain source-based border colors and flow logic.
+- Display city grid power from 1000 W in kW with up to two decimals and no grouping.
+- Keep the entire grid output row, including its label, value and unit, on one line; widen the grid block in narrow layouts.
+
 ## 0.1.8
 
 - Replace moving dots with short dashes without arrows on the same seven orthogonal routes.

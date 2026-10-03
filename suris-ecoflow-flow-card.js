@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v0.1.8 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v0.1.9 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '0.1.8';
+  const VERSION = '0.1.9';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -127,10 +127,10 @@
     .flow path{fill:none;stroke:var(--divider-color,#60656d);stroke-width:1.5;stroke-linejoin:miter;stroke-linecap:butt;opacity:.40}.flow.active .flow-track{stroke:var(--color);opacity:.28}.flow .flow-dashes{stroke:var(--color);stroke-width:3;stroke-linecap:round;stroke-dasharray:7 21;opacity:.95;visibility:hidden}.flow.active .flow-dashes{visibility:visible}
     .node{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0;background:transparent;background:color-mix(in srgb,var(--ha-card-background,var(--card-background-color,#1c1c1c)) 8%,transparent);border:2px solid var(--node-color,var(--divider-color,#60656d));border-radius:12px;padding:12px 10px;z-index:1;min-height:max(140px,22cqw);height:auto}
     .node h3{font-size:clamp(12px,1.9cqw,20px);line-height:1.25;text-align:center;margin:0;font-weight:600;overflow-wrap:anywhere}.node .icon{display:flex;justify-content:center;height:clamp(30px,5cqw,56px);margin:4px 0}.icon svg{height:100%;width:64px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.icon .battery-fill{fill:var(--node-color,var(--flow-main));stroke:none}
-    .row{display:flex;align-items:baseline;justify-content:space-between;gap:4px;font-size:clamp(11px,1.6cqw,17px);line-height:1.35;min-width:0}.label{color:var(--secondary-text-color,#aaa);overflow-wrap:anywhere}.value{font:inherit;color:inherit;font-weight:600;text-align:right;white-space:nowrap;background:none;border:0;padding:0;min-width:0}.value[data-entity]{cursor:pointer}.value:focus-visible{outline:2px solid var(--flow-main);outline-offset:2px}.value:disabled{opacity:1}.source{flex-wrap:wrap}.source .label{width:100%}.source .value{margin-left:auto;white-space:normal;overflow-wrap:anywhere}
+    .row{display:flex;align-items:baseline;justify-content:space-between;gap:4px;font-size:clamp(11px,1.6cqw,17px);line-height:1.35;min-width:0}.label{color:var(--secondary-text-color,#aaa);overflow-wrap:anywhere}.value{font:inherit;color:inherit;font-weight:600;text-align:right;white-space:nowrap;background:none;border:0;padding:0;min-width:0}.value[data-entity]{cursor:pointer}.value:focus-visible{outline:2px solid var(--flow-main);outline-offset:2px}.value:disabled{opacity:1}
     .grid{left:0;top:37%;width:22%}.home{right:0;top:37%;width:22%}.auxiliary_1{left:29%;top:3%;width:22%}.auxiliary_2{left:55%;top:3%;width:22%}.main{left:36%;bottom:1%;width:28%;min-height:max(220px,28cqw)}
     .status{margin-top:8px;color:var(--secondary-text-color,#aaa);font-size:12px;min-height:16px;text-align:center}.status:empty{display:none}
-    @container(max-width:520px){.diagram{height:540px}.node{padding:8px 5px;gap:6px;border-radius:9px;min-height:137px}.node h3{font-size:12px}.node .icon{height:29px;margin:0}.row{font-size:11px;flex-wrap:wrap;gap:0 3px}.row .value{margin-left:auto}.grid,.home{width:24%;top:38%}.home .power .label{font-size:clamp(8px,2.8cqw,11px);overflow-wrap:normal}.auxiliary_1{left:26%;width:25%;top:5%}.auxiliary_2{left:54%;width:25%;top:5%}.main{left:33%;width:34%;min-height:202px}}
+    @container(max-width:520px){.diagram{height:540px}.node{padding:8px 5px;gap:6px;border-radius:9px;min-height:137px}.node h3{font-size:12px}.node .icon{height:29px;margin:0}.row{font-size:11px;flex-wrap:wrap;gap:0 3px}.row .value{margin-left:auto}.grid .row{flex-wrap:nowrap;gap:2px;font-size:clamp(8px,2.9cqw,11px)}.grid .row .label{white-space:nowrap}.grid .value{flex-shrink:0}.grid,.home{width:24%;top:38%}.grid{width:32%}.home .power .label{font-size:clamp(8px,2.8cqw,11px);overflow-wrap:normal}.auxiliary_1{left:26%;width:25%;top:5%}.auxiliary_2{left:54%;width:25%;top:5%}.main{left:33%;width:34%;min-height:202px}}
     @media(prefers-reduced-motion:reduce){.flow .flow-dashes{display:none}.flow.active .flow-track{stroke-width:3;opacity:.92}}
   `;
   class SurisEcoFlowFlowCard extends HTMLElement {
@@ -196,7 +196,7 @@
         const artwork = document.createElement('div'); artwork.className = 'icon'; artwork.innerHTML = icon(key === 'grid' ? 'grid' : key === 'home' ? 'home' : 'battery');
         node.append(heading, artwork);
         if (key === 'grid') this._row(node, 'output', text.output);
-        else if (key === 'home') { this._row(node, 'power', text.input); this._row(node, 'source', text.source); }
+        else if (key === 'home') this._row(node, 'power', text.input);
         else {
           this._row(node, 'soc', text.soc); this._row(node, 'input', text.input);
           if (key === 'main') { this._row(node, 'ac', text.ac); this._row(node, 'solar_1', 'XT60(1)'); this._row(node, 'solar_2', 'XT60(2)'); }
@@ -224,12 +224,12 @@
         const [node, field] = key.split('.'); let value = data[node][field];
         let entity = c[node][field === 'soc' ? 'soc' : `${field}_power`];
         if (node === 'grid') entity = c.grid.power;
-        if (node === 'home') entity = field === 'source' ? c.grid.available_entity : c.home.power;
+        if (node === 'home') entity = c.home.power;
         if (node === 'main' && field === 'ac') entity = c.main.ac_input_power;
         if (node === 'main' && field === 'solar_1') entity = c.main.solar_input_power;
         if (node === 'main' && field === 'solar_2') entity = c.main.solar_input_power_2;
-        if (field === 'source') value = value === 'grid' ? c.grid.name : value === 'main' ? c.main.name : text.unknown;
-        else if (field === 'soc') value = value != null && value >= 0 && value <= 100 ? `${formatter.format(value)}%` : '—';
+        if (field === 'soc') value = value != null && value >= 0 && value <= 100 ? `${formatter.format(value)}%` : '—';
+        else if (node === 'grid' && value != null && Math.abs(value) >= 1000) value = `${new Intl.NumberFormat(c.language === 'en' ? 'en' : 'uk', { maximumFractionDigits: 2, useGrouping: false }).format(value / 1000)} ${c.language === 'en' ? 'kW' : 'кВт'}`;
         else value = value == null ? '—' : `${formatter.format(value)} ${text.watts}`;
         button.textContent = value;
         if (entity) button.dataset.entity = entity; else delete button.dataset.entity;
