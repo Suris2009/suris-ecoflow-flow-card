@@ -1,6 +1,6 @@
 {
   "name": "suris-ecoflow-flow-card",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "private": true,
   "license": "MIT",
   "description": "Home Assistant flow card with a visual editor for three EcoFlow stations",

@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v0.1.10 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v0.1.11 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '0.1.10';
+  const VERSION = '0.1.11';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -14,7 +14,7 @@
     appearance: { grid_color: '#4b9fff', solar_color: '#ffcc42', main_color: '#27d9d5', threshold: 3, duration: 3 }
   };
   const TEXT = {
-    uk: { grid: 'Міська мережа', main: 'Головна EcoFlow', home: 'Дім', title: 'Енергопотоки', input: 'Вхід', output: 'Вихід', soc: 'Заряд', ac: 'Мережа', source: 'Джерело', unknown: 'Невідомо', unavailable: 'Недоступно', select: 'Вибери сутності в редакторі картки', settings: 'Налаштування', homePowerLabel: 'Вхід дому (необов’язково)', homeDerived: 'Без окремого датчика: від мережі — загальна потужність мінус заряджання трьох станцій; від EcoFlow — вихід головної станції. Відсутні або недоступні входи станцій у розрахунку вважаються нулем. Вхід дому від мережі розрахунковий.', sourceHint: 'Мережа є — дім від міської мережі. Мережі немає — дім від головної EcoFlow. Вибери датчик наявності мережі в блоці міської мережі.', flowHint: 'Штрихи без стрілок рухаються від джерела до споживача. Більша потужність кожної лінії — більша швидкість. Більший базовий час — повільніший рух. Потік активний, коли потужність перевищує поріг. Відсутні або недоступні показники відображаються як —.', mainHint: 'Для лінії мережа → головна EcoFlow потрібна окрема потужність AC-входу. Загальний вхід не використовується як AC-вхід.', auxHint: 'Потужність передачі на головну станцію: вибери DC-вихід, якщо загальний вихід включає інші навантаження. Якщо поле порожнє, використовується загальний вихід.', editorError: 'Редактор Home Assistant ще завантажується. Закрий та відкрий редактор картки ще раз.', more: 'Докладніше', watts: 'Вт', mismatch: 'Стан міської мережі не розпізнано', setup: 'Вибери датчик наявності міської мережі' },
+    uk: { grid: 'Міська мережа', main: 'Головна EcoFlow', home: 'Дім', title: 'Енергопотоки', input: 'Вхід', output: 'Вихід', soc: 'Заряд', ac: 'Мережа', source: 'Джерело', unknown: 'Невідомо', unavailable: 'Недоступно', select: 'Вибери сутності в редакторі картки', settings: 'Налаштування', homePowerLabel: 'Вхід дому (необов’язково)', homeDerived: 'Без окремого датчика: від мережі — загальна потужність мінус заряджання трьох станцій; від EcoFlow — вихід головної станції. Відсутні або недоступні входи станцій у розрахунку вважаються нулем. Вхід дому від мережі розрахунковий.', sourceHint: 'Мережа є — дім від міської мережі. Мережі немає — дім від головної EcoFlow. Вибери датчик наявності мережі в блоці міської мережі.', flowHint: 'Штрихи без стрілок рухаються від джерела до споживача. Більша потужність кожної лінії — більша швидкість. Більший базовий час — повільніший рух. Потік активний, коли потужність перевищує поріг. Відсутні або недоступні показники відображаються як —.', mainHint: 'Для лінії мережа → головна EcoFlow потрібна окрема потужність AC-входу. Загальний вхід не використовується як AC-вхід.', auxHint: 'Потужність передачі на головну станцію: вибери DC-вихід, якщо загальний вихід включає інші навантаження. Якщо поле порожнє, використовується загальний вихід.', editorError: 'Редактор Home Assistant ще завантажується. Закрий та відкрий редактор картки ще раз.', more: 'Докладніше', watts: 'W', mismatch: 'Стан міської мережі не розпізнано', setup: 'Вибери датчик наявності міської мережі' },
     en: { grid: 'City grid', main: 'Main EcoFlow', home: 'Home', title: 'Energy flows', input: 'Input', output: 'Output', soc: 'Charge', ac: 'Grid', source: 'Source', unknown: 'Unknown', unavailable: 'Unavailable', select: 'Select entities in the card editor', settings: 'Settings', homePowerLabel: 'Home input power (optional)', homeDerived: 'Without a separate sensor: grid power minus the three station charging powers when on grid; main station output when on EcoFlow. Missing or unavailable station inputs count as zero in this calculation. Home input from the grid is calculated.', sourceHint: 'Grid available — home powered by grid. Grid absent — home powered by the main EcoFlow. Select the grid availability sensor in the city grid section.', flowHint: 'Dashes without arrows move from source to load. Higher power on each line increases its speed. A larger base time slows movement. A flow is active above the threshold. Missing or unavailable readings appear as —.', mainHint: 'A separate AC input power entity is required for grid → main EcoFlow. Total input is never treated as AC input.', auxHint: 'Transfer power: use DC output if total output includes other loads. When empty, total output is used.', editorError: 'The Home Assistant editor is still loading. Close and reopen the card editor.', more: 'More information', watts: 'W', mismatch: 'Unrecognized grid availability state', setup: 'Select the grid availability sensor' }
   };
   const t = (config) => TEXT[config?.language] || TEXT.uk;
@@ -127,10 +127,10 @@
     .flow path{fill:none;stroke:var(--divider-color,#60656d);stroke-width:1.5;stroke-linejoin:miter;stroke-linecap:butt;opacity:.40}.flow.active .flow-track{stroke:var(--color);opacity:.28}.flow .flow-dashes{stroke:var(--color);stroke-width:3;stroke-linecap:round;stroke-dasharray:7 21;opacity:.95;visibility:hidden}.flow.active .flow-dashes{visibility:visible}
     .node{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0;background:transparent;background:color-mix(in srgb,var(--ha-card-background,var(--card-background-color,#1c1c1c)) 8%,transparent);border:2px solid var(--node-color,var(--divider-color,#60656d));border-radius:12px;padding:12px 10px;z-index:1;min-height:max(140px,22cqw);height:auto}
     .node h3{font-size:clamp(12px,1.9cqw,20px);line-height:1.25;text-align:center;margin:0;font-weight:600;overflow-wrap:anywhere}.node .icon{display:flex;justify-content:center;height:clamp(30px,5cqw,56px);margin:4px 0}.icon svg{height:100%;width:64px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.icon .battery-fill{fill:var(--node-color,var(--flow-main));stroke:none}
-    .row{display:flex;align-items:baseline;justify-content:space-between;gap:4px;font-size:clamp(11px,1.6cqw,17px);line-height:1.35;min-width:0}.label{color:var(--secondary-text-color,#aaa);overflow-wrap:anywhere}.value{font:inherit;color:inherit;font-weight:600;text-align:right;white-space:nowrap;background:none;border:0;padding:0;min-width:0}.value[data-entity]{cursor:pointer}.value:focus-visible{outline:2px solid var(--flow-main);outline-offset:2px}.value:disabled{opacity:1}
+    .row{display:flex;align-items:baseline;justify-content:space-between;gap:4px;flex-wrap:nowrap;font-size:clamp(11px,1.6cqw,17px);line-height:1.35;min-width:0}.label{color:var(--secondary-text-color,#aaa);white-space:nowrap}.value{flex-shrink:0;font:inherit;color:inherit;font-weight:600;text-align:right;white-space:nowrap;background:none;border:0;padding:0;min-width:0}.value[data-entity]{cursor:pointer}.value:focus-visible{outline:2px solid var(--flow-main);outline-offset:2px}.value:disabled{opacity:1}
     .grid{left:0;top:37%;width:22%}.home{right:0;top:37%;width:22%}.auxiliary_1{left:29%;top:3%;width:22%}.auxiliary_2{left:55%;top:3%;width:22%}.main{left:36%;bottom:1%;width:28%;min-height:max(220px,28cqw)}
     .status{margin-top:8px;color:var(--secondary-text-color,#aaa);font-size:12px;min-height:16px;text-align:center}.status:empty{display:none}
-    @container(max-width:520px){.diagram{height:540px}.node{padding:8px 5px;gap:6px;border-radius:9px;min-height:137px}.node h3{font-size:12px}.node .icon{height:29px;margin:0}.row{font-size:11px;flex-wrap:wrap;gap:0 3px}.row .value{margin-left:auto}.grid .row{flex-wrap:nowrap;gap:2px}.grid .row .label{white-space:nowrap}.grid .value{flex-shrink:0}.grid,.home{width:24%;top:38%}.home .power .label{font-size:clamp(8px,2.8cqw,11px);overflow-wrap:normal}.auxiliary_1{left:26%;width:25%;top:5%}.auxiliary_2{left:54%;width:25%;top:5%}.main{left:33%;width:34%;min-height:202px}}
+    @container(max-width:520px){.diagram{height:540px}.node{padding:8px 5px;gap:6px;border-radius:9px;min-height:137px}.node h3{font-size:12px}.node .icon{height:29px;margin:0}.row{font-size:11px;gap:2px}.row .value{margin-left:auto}.grid,.home{width:24%;top:38%}.auxiliary_1{left:26%;width:25%;top:5%}.auxiliary_2{left:54%;width:25%;top:5%}.main{left:33%;width:34%;min-height:202px}}
     @media(prefers-reduced-motion:reduce){.flow .flow-dashes{display:none}.flow.active .flow-track{stroke-width:3;opacity:.92}}
   `;
   class SurisEcoFlowFlowCard extends HTMLElement {
@@ -229,7 +229,7 @@
         if (node === 'main' && field === 'solar_1') entity = c.main.solar_input_power;
         if (node === 'main' && field === 'solar_2') entity = c.main.solar_input_power_2;
         if (field === 'soc') value = value != null && value >= 0 && value <= 100 ? `${formatter.format(value)}%` : '—';
-        else if (node === 'grid' && value != null && Math.abs(value) >= 1000) value = `${new Intl.NumberFormat(c.language === 'en' ? 'en' : 'uk', { maximumFractionDigits: 2, useGrouping: false }).format(value / 1000)} ${c.language === 'en' ? 'kW' : 'кВт'}`;
+        else if (value != null && Math.abs(value) >= 1000) value = `${new Intl.NumberFormat(c.language === 'en' ? 'en' : 'uk', { maximumFractionDigits: 2, useGrouping: false }).format(value / 1000)} kW`;
         else value = value == null ? '—' : `${formatter.format(value)} ${text.watts}`;
         button.textContent = value;
         if (entity) button.dataset.entity = entity; else delete button.dataset.entity;
@@ -237,7 +237,7 @@
         button.title = entity ? `${entity}: ${this._states[entity]?.state ?? text.unavailable}` : node === 'home' && field === 'power' ? text.homeDerived : text.select;
         button.setAttribute('aria-label', `${this._nodes[node].querySelector('h3').textContent}, ${button.previousSibling.textContent}: ${value}`);
       }
-      this._fitGridPower();
+      this._fitRows();
       for (const key of ['auxiliary_1', 'auxiliary_2', 'main']) {
         const soc = data[key].soc, battery = this._nodes[key].querySelector('.icon svg');
         const known = soc != null && soc >= 0 && soc <= 100;
@@ -263,28 +263,31 @@
         } else if (animation.playState !== 'paused') animation.pause();
       }
     }
-    _fitGridPower() {
-      const row = this._values?.['grid.output']?.parentElement;
-      if (!row || !this.isConnected || !row.clientWidth) return;
-      row.style.removeProperty('font-size');
-      const label = row.querySelector('.label'), value = row.querySelector('.value');
-      const range = document.createRange();
-      const width = (element) => { range.selectNodeContents(element); return range.getBoundingClientRect().width; };
-      const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
-      const available = row.clientWidth - gap - 1;
-      const needed = () => width(label) + width(value);
-      const naturalWidth = needed();
-      if (naturalWidth <= available) return;
-      let size = Math.floor(parseFloat(getComputedStyle(row).fontSize) * available / naturalWidth * 10) / 10;
-      row.style.fontSize = `${size}px`;
-      while (needed() > available && size > 1) {
-        size = Math.max(1, Math.round((size - .1) * 10) / 10);
+    _fitRows() {
+      if (!this.isConnected || !this._values) return;
+      for (const button of Object.values(this._values)) {
+        const row = button.parentElement;
+        if (!row.clientWidth) continue;
+        row.style.removeProperty('font-size');
+        const label = row.querySelector('.label');
+        const range = document.createRange();
+        const width = (element) => { range.selectNodeContents(element); return range.getBoundingClientRect().width; };
+        const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+        const available = row.clientWidth - gap - 1;
+        const needed = () => width(label) + width(button);
+        const naturalWidth = needed();
+        if (naturalWidth <= available) continue;
+        let size = Math.floor(parseFloat(getComputedStyle(row).fontSize) * available / naturalWidth * 10) / 10;
         row.style.fontSize = `${size}px`;
+        while (needed() > available && size > 1) {
+          size = Math.max(1, Math.round((size - .1) * 10) / 10);
+          row.style.fontSize = `${size}px`;
+        }
       }
     }
     _drawPaths() {
       if (!this._diagram || !this.isConnected) return;
-      this._fitGridPower();
+      this._fitRows();
       const base = this._diagram.getBoundingClientRect(); if (!base.width || !base.height) return;
       const rect = (key) => { const r = this._nodes[key].getBoundingClientRect(); return { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height, right: r.right - base.left, bottom: r.bottom - base.top }; };
       const g = rect('grid'), a = rect('auxiliary_1'), b = rect('auxiliary_2'), m = rect('main'), h = rect('home');

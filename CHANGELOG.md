@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.11
+
+- Keep every reading on one line in all five blocks, including both upper stations, without widening the blocks.
+- Fit only overflowing row text and restore its natural size when space is available.
+- Use W and kW in both languages; show power from 1000 W in kW throughout the card.
+
 ## 0.1.10
 
 - Restore the original city grid block width to match the home block on mobile.
