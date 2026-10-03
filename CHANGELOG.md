@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.7
+
+- Route all seven flows along horizontal and vertical segments with sharp 90-degree corners.
+- Give the city grid separate lines to each station and home; remove the route above the auxiliary stations.
+- Make the first auxiliary station's transfer to the main station a single straight vertical line.
+- Simplify the main station's home feed to one corner, entering home from below.
+- Reserve enough vertical space for routes to stay clear of unrelated blocks on medium-width screens.
+- Keep moving flow dots on the same paths and verify connections across desktop and mobile layouts.
+
 ## 0.1.6
 
 - Rename the main station's two DC inputs to XT60(1) and XT60(2) in the card and visual editor.

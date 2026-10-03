@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v0.1.6 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v0.1.7 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '0.1.6';
+  const VERSION = '0.1.7';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -113,15 +113,15 @@
   const CSS = `
     :host{display:block;--flow-grid:#4b9fff;--flow-auxiliary_1:#ffcc42;--flow-auxiliary_2:#ffcc42;--flow-main:#27d9d5}
     *{box-sizing:border-box}ha-card{display:block;overflow:hidden;background:var(--ha-card-background,var(--card-background-color,#1c1c1c));color:var(--primary-text-color,#e8e8e8);padding:16px;border-radius:var(--ha-card-border-radius,16px)}
-    .wrap{container-type:inline-size}h2{font-size:22px;font-weight:600;margin:0 0 8px}.diagram{position:relative;height:clamp(470px,65cqw,720px)}
+    .wrap{container-type:inline-size}h2{font-size:22px;font-weight:600;margin:0 0 8px}.diagram{position:relative;height:clamp(540px,65cqw,720px)}
     .lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-    .flow path{fill:none;stroke:var(--divider-color,#60656d);stroke-width:2;opacity:.58}.flow.active path{stroke:var(--color);opacity:.92}.flow circle{fill:var(--color);visibility:hidden}.flow.active circle{visibility:visible}
+    .flow path{fill:none;stroke:var(--divider-color,#60656d);stroke-width:2;stroke-linejoin:miter;stroke-linecap:butt;opacity:.58}.flow.active path{stroke:var(--color);opacity:.92}.flow circle{fill:var(--color);visibility:hidden}.flow.active circle{visibility:visible}
     .node{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0;background:transparent;background:color-mix(in srgb,var(--ha-card-background,var(--card-background-color,#1c1c1c)) 8%,transparent);border:2px solid var(--node-color,var(--divider-color,#60656d));border-radius:12px;padding:12px 10px;z-index:1;min-height:max(140px,22cqw);height:auto}
     .node h3{font-size:clamp(12px,1.9cqw,20px);line-height:1.25;text-align:center;margin:0;font-weight:600;overflow-wrap:anywhere}.node .icon{display:flex;justify-content:center;height:clamp(30px,5cqw,56px);margin:4px 0}.icon svg{height:100%;width:64px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.icon .battery-fill{fill:var(--node-color,var(--flow-main));stroke:none}
     .row{display:flex;align-items:baseline;justify-content:space-between;gap:4px;font-size:clamp(11px,1.6cqw,17px);line-height:1.35;min-width:0}.label{color:var(--secondary-text-color,#aaa);overflow-wrap:anywhere}.value{font:inherit;color:inherit;font-weight:600;text-align:right;white-space:nowrap;background:none;border:0;padding:0;min-width:0}.value[data-entity]{cursor:pointer}.value:focus-visible{outline:2px solid var(--flow-main);outline-offset:2px}.value:disabled{opacity:1}.source{flex-wrap:wrap}.source .label{width:100%}.source .value{margin-left:auto;white-space:normal;overflow-wrap:anywhere}
     .grid{left:0;top:37%;width:22%}.home{right:0;top:37%;width:22%}.auxiliary_1{left:29%;top:3%;width:22%}.auxiliary_2{left:55%;top:3%;width:22%}.main{left:36%;bottom:1%;width:28%;min-height:max(220px,28cqw)}
     .status{margin-top:8px;color:var(--secondary-text-color,#aaa);font-size:12px;min-height:16px;text-align:center}.status:empty{display:none}
-    @container(max-width:520px){.diagram{height:500px}.node{padding:8px 5px;gap:6px;border-radius:9px;min-height:137px}.node h3{font-size:12px}.node .icon{height:29px;margin:0}.row{font-size:11px;flex-wrap:wrap;gap:0 3px}.row .value{margin-left:auto}.grid,.home{width:24%;top:38%}.home .power .label{font-size:clamp(8px,2.8cqw,11px);overflow-wrap:normal}.auxiliary_1{left:26%;width:25%;top:5%}.auxiliary_2{left:54%;width:25%;top:5%}.main{left:33%;width:34%;min-height:202px}}
+    @container(max-width:520px){.diagram{height:540px}.node{padding:8px 5px;gap:6px;border-radius:9px;min-height:137px}.node h3{font-size:12px}.node .icon{height:29px;margin:0}.row{font-size:11px;flex-wrap:wrap;gap:0 3px}.row .value{margin-left:auto}.grid,.home{width:24%;top:38%}.home .power .label{font-size:clamp(8px,2.8cqw,11px);overflow-wrap:normal}.auxiliary_1{left:26%;width:25%;top:5%}.auxiliary_2{left:54%;width:25%;top:5%}.main{left:33%;width:34%;min-height:202px}}
     @media(prefers-reduced-motion:reduce){.flow circle{display:none}.flow.active path{stroke-width:3}}
   `;
   class SurisEcoFlowFlowCard extends HTMLElement {
@@ -235,18 +235,22 @@
     _drawPaths() {
       if (!this._diagram || !this.isConnected) return;
       const base = this._diagram.getBoundingClientRect(); if (!base.width || !base.height) return;
-      const rect = (key) => { const r = this._nodes[key].getBoundingClientRect(); return { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height }; };
+      const rect = (key) => { const r = this._nodes[key].getBoundingClientRect(); return { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height, right: r.right - base.left, bottom: r.bottom - base.top }; };
       const g = rect('grid'), a = rect('auxiliary_1'), b = rect('auxiliary_2'), m = rect('main'), h = rect('home');
       const midY = g.y + g.h / 2;
-      const curve = (x, y, xx, yy) => `M ${x} ${y} C ${(x + xx) / 2} ${y}, ${(x + xx) / 2} ${yy}, ${xx} ${yy}`;
+      const inputA = a.x + a.w * .25, inputB = b.x + b.w * .25;
+      const outputA = a.x + a.w * .70, outputB = b.x + b.w * .70;
+      const mainInputB = m.x + m.w * .70, mainAC = m.y + m.h * .55;
+      const gridMainX = m.x - (m.x - g.right) * .35;
+      const homeBottomInput = h.x + h.w * .50;
       const routes = {
-        grid_auxiliary_1: curve(g.x + g.w, g.y + g.h * .23, a.x, a.y + a.h * .42),
-        grid_auxiliary_2: `M ${g.x + g.w} ${g.y + g.h * .36} C ${g.x + g.w + 22} ${g.y + g.h * .36}, ${g.x + g.w + 22} 3, ${g.x + g.w + 36} 3 H ${b.x + b.w / 2 - 12} Q ${b.x + b.w / 2} 3, ${b.x + b.w / 2} 15 V ${b.y}`,
-        grid_main: curve(g.x + g.w, g.y + g.h * .77, m.x, m.y + m.h * .55),
-        grid_home: `M ${g.x + g.w} ${midY} L ${h.x} ${midY}`,
-        auxiliary_1_main: `M ${a.x + a.w / 2} ${a.y + a.h} C ${a.x + a.w / 2} ${m.y - 25}, ${m.x + m.w * .32} ${a.y + a.h + 25}, ${m.x + m.w * .32} ${m.y}`,
-        auxiliary_2_main: `M ${b.x + b.w / 2} ${b.y + b.h} C ${b.x + b.w / 2} ${m.y - 25}, ${m.x + m.w * .68} ${b.y + b.h + 25}, ${m.x + m.w * .68} ${m.y}`,
-        main_home: curve(m.x + m.w, m.y + m.h * .55, h.x, h.y + h.h * .75)
+        grid_auxiliary_1: `M ${g.right} ${g.y + g.h * .16} H ${inputA} V ${a.bottom}`,
+        grid_auxiliary_2: `M ${g.right} ${g.y + g.h * .31} H ${inputB} V ${b.bottom}`,
+        grid_main: `M ${g.right} ${g.y + g.h * .80} H ${gridMainX} V ${mainAC} H ${m.x}`,
+        grid_home: `M ${g.right} ${midY} H ${h.x}`,
+        auxiliary_1_main: `M ${outputA} ${a.bottom} V ${m.y}`,
+        auxiliary_2_main: `M ${outputB} ${b.bottom} V ${m.y - 14} H ${mainInputB} V ${m.y}`,
+        main_home: `M ${m.right} ${m.y + m.h * .50} H ${homeBottomInput} V ${h.bottom}`
       };
       const geometry = JSON.stringify(routes); if (geometry === this._geometry && this._svg.childElementCount) return;
       this._geometry = geometry; this._svg.setAttribute('viewBox', `0 0 ${base.width} ${base.height}`); this._svg.replaceChildren(); this._flows = {};
