@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.8
+
+- Replace moving dots with short dashes without arrows on the same seven orthogonal routes.
+- Drive each flow speed from its own wattage with a smooth bounded response and equal visual speed for equal power across different route lengths.
+- Change playback speed in place without restarting animation when readings or base movement time change.
+- Preserve the existing duration setting as the global base movement time and update Ukrainian and English editor labels.
+- Pause inactive and unavailable flows, honor reduced motion, and suspend animations while the card is disconnected.
+- Verify per-flow power selection, live speed changes, direction, editor stability and responsive layouts.
+
 ## 0.1.7
 
 - Route all seven flows along horizontal and vertical segments with sharp 90-degree corners.
