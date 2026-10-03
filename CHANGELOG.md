@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.6
+
+- Rename the main station's two DC inputs to XT60(1) and XT60(2) in the card and visual editor.
+- Fill all three battery icons according to their own charge sensors; show a dash for missing or invalid charge readings.
+- Make node backgrounds nearly transparent with a subtle tint from the card theme, including support for gradient backgrounds.
+- Hide flow lines beneath node interiors so transparent backgrounds do not expose lines through labels and icons.
+- Label home power as Input and remove the approximation symbol from its displayed value while keeping the existing calculation.
+- Verify live battery levels, unavailable charge, updated labels and light, dark and gradient themes in the browser.
+
 ## 0.1.5
 
 - Keep visual editor fields, focus, cursor and expanded sections while changing configuration.
