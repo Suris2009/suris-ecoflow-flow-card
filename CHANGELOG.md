@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3
+
+- Keep home consumption and the grid-to-home flow active when EcoFlow charging inputs are missing or unavailable.
+- Count missing charging inputs as zero in the home estimate and subtract available positive charging powers.
+- Preserve unavailable readings on station blocks and unknown total grid power.
+
 ## 0.1.2
 
 - Determine home power source from grid availability: grid present means grid, grid absent means main EcoFlow.
