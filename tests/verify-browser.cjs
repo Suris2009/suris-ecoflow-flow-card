@@ -10,7 +10,19 @@ const root = path.resolve(__dirname, '..');
  await page.setContent('<html><body style="margin:24px;background:#111;color:#eee;font-family:Arial"><div id="host" style="max-width:1060px"></div></body></html>');
  await page.addScriptTag({path:path.join(root,'suris-ecoflow-flow-card.js')});
  await page.evaluate(()=>{
-  window.loadCardHelpers=async()=>({createCardElement:()=>({constructor:{getConfigElement:async()=>{if(!customElements.get('ha-form'))customElements.define('ha-form',class extends HTMLElement{});}}})});
+  window.loadCardHelpers=async()=>({createCardElement:()=>({constructor:{getConfigElement:async()=>{
+   if(!customElements.get('ha-form'))customElements.define('ha-form',class extends HTMLElement{
+    constructor(){super();this.attachShadow({mode:'open'});this._inputs=new Map()}
+    set schema(schema){this._schema=schema;this.shadowRoot.replaceChildren();this._inputs.clear();for(const field of schema){
+     const label=document.createElement('label');label.textContent=field.name;label.style.display='block';
+     const input=document.createElement('input');input.dataset.field=field.name;input.setAttribute('aria-label',field.name);label.append(input);this.shadowRoot.append(label);this._inputs.set(field.name,input);
+     input.addEventListener('input',()=>{const raw=input.value;this.data={...this.data,[field.name]:raw===''?undefined:field.selector.number&&Number.isFinite(Number(raw))?Number(raw):raw};this.dispatchEvent(new CustomEvent('value-changed',{detail:{value:this.data},bubbles:true,composed:true}))});
+    }this.data=this._data||{}}
+    get schema(){return this._schema}
+    set data(data){this._data=data;for(const [name,input]of this._inputs){const value=data[name]==null?'':String(data[name]);if(input.value!==value)input.value=value}}
+    get data(){return this._data}
+   });
+  }}})});
   const s=(state,unit='W')=>({state:String(state),attributes:{unit_of_measurement:unit}});
   window.states={'sensor.grid':s(0),'sensor.a_in':s(0),'sensor.a_out':s(150),'sensor.a_soc':s(68,'%'),'sensor.b_in':s(0),'sensor.b_out':s(200),'sensor.b_soc':s(81,'%'),'sensor.main_in':s(.33,'kW'),'sensor.main_ac':s(0),'sensor.main_pv':s(330),'sensor.main_out':s(320),'sensor.main_soc':s(74,'%'),'sensor.home':s(320),'binary_sensor.source':s('off'),'binary_sensor.grid_available':s('off')};
   window.config={type:'custom:suris-ecoflow-flow-card',grid:{power:'sensor.grid',available_entity:'binary_sensor.grid_available',available_state:'on'},auxiliary_1:{soc:'sensor.a_soc',input_power:'sensor.a_in',output_power:'sensor.a_out'},auxiliary_2:{soc:'sensor.b_soc',input_power:'sensor.b_in',output_power:'sensor.b_out'},main:{soc:'sensor.main_soc',input_power:'sensor.main_in',output_power:'sensor.main_out',ac_input_power:'sensor.main_ac',solar_input_power:'sensor.main_pv'},home:{power:'sensor.home',source_entity:'binary_sensor.source',grid_state:'on',main_state:'off'}};
@@ -57,6 +69,46 @@ const root = path.resolve(__dirname, '..');
   return{count:forms.length,events:events.length,home:final.home.power,transfer:final.auxiliary_1.transfer_power,solar2:final.main.solar_input_power_2,color3:final.appearance.auxiliary_2_color,stable};
  });
  assert.deepEqual(result,{count:7,events:4,home:'sensor.new_home',transfer:'sensor.a_dc',solar2:'sensor.pv2',color3:'#ff8800',stable:true});
+ // Exercise real keystrokes and the parent configuration feedback used by Home Assistant.
+ await page.evaluate(async()=>{
+  window.editor=await customElements.get('suris-ecoflow-flow-card').getConfigElement();editor.hass={states};editor.setConfig(config);document.body.append(editor);
+  for(const details of editor.shadowRoot.querySelectorAll('details'))details.open=true;
+  window.originalForms=[...editor.shadowRoot.querySelectorAll('ha-form')];window.originalInputs=originalForms.flatMap(form=>[...form.shadowRoot.querySelectorAll('input')]);window.originalNodes=[...card.shadowRoot.querySelectorAll('.node')];window.published=[];window.feedbackErrors=[];
+  editor.addEventListener('config-changed',event=>{try{card.setConfig(event.detail.config);const roundtrip=JSON.parse(JSON.stringify(event.detail.config));published.push(roundtrip);editor.setConfig(roundtrip)}catch(error){feedbackErrors.push(error.message)}});
+ });
+ const sections=['','grid','auxiliary_1','auxiliary_2','main','home','appearance'];
+ const field=(section,name)=>page.locator('suris-ecoflow-flow-card-editor ha-form').nth(sections.indexOf(section)).locator(`input[data-field="${name}"]`);
+ const assertEditorStable=async()=>{
+  assert.deepEqual(await page.evaluate(()=>feedbackErrors),[]);
+  assert(await page.evaluate(()=>originalForms.every((form,index)=>editor.shadowRoot.querySelectorAll('ha-form')[index]===form)&&originalInputs.every(input=>input.isConnected)&&[...editor.shadowRoot.querySelectorAll('details')].every(details=>details.open)&&originalNodes.every((node,index)=>card.shadowRoot.querySelectorAll('.node')[index]===node)),'Editing replaced fields or preview nodes');
+ };
+ for(const [section,name,value]of [['','title','Потоки'],['grid','name','Місто'],['grid','available_state','on'],['auxiliary_1','name','Рівер 2'],['auxiliary_2','name','Рівер 3'],['main','name','Дельта'],['home','name','Квартира'],['main','solar_input_power_2','sensor.pv2'],['appearance','threshold','7'],['appearance','duration','4']]){
+  const input=field(section,name);await input.fill('');assert.equal(await input.inputValue(),'');assert(await input.evaluate(input=>input.getRootNode().activeElement===input));await assertEditorStable();
+  await input.pressSequentially(value,{delay:5});assert.equal(await input.inputValue(),value);await assertEditorStable();
+ }
+ const title=field('','title');await title.fill('abc');await title.press('Home');await title.press('ArrowRight');await title.pressSequentially('X');assert.equal(await title.inputValue(),'aXbc');assert.equal(await title.evaluate(input=>input.selectionStart),2);await assertEditorStable();
+ for(const name of ['grid_color','auxiliary_1_color','auxiliary_2_color','main_color']){
+  const input=field('appearance',name);
+  for(const value of ['', 'r', 're', 'red', '', '#', '#f', '#ff', '#ff0', '#ff00', '#ff000', '#ff0000']){await input.fill(value);assert.equal(await input.inputValue(),value);await assertEditorStable()}
+  await input.fill('');await input.pressSequentially('green',{delay:5});assert.equal(await input.inputValue(),'green');await assertEditorStable();
+ }
+ const mainColor=field('appearance','main_color');
+ for(const [color,expected]of [['red','rgb(255, 0, 0)'],['green','rgb(0, 128, 0)'],['orange','rgb(255, 165, 0)'],['#f00','rgb(255, 0, 0)'],['rgb(0, 128, 255)','rgb(0, 128, 255)'],['hsl(120, 100%, 25%)','rgb(0, 128, 0)']]){
+  await mainColor.fill(color);assert.deepEqual(await page.evaluate(()=>({border:getComputedStyle(card.shadowRoot.querySelector('.main')).borderTopColor,flow:getComputedStyle(card.shadowRoot.querySelector('[data-flow="main_home"] circle')).fill})),{border:expected,flow:expected});await assertEditorStable();
+ }
+ for(const color of ['#f008','#ff000080','rgba(255, 0, 0, 0.5)','hsla(120, 100%, 25%, 0.5)','lightseagreen']){await mainColor.fill(color);assert.equal(await page.evaluate(()=>published.at(-1).appearance.main_color),color);await assertEditorStable()}
+ const beforeDraft=await page.evaluate(()=>published.length);await mainColor.fill('#');assert.equal(await page.evaluate(()=>published.length),beforeDraft);
+ await page.evaluate(()=>editor.setConfig(published.at(-1)));assert.equal(await mainColor.inputValue(),'#');await field('main','name').fill('Нова назва');assert.equal(await page.evaluate(()=>published.length),beforeDraft);
+ await mainColor.fill('red');assert.equal(await page.evaluate(()=>published.at(-1).main.name),'Нова назва');await assertEditorStable();
+ const duration=field('appearance','duration');const beforeNumber=await page.evaluate(()=>published.length);await duration.fill('-');assert.equal(await duration.inputValue(),'-');assert.equal(await page.evaluate(()=>published.length),beforeNumber);await duration.fill('0');assert.equal(await page.evaluate(()=>published.length),beforeNumber);await duration.fill('0.5');assert.equal(await page.evaluate(()=>card._config.appearance.duration),.5);
+ await duration.fill('');assert.equal(await duration.inputValue(),'');assert.equal(await page.evaluate(()=>card._config.appearance.duration),3);await assertEditorStable();
+ await mainColor.fill('');assert.equal(await mainColor.inputValue(),'');assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('.main')).borderTopColor),'rgb(39, 217, 213)');
+ await field('appearance','main_color').fill('red');await field('','language').fill('en');
+ assert(await page.evaluate(()=>[...editor.shadowRoot.querySelectorAll('details')].every(details=>details.open)));
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .solar_2 .label').textContent),'Solar 2');
+ await page.evaluate(async()=>{const saved=published.at(-1);editor.remove();window.editor=await customElements.get('suris-ecoflow-flow-card').getConfigElement();editor.hass={states};editor.setConfig(saved);document.body.append(editor);for(const details of editor.shadowRoot.querySelectorAll('details'))details.open=true});
+ assert.equal(await field('main','name').inputValue(),'Нова назва');assert.equal(await field('appearance','main_color').inputValue(),'red');assert.equal(await field('main','solar_input_power_2').inputValue(),'sensor.pv2');
+ await page.evaluate(()=>{editor.remove();card.setConfig(config);refresh()});
  await page.evaluate(()=>{delete config.home.power;states['binary_sensor.source'].state='on';states['binary_sensor.grid_available'].state='on';states['sensor.grid'].state='1000';states['sensor.a_in'].state='100';states['sensor.b_in'].state='200';states['sensor.main_ac'].state='300';card.setConfig(config);refresh()});
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'≈ 400 Вт');
  assert((await page.evaluate(()=>active())).includes('grid_home'));
@@ -120,6 +172,6 @@ const root = path.resolve(__dirname, '..');
  assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('.flow circle')).display),'none');
  await page.evaluate(()=>{const card2=document.createElement('suris-ecoflow-flow-card');card2.setConfig({type:'custom:suris-ecoflow-flow-card'});document.body.append(card2)});
  assert.deepEqual(errors,[]);
- console.log('PASS: source switching, seven flows, unavailable data, kW conversion, unsupported units, threshold, two solar ports, matching borders and flow colors, total input, editor selections, stable updates, more-info, mobile bounds, reduced motion, empty configuration.');
+ console.log('PASS: source switching, seven flows, unavailable data, kW conversion, unsupported units, threshold, two solar ports, named/HEX/RGB/HSL colors, total input, editor clearing and typing, focus and cursor, draft validation, configuration feedback, saved selections, stable preview, more-info, mobile bounds, reduced motion, empty configuration.');
  await browser.close();
 })().catch(error=>{console.error(error);process.exit(1)});

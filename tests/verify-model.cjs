@@ -74,7 +74,13 @@ ports.main.input_power='sensor.total';portStates['sensor.total']={state:'490'};a
 delete ports.main.solar_input_power;portStates['sensor.pv2'].state='150';assert.equal(model(ports,portStates).main.input,250);
 const previousColors=merge({appearance:{solar_color:'#123456'}});assert.equal(previousColors.appearance.auxiliary_1_color,'#123456');assert.equal(previousColors.appearance.auxiliary_2_color,'#123456');
 const separateColors=merge({appearance:{solar_color:'#123456',auxiliary_2_color:'#ff8800'}});assert.equal(separateColors.appearance.auxiliary_1_color,'#123456');assert.equal(separateColors.appearance.auxiliary_2_color,'#ff8800');
-assert.throws(()=>merge({appearance:{auxiliary_2_color:'orange'}}));
+assert.throws(()=>merge({appearance:{auxiliary_2_color:'not-a-color'}}));
+assert.equal(merge({title:undefined,main:{name:undefined},appearance:{main_color:'',duration:undefined,threshold:''}}).title,'Енергопотоки');
+assert.equal(merge({main:{name:''}}).main.name,'Головна EcoFlow');
+assert.equal(merge({appearance:{main_color:'',duration:undefined,threshold:''}}).appearance.main_color,'#27d9d5');
+assert.equal(merge({appearance:{duration:undefined,threshold:''}}).appearance.duration,3);
+assert.equal(merge({appearance:{solar_color:'',auxiliary_1_color:''}}).appearance.auxiliary_1_color,'#ffcc42');
+assert.equal(merge({appearance:{main_color:'#f00'}}).appearance.main_color,'#f00');
 assert.equal(context.window.customCards.length,1);
 vm.runInContext(source,context);assert.equal(context.window.customCards.length,1);
 console.log('PASS: flow topology, mutually exclusive home source, unknown states, grid availability, independent transfer flows, two solar ports, color migration, missing data, unit conversion, exact threshold, total input fallback, missing home sensor fallback, input validation, duplicate registration.');
