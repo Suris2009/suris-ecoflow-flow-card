@@ -253,9 +253,12 @@ const root = path.resolve(__dirname, '..');
    assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.grid .value').textContent),expected);
    for(const width of [320,352,390,422]){
     await page.setViewportSize({width,height:800});
+    await page.waitForTimeout(60);
+    assert(await page.evaluate(()=>Math.abs(card._nodes.grid.getBoundingClientRect().width-card._nodes.home.getBoundingClientRect().width)<.1),'Grid and home widths must match');
     const fit=await page.evaluate(()=>{const row=card.shadowRoot.querySelector('.grid .row'),v=row.querySelector('.value'),range=document.createRange();range.selectNodeContents(v);const bounds=range.getBoundingClientRect(),label=row.querySelector('.label');range.selectNodeContents(label);const caption=range.getBoundingClientRect();return {available:row.getBoundingClientRect().width,needed:bounds.width+caption.width+parseFloat(getComputedStyle(row).columnGap),height:bounds.height,lineHeight:parseFloat(getComputedStyle(v).lineHeight),sameLine:Math.abs(bounds.bottom-caption.bottom)<2}});
     assert(fit.needed<=fit.available+.5,`${language}: ${expected} too wide at ${width}px: ${JSON.stringify(fit)}`);
     assert(fit.height<=fit.lineHeight+1&&fit.sameLine,`Wrapped grid output row at ${width}px: ${JSON.stringify(fit)}`);
+    if(language==='uk'&&watts===2468&&width===390) await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-mobile.png')});
    }
   }
  }
@@ -268,7 +271,6 @@ const root = path.resolve(__dirname, '..');
  assert.deepEqual(layout.overflows,[]);assert.deepEqual(layout.outside,[]);
  for(let i=0;i<layout.rects.length;i++)for(let j=i+1;j<layout.rects.length;j++){const a=layout.rects[i].rect,b=layout.rects[j].rect;assert(!(a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top),`Overlapping nodes ${layout.rects[i].key}, ${layout.rects[j].key}`)}
  await verifyRoutes('mobile');
- await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-mobile.png')});
  for (const width of [320, 768]) {
   await page.setViewportSize({width,height:900});await page.waitForTimeout(60);
   const problems=await page.evaluate(()=>[...card.shadowRoot.querySelectorAll('.node')].filter(n=>n.scrollWidth>n.clientWidth+1||n.scrollHeight>n.clientHeight+1).map(n=>n.dataset.key));
