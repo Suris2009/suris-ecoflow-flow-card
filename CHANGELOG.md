@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+- Determine home power source from grid availability: grid present means grid, grid absent means main EcoFlow.
+- Remove separate home source controls from the visual editor; legacy source fields are ignored.
+- Keep unknown grid availability distinct from an actual outage.
+
 ## 0.1.1
 
 - Home consumption no longer requires a dedicated sensor.

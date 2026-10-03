@@ -6,11 +6,11 @@
 const card=document.querySelector('suris-ecoflow-flow-card');
 const make=(value,unit='W')=>({state:String(value),attributes:{unit_of_measurement:unit}});
 const states={};
-const config={type:'custom:suris-ecoflow-flow-card',grid:{power:'sensor.grid',available_entity:'binary_sensor.grid',available_state:'on'},auxiliary_1:{soc:'sensor.a_soc',input_power:'sensor.a_in',output_power:'sensor.a_out'},auxiliary_2:{soc:'sensor.b_soc',input_power:'sensor.b_in',output_power:'sensor.b_out'},main:{soc:'sensor.m_soc',input_power:'sensor.m_in',output_power:'sensor.m_out',ac_input_power:'sensor.m_ac',solar_input_power:'sensor.m_pv'},home:{power:'sensor.home',source_entity:'binary_sensor.source',grid_state:'on',main_state:'off'}};
+const config={type:'custom:suris-ecoflow-flow-card',grid:{power:'sensor.grid',available_entity:'binary_sensor.grid',available_state:'on'},auxiliary_1:{soc:'sensor.a_soc',input_power:'sensor.a_in',output_power:'sensor.a_out'},auxiliary_2:{soc:'sensor.b_soc',input_power:'sensor.b_in',output_power:'sensor.b_out'},main:{soc:'sensor.m_soc',input_power:'sensor.m_in',output_power:'sensor.m_out',ac_input_power:'sensor.m_ac',solar_input_power:'sensor.m_pv'},home:{}};
 card.setConfig(config);
 function update(mode){
 const charging=mode==='charging',grid=mode==='grid'||charging;
-Object.assign(states,{'sensor.grid':make(grid?(charging?1250:320):0),'binary_sensor.grid':make(grid?'on':'off'),'sensor.a_soc':make(68,'%'),'sensor.b_soc':make(81,'%'),'sensor.m_soc':make(74,'%'),'sensor.a_in':make(charging?300:0),'sensor.b_in':make(charging?330:0),'sensor.a_out':make(charging?0:150),'sensor.b_out':make(charging?0:200),'sensor.m_in':make(charging?300:330),'sensor.m_ac':make(charging?300:0),'sensor.m_pv':make(charging?0:330),'sensor.m_out':make(grid?0:320),'sensor.home':make(320),'binary_sensor.source':make(mode==='unknown'?'unavailable':grid?'on':'off')});
+Object.assign(states,{'sensor.grid':make(grid?(charging?1250:320):0),'binary_sensor.grid':make(mode==='unknown'?'unavailable':grid?'on':'off'),'sensor.a_soc':make(68,'%'),'sensor.b_soc':make(81,'%'),'sensor.m_soc':make(74,'%'),'sensor.a_in':make(charging?300:0),'sensor.b_in':make(charging?330:0),'sensor.a_out':make(charging?0:150),'sensor.b_out':make(charging?0:200),'sensor.m_in':make(charging?300:330),'sensor.m_ac':make(charging?300:0),'sensor.m_pv':make(charging?0:330),'sensor.m_out':make(grid?0:320),'sensor.home':make(320)});
 card.hass={states:{...states}};
 }
 document.querySelector('nav').addEventListener('click',e=>{if(e.target.dataset.mode)update(e.target.dataset.mode)});update('main');

@@ -1,20 +1,20 @@
-/* Suris EcoFlow Flow Card v0.1.1 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v0.1.2 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '0.1.1';
+  const VERSION = '0.1.2';
   const NS = 'http://www.w3.org/2000/svg';
   const DEFAULTS = {
     type: `custom:${TAG}`, title: 'Енергопотоки', language: 'uk',
     grid: { name: 'Міська мережа' },
     auxiliary_1: { name: 'EcoFlow №2' }, auxiliary_2: { name: 'EcoFlow №3' },
     main: { name: 'Головна EcoFlow' },
-    home: { name: 'Дім', grid_state: 'on', main_state: 'off' },
+    home: { name: 'Дім' },
     appearance: { grid_color: '#4b9fff', solar_color: '#ffcc42', main_color: '#27d9d5', threshold: 3, duration: 3 }
   };
   const TEXT = {
-    uk: { grid: 'Міська мережа', main: 'Головна EcoFlow', home: 'Дім', title: 'Енергопотоки', input: 'Вхід', output: 'Вихід', soc: 'Заряд', ac: 'Мережа', solar: 'Сонячний', power: 'Споживання', source: 'Джерело', unknown: 'Невідомо', unavailable: 'Недоступно', select: 'Вибери сутності в редакторі картки', settings: 'Налаштування', homePowerLabel: 'Споживання дому (необов’язково)', homeDerived: 'Без окремого датчика: від мережі — загальна потужність мінус заряджання трьох станцій; від EcoFlow — вихід головної станції. Для розрахунку від мережі потрібні всі три потужності заряджання. ≈ означає розрахункове значення.', sourceHint: 'Джерело живлення дому визначається окремою сутністю. Її стан має точно збігатися зі значеннями нижче. Наявність міської мережі не визначає положення перемикача.', flowHint: 'На лініях лише анімація. Потік активний, коли потужність перевищує поріг. Відсутні або недоступні показники відображаються як —.', mainHint: 'Для лінії мережа → головна EcoFlow потрібна окрема потужність AC-входу. Загальний вхід не використовується як AC-вхід.', auxHint: 'Потужність передачі на головну станцію: вибери DC-вихід, якщо загальний вихід включає інші навантаження. Якщо поле порожнє, використовується загальний вихід.', editorError: 'Редактор Home Assistant ще завантажується. Закрий та відкрий редактор картки ще раз.', more: 'Докладніше', watts: 'Вт', mismatch: 'Стан джерела не розпізнано', setup: 'Потрібно вибрати джерело живлення дому' },
-    en: { grid: 'City grid', main: 'Main EcoFlow', home: 'Home', title: 'Energy flows', input: 'Input', output: 'Output', soc: 'Charge', ac: 'Grid', solar: 'Solar', power: 'Consumption', source: 'Source', unknown: 'Unknown', unavailable: 'Unavailable', select: 'Select entities in the card editor', settings: 'Settings', homePowerLabel: 'Home consumption (optional)', homeDerived: 'Without a separate sensor: grid power minus the three station charging powers when on grid; main station output when on EcoFlow. All three charging readings are required for grid calculation. ≈ marks an estimated value.', sourceHint: 'Select the entity that reports the actual home power source. Its state must exactly match one of the values below. Grid availability does not determine the transfer switch position.', flowHint: 'Lines show animation only. A flow is active above the threshold. Missing or unavailable readings appear as —.', mainHint: 'A separate AC input power entity is required for grid → main EcoFlow. Total input is never treated as AC input.', auxHint: 'Transfer power: use DC output if total output includes other loads. When empty, total output is used.', editorError: 'The Home Assistant editor is still loading. Close and reopen the card editor.', more: 'More information', watts: 'W', mismatch: 'Unrecognized source state', setup: 'Select the home power source entity' }
+    uk: { grid: 'Міська мережа', main: 'Головна EcoFlow', home: 'Дім', title: 'Енергопотоки', input: 'Вхід', output: 'Вихід', soc: 'Заряд', ac: 'Мережа', solar: 'Сонячний', power: 'Споживання', source: 'Джерело', unknown: 'Невідомо', unavailable: 'Недоступно', select: 'Вибери сутності в редакторі картки', settings: 'Налаштування', homePowerLabel: 'Споживання дому (необов’язково)', homeDerived: 'Без окремого датчика: від мережі — загальна потужність мінус заряджання трьох станцій; від EcoFlow — вихід головної станції. Для розрахунку від мережі потрібні всі три потужності заряджання. ≈ означає розрахункове значення.', sourceHint: 'Мережа є — дім від міської мережі. Мережі немає — дім від головної EcoFlow. Вибери датчик наявності мережі в блоці міської мережі.', flowHint: 'На лініях лише анімація. Потік активний, коли потужність перевищує поріг. Відсутні або недоступні показники відображаються як —.', mainHint: 'Для лінії мережа → головна EcoFlow потрібна окрема потужність AC-входу. Загальний вхід не використовується як AC-вхід.', auxHint: 'Потужність передачі на головну станцію: вибери DC-вихід, якщо загальний вихід включає інші навантаження. Якщо поле порожнє, використовується загальний вихід.', editorError: 'Редактор Home Assistant ще завантажується. Закрий та відкрий редактор картки ще раз.', more: 'Докладніше', watts: 'Вт', mismatch: 'Стан міської мережі не розпізнано', setup: 'Вибери датчик наявності міської мережі' },
+    en: { grid: 'City grid', main: 'Main EcoFlow', home: 'Home', title: 'Energy flows', input: 'Input', output: 'Output', soc: 'Charge', ac: 'Grid', solar: 'Solar', power: 'Consumption', source: 'Source', unknown: 'Unknown', unavailable: 'Unavailable', select: 'Select entities in the card editor', settings: 'Settings', homePowerLabel: 'Home consumption (optional)', homeDerived: 'Without a separate sensor: grid power minus the three station charging powers when on grid; main station output when on EcoFlow. All three charging readings are required for grid calculation. ≈ marks an estimated value.', sourceHint: 'Grid available — home powered by grid. Grid absent — home powered by the main EcoFlow. Select the grid availability sensor in the city grid section.', flowHint: 'Lines show animation only. A flow is active above the threshold. Missing or unavailable readings appear as —.', mainHint: 'A separate AC input power entity is required for grid → main EcoFlow. Total input is never treated as AC input.', auxHint: 'Transfer power: use DC output if total output includes other loads. When empty, total output is used.', editorError: 'The Home Assistant editor is still loading. Close and reopen the card editor.', more: 'More information', watts: 'W', mismatch: 'Unrecognized grid availability state', setup: 'Select the grid availability sensor' }
   };
   const t = (config) => TEXT[config?.language] || TEXT.uk;
   const merge = (config = {}) => {
@@ -30,7 +30,6 @@
     for (const key of ['grid_color', 'solar_color', 'main_color']) {
       if (!/^#[0-9a-f]{6}$/i.test(a[key])) throw new Error(`${key} must be a six-digit hex color`);
     }
-    if (result.home.grid_state === result.home.main_state) throw new Error('Grid and main source states must differ');
     return result;
   };
   const readNumber = (states, id, power = false) => {
@@ -49,11 +48,13 @@
     const main = station(c.main), auxiliary_1 = station(c.auxiliary_1), auxiliary_2 = station(c.auxiliary_2);
     main.ac = p(c.main.ac_input_power); main.solar = p(c.main.solar_input_power);
     if (!c.main.input_power && main.ac != null && main.solar != null) main.input = main.ac + main.solar;
-    const sourceState = c.home.source_entity && states[c.home.source_entity]?.state;
-    const usableSource = sourceState != null && !['unknown', 'unavailable', ''].includes(String(sourceState));
-    const source = usableSource && String(sourceState) === String(c.home.grid_state) ? 'grid'
-      : usableSource && String(sourceState) === String(c.home.main_state) ? 'main' : 'unknown';
-    const gridAvailable = !c.grid.available_entity || states[c.grid.available_entity]?.state === String(c.grid.available_state || 'on');
+    const gridState = c.grid.available_entity && states[c.grid.available_entity]?.state;
+    const availableState = String(c.grid.available_state || 'on');
+    const absentState = availableState === 'on' ? 'off' : availableState === 'off' ? 'on' : null;
+    const usableGrid = gridState != null && !['unknown', 'unavailable', ''].includes(String(gridState));
+    const source = usableGrid && String(gridState) === availableState ? 'grid'
+      : usableGrid && (absentState ? String(gridState) === absentState : true) ? 'main' : 'unknown';
+    const gridAvailable = source === 'grid';
     const feedPower = p(c.main.home_feed_power || c.main.output_power);
     const gridCharging = [
       p(c.auxiliary_1.grid_charge_power || c.auxiliary_1.input_power),
@@ -176,7 +177,7 @@
         const [node, field] = key.split('.'); let value = data[node][field];
         let entity = c[node][field === 'soc' ? 'soc' : `${field}_power`];
         if (node === 'grid') entity = c.grid.power;
-        if (node === 'home') entity = field === 'source' ? c.home.source_entity : c.home.power;
+        if (node === 'home') entity = field === 'source' ? c.grid.available_entity : c.home.power;
         if (node === 'main' && field === 'ac') entity = c.main.ac_input_power;
         if (node === 'main' && field === 'solar') entity = c.main.solar_input_power;
         if (field === 'source') value = value === 'grid' ? c.grid.name : value === 'main' ? c.main.name : text.unknown;
@@ -189,7 +190,7 @@
         button.setAttribute('aria-label', `${this._nodes[node].querySelector('h3').textContent}, ${button.previousSibling.textContent}: ${value}`);
       }
       const status = this.shadowRoot.querySelector('.status');
-      status.textContent = !c.home.source_entity ? text.setup : data.home.source === 'unknown' ? text.mismatch : '';
+      status.textContent = !c.grid.available_entity ? text.setup : data.home.source === 'unknown' ? text.mismatch : '';
       for (const [name, flow] of Object.entries(this._flows)) flow.classList.toggle('active', data.flows[name]);
     }
     _drawPaths() {
@@ -236,8 +237,8 @@
     } catch (error) { console.debug(`${TAG}: form preload`, error); }
   }
   const FIELD_LABELS = {
-    uk: { title: 'Заголовок', language: 'Мова', name: 'Назва', power: 'Потужність', input_power: 'Загальна вхідна потужність', output_power: 'Загальна вихідна потужність', soc: 'Заряд батареї (%)', ac_input_power: 'Потужність входу від міської мережі (AC)', solar_input_power: 'Потужність сонячного входу (DC)', grid_charge_power: 'Потужність заряджання від мережі (необов’язково)', transfer_power: 'Потужність передачі на головну EcoFlow (необов’язково)', home_feed_power: 'Потужність виходу на дім (необов’язково)', available_entity: 'Наявність міської мережі (необов’язково)', available_state: 'Стан «мережа є»', source_entity: 'Сутність джерела живлення дому', grid_state: 'Стан «дім від міської мережі»', main_state: 'Стан «дім від головної EcoFlow»', grid_color: 'Колір потоків мережі (#RRGGBB)', solar_color: 'Колір передачі між станціями (#RRGGBB)', main_color: 'Колір потоку головна EcoFlow → дім (#RRGGBB)', threshold: 'Поріг активного потоку (Вт)', duration: 'Час проходження точки (с)' },
-    en: { title: 'Title', language: 'Language', name: 'Name', power: 'Power', input_power: 'Total input power', output_power: 'Total output power', soc: 'Battery charge (%)', ac_input_power: 'City grid input power (AC)', solar_input_power: 'Solar input power (DC)', grid_charge_power: 'Grid charging power (optional)', transfer_power: 'Transfer power to main EcoFlow (optional)', home_feed_power: 'Output power to home (optional)', available_entity: 'Grid availability (optional)', available_state: 'Grid available state', source_entity: 'Home power source entity', grid_state: 'State: home powered by grid', main_state: 'State: home powered by main EcoFlow', grid_color: 'Grid flow color (#RRGGBB)', solar_color: 'Station transfer color (#RRGGBB)', main_color: 'Main EcoFlow → home color (#RRGGBB)', threshold: 'Active flow threshold (W)', duration: 'Dot travel duration (s)' }
+    uk: { title: 'Заголовок', language: 'Мова', name: 'Назва', power: 'Потужність', input_power: 'Загальна вхідна потужність', output_power: 'Загальна вихідна потужність', soc: 'Заряд батареї (%)', ac_input_power: 'Потужність входу від міської мережі (AC)', solar_input_power: 'Потужність сонячного входу (DC)', grid_charge_power: 'Потужність заряджання від мережі (необов’язково)', transfer_power: 'Потужність передачі на головну EcoFlow (необов’язково)', home_feed_power: 'Потужність виходу на дім (необов’язково)', available_entity: 'Наявність міської мережі', available_state: 'Стан «мережа є»', source_entity: 'Сутність джерела живлення дому', grid_state: 'Стан «дім від міської мережі»', main_state: 'Стан «дім від головної EcoFlow»', grid_color: 'Колір потоків мережі (#RRGGBB)', solar_color: 'Колір передачі між станціями (#RRGGBB)', main_color: 'Колір потоку головна EcoFlow → дім (#RRGGBB)', threshold: 'Поріг активного потоку (Вт)', duration: 'Час проходження точки (с)' },
+    en: { title: 'Title', language: 'Language', name: 'Name', power: 'Power', input_power: 'Total input power', output_power: 'Total output power', soc: 'Battery charge (%)', ac_input_power: 'City grid input power (AC)', solar_input_power: 'Solar input power (DC)', grid_charge_power: 'Grid charging power (optional)', transfer_power: 'Transfer power to main EcoFlow (optional)', home_feed_power: 'Output power to home (optional)', available_entity: 'Grid availability', available_state: 'Grid available state', source_entity: 'Home power source entity', grid_state: 'State: home powered by grid', main_state: 'State: home powered by main EcoFlow', grid_color: 'Grid flow color (#RRGGBB)', solar_color: 'Station transfer color (#RRGGBB)', main_color: 'Main EcoFlow → home color (#RRGGBB)', threshold: 'Active flow threshold (W)', duration: 'Dot travel duration (s)' }
   };
   const entityField = (name, power = true) => ({ name, selector: { entity: power ? { domain: 'sensor' } : {} } });
   const textField = (name) => ({ name, selector: { text: {} } });
@@ -267,7 +268,7 @@
         ['auxiliary_1', c.auxiliary_1.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
         ['auxiliary_2', c.auxiliary_2.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
         ['main', text.main, [...stationSchema, entityField('ac_input_power'), entityField('solar_input_power'), entityField('home_feed_power')], text.mainHint],
-        ['home', text.home, [textField('name'), entityField('power'), entityField('source_entity', false), textField('grid_state'), textField('main_state')], `${text.sourceHint} ${text.homeDerived}`],
+        ['home', text.home, [textField('name'), entityField('power')], `${text.sourceHint} ${text.homeDerived}`],
         ['appearance', c.language === 'en' ? 'Flow appearance' : 'Вигляд потоків', [textField('grid_color'), textField('solar_color'), textField('main_color'), { name: 'threshold', selector: { number: { min: 0, max: 1000, step: 1, mode: 'box', unit_of_measurement: text.watts } } }, { name: 'duration', selector: { number: { min: .5, max: 20, step: .5, mode: 'box', unit_of_measurement: 's' } } }], text.flowHint]
       ];
       for (const [section, label, schema, hint] of sections) {
