@@ -38,7 +38,8 @@ const root = path.resolve(__dirname, '..');
    const paths=[...card.shadowRoot.querySelectorAll('.flow')].map(flow=>{
     const path=flow.querySelector('path'),d=path.getAttribute('d'),length=path.getTotalLength();
     const point=distance=>{const p=path.getPointAtLength(distance);return{x:p.x,y:p.y}};
-    return{name:flow.dataset.flow,d,length,start:point(0),end:point(length),samples:Array.from({length:31},(_,i)=>point(length*i/30)),animationMatches:[...flow.querySelectorAll('animateMotion')].every(motion=>motion.getAttribute('path')===d)};
+    const dashes=flow.querySelector('.flow-dashes'),animation=flow._animation,frames=animation.effect.getKeyframes();
+    return{name:flow.dataset.flow,d,length,start:point(0),end:point(length),samples:Array.from({length:31},(_,i)=>point(length*i/30)),animationMatches:dashes.getAttribute('d')===d&&animation.effect.target===dashes&&frames[0].strokeDashoffset==='0px'&&frames.at(-1).strokeDashoffset==='-28px'};
    });
    return{width:diagram.width,height:diagram.height,nodes,paths};
   });
@@ -47,7 +48,7 @@ const root = path.resolve(__dirname, '..');
   assert.equal(geometry.paths.length,7,`${label}: missing flow`);
   for(const route of geometry.paths){
    assert((route.d.match(/[A-Za-z]/g)||[]).every(command=>['M','H','V'].includes(command)),`${label}: diagonal or curved ${route.name}`);
-   assert(route.animationMatches,`${label}: dots leave ${route.name}`);
+   assert(route.animationMatches,`${label}: dashes leave ${route.name} or run backwards`);
    const [source,target]=connections[route.name];
    assert(onBorder(route.start,geometry.nodes[source])&&onBorder(route.end,geometry.nodes[target]),`${label}: incorrect endpoints ${route.name}`);
    for(const p of route.samples){
@@ -63,6 +64,30 @@ const root = path.resolve(__dirname, '..');
  };
  await verifyRoutes('desktop');
  assert.deepEqual(await page.evaluate(()=>active()),['auxiliary_1_main','auxiliary_2_main','main_home']);
+ assert.equal(await page.evaluate(()=>card.shadowRoot.querySelectorAll('.flow circle, animateMotion, marker').length),0);
+ const flowState=async name=>page.evaluate(async name=>{const flow=card.shadowRoot.querySelector(`[data-flow="${name}"]`);await flow._animation.ready;return{rate:flow._animation.playbackRate,state:flow._animation.playState,time:flow._animation.currentTime,offset:getComputedStyle(flow.querySelector('.flow-dashes')).strokeDashoffset}},name);
+ const originalTransferRate=(await flowState('auxiliary_1_main')).rate;
+ let previousRate=0;
+ for(const watts of [10,100,1000,10000]){
+  const before=await flowState('main_home');
+  await page.evaluate(watts=>{states['sensor.home'].state=String(watts);refresh()},watts);
+  const after=await flowState('main_home');assert(after.rate>previousRate&&after.rate<120/28);assert(after.time>=before.time-.1,'Power update restarted the animation');previousRate=after.rate;
+  assert.equal((await flowState('auxiliary_1_main')).rate,originalTransferRate,'Another flow wattage changed transfer speed');
+ }
+ await page.evaluate(()=>{states['sensor.home'].state='150';refresh()});
+ assert.equal((await flowState('main_home')).rate,(await flowState('auxiliary_1_main')).rate,'Equal wattage should have equal speed on different route lengths');
+ const moving=await flowState('main_home');await page.waitForTimeout(120);assert.notEqual((await flowState('main_home')).offset,moving.offset,'Dashes do not move');
+ for(const value of ['3','0','-10','unavailable','unknown']){
+  await page.evaluate(value=>{states['sensor.home'].state=value;refresh()},value);
+  assert.equal((await flowState('main_home')).state,'paused');
+  assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('[data-flow="main_home"] .flow-dashes')).visibility),'hidden');
+ }
+ await page.evaluate(()=>{states['sensor.home'].state='320';refresh()});
+ assert.equal((await flowState('main_home')).state,'running');
+ assert.equal((await flowState('grid_home')).state,'paused');
+ const beforeDuration=(await flowState('main_home')).rate;
+ await page.evaluate(()=>{card.setConfig({...config,appearance:{duration:6}});refresh()});
+ assert.equal((await flowState('main_home')).rate,beforeDuration/2);await page.evaluate(()=>{card.setConfig(config);refresh()});
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .input .value').textContent),'330 Вт');
  assert.deepEqual(await page.evaluate(()=>['.main .solar_1','.main .solar_2','.home .power'].map(selector=>card.shadowRoot.querySelector(selector+' .label').textContent)),['XT60(1)','XT60(2)','Вхід']);
  // Each battery follows its own charge sensor, including empty, full and unknown states.
@@ -94,9 +119,9 @@ const root = path.resolve(__dirname, '..');
  }
  assert.notEqual(backgrounds[0],backgrounds[1]);
  await page.evaluate(()=>card.style.removeProperty('--ha-card-background'));
- const motion=await page.evaluateHandle(()=>card.shadowRoot.querySelector('animateMotion'));
+ const motion=await page.evaluateHandle(()=>card.shadowRoot.querySelector('.flow-dashes'));
  await page.evaluate(()=>{states['sensor.unrelated']={state:'12',attributes:{}};refresh()});
- assert(await page.evaluate(old=>old===card.shadowRoot.querySelector('animateMotion'),motion));
+ assert(await page.evaluate(old=>old===card.shadowRoot.querySelector('.flow-dashes'),motion));
  await page.evaluate(()=>{states['binary_sensor.source'].state='on';states['binary_sensor.grid_available'].state='on';states['sensor.grid'].state='800';states['sensor.a_in'].state='200';states['sensor.b_in'].state='180';states['sensor.main_ac'].state='100';refresh()});
  assert.deepEqual(await page.evaluate(()=>active()),['auxiliary_1_main','auxiliary_2_main','grid_auxiliary_1','grid_auxiliary_2','grid_home','grid_main']);
  await page.evaluate(()=>{states['binary_sensor.grid_available'].state='unavailable';refresh()});
@@ -156,7 +181,7 @@ const root = path.resolve(__dirname, '..');
  }
  const mainColor=field('appearance','main_color');
  for(const [color,expected]of [['red','rgb(255, 0, 0)'],['green','rgb(0, 128, 0)'],['orange','rgb(255, 165, 0)'],['#f00','rgb(255, 0, 0)'],['rgb(0, 128, 255)','rgb(0, 128, 255)'],['hsl(120, 100%, 25%)','rgb(0, 128, 0)']]){
-  await mainColor.fill(color);assert.deepEqual(await page.evaluate(()=>({border:getComputedStyle(card.shadowRoot.querySelector('.main')).borderTopColor,flow:getComputedStyle(card.shadowRoot.querySelector('[data-flow="main_home"] circle')).fill})),{border:expected,flow:expected});await assertEditorStable();
+  await mainColor.fill(color);assert.deepEqual(await page.evaluate(()=>({border:getComputedStyle(card.shadowRoot.querySelector('.main')).borderTopColor,flow:getComputedStyle(card.shadowRoot.querySelector('[data-flow="main_home"] .flow-dashes')).stroke})),{border:expected,flow:expected});await assertEditorStable();
  }
  for(const color of ['#f008','#ff000080','rgba(255, 0, 0, 0.5)','hsla(120, 100%, 25%, 0.5)','lightseagreen']){await mainColor.fill(color);assert.equal(await page.evaluate(()=>published.at(-1).appearance.main_color),color);await assertEditorStable()}
  const beforeDraft=await page.evaluate(()=>published.length);await mainColor.fill('#');assert.equal(await page.evaluate(()=>published.length),beforeDraft);
@@ -199,7 +224,7 @@ const root = path.resolve(__dirname, '..');
  assert((await page.evaluate(()=>active())).includes('auxiliary_2_main'));assert(!(await page.evaluate(()=>active())).includes('auxiliary_1_main'));
  const colors=await page.evaluate(()=>{
   const border=key=>getComputedStyle(card.shadowRoot.querySelector('.node.'+key)).borderTopColor;
-  const flow=name=>getComputedStyle(card.shadowRoot.querySelector('[data-flow="'+name+'"] circle')).fill;
+  const flow=name=>getComputedStyle(card.shadowRoot.querySelector('[data-flow="'+name+'"] .flow-dashes')).stroke;
   return{grid:[border('grid'),flow('grid_main'),flow('grid_home')],main:[border('main'),flow('main_home'),border('home')],a:[border('auxiliary_1'),flow('auxiliary_1_main')],b:[border('auxiliary_2'),flow('auxiliary_2_main')]};
  });
  assert.deepEqual(colors,{grid:['rgb(17, 102, 204)','rgb(17, 102, 204)','rgb(17, 102, 204)'],main:['rgb(34, 204, 136)','rgb(34, 204, 136)','rgb(34, 204, 136)'],a:['rgb(170, 68, 221)','rgb(170, 68, 221)'],b:['rgb(255, 136, 0)','rgb(255, 136, 0)']});
@@ -235,9 +260,14 @@ const root = path.resolve(__dirname, '..');
   await verifyRoutes(`${width}px`);
  }
  await page.emulateMedia({reducedMotion:'reduce'});
- assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('.flow circle')).display),'none');
+ await page.waitForFunction(()=>Object.values(card._flows).every(flow=>flow._animation.playState==='paused'));
+ assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('.flow-dashes')).display),'none');
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.waitForFunction(()=>card._flows.main_home._animation.playState==='running');
+ await page.evaluate(()=>card.remove());assert(await page.evaluate(()=>Object.values(card._flows).every(flow=>flow._animation.playState==='paused')));
+ await page.evaluate(()=>document.querySelector('#host').append(card));await page.waitForFunction(()=>card._flows.main_home._animation.playState==='running');
  await page.evaluate(()=>{const card2=document.createElement('suris-ecoflow-flow-card');card2.setConfig({type:'custom:suris-ecoflow-flow-card'});document.body.append(card2)});
  assert.deepEqual(errors,[]);
- console.log('PASS: source switching, seven orthogonal flows, correct endpoints, matching dot paths, straight first-station transfer, one-corner home feed, unavailable data, kW conversion, unsupported units, threshold, XT60 labels, independent battery charge levels, unavailable charge, transparent light/dark/gradient themes, home input without approximation symbol, named/HEX/RGB/HSL colors, total input, editor clearing and typing, focus and cursor, draft validation, configuration feedback, saved selections, stable preview, more-info, mobile bounds, reduced motion, empty configuration.');
+ console.log('PASS: source switching, seven orthogonal flows, correct endpoints, matching dash paths and wattage-dependent speed, straight first-station transfer, one-corner home feed, unavailable data, kW conversion, unsupported units, threshold, XT60 labels, independent battery charge levels, unavailable charge, transparent light/dark/gradient themes, home input without approximation symbol, named/HEX/RGB/HSL colors, total input, editor clearing and typing, focus and cursor, draft validation, configuration feedback, saved selections, stable preview, more-info, mobile bounds, reduced motion, empty configuration.');
  await browser.close();
 })().catch(error=>{console.error(error);process.exit(1)});

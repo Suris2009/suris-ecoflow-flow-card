@@ -6,8 +6,8 @@ const source = fs.readFileSync(path.resolve(__dirname, '../suris-ecoflow-flow-ca
 const registry = new Map();
 const context = { HTMLElement: class {}, window: {}, console: { info() {} }, customElements: { get: key => registry.get(key), define: (key, value) => registry.set(key, value) } };
 vm.createContext(context);
-vm.runInContext(source.replace('  class SurisEcoFlowFlowCard extends HTMLElement {', '  globalThis.api = { model, merge, readNumber };\n  class SurisEcoFlowFlowCard extends HTMLElement {'), context);
-const { model, merge, readNumber } = context.api;
+vm.runInContext(source.replace('  class SurisEcoFlowFlowCard extends HTMLElement {', '  globalThis.api = { model, merge, readNumber, flowSpeed };\n  class SurisEcoFlowFlowCard extends HTMLElement {'), context);
+const { model, merge, readNumber, flowSpeed } = context.api;
 const config = merge({grid:{power:'sensor.grid',available_entity:'binary_sensor.grid',available_state:'on'},auxiliary_1:{input_power:'sensor.a_in',output_power:'sensor.a_out'},auxiliary_2:{input_power:'sensor.b_in',output_power:'sensor.b_out'},main:{input_power:'sensor.m_in',output_power:'sensor.m_out',ac_input_power:'sensor.m_ac',solar_input_power:'sensor.m_pv'},home:{power:'sensor.home',source_entity:'binary_sensor.source',grid_state:'on',main_state:'off'}});
 const states = {};
 const set = (id, value, unit='W') => states[id] = {state:String(value),attributes:{unit_of_measurement:unit}};
@@ -82,5 +82,16 @@ assert.equal(merge({appearance:{duration:undefined,threshold:''}}).appearance.du
 assert.equal(merge({appearance:{solar_color:'',auxiliary_1_color:''}}).appearance.auxiliary_1_color,'#ffcc42');
 assert.equal(merge({appearance:{main_color:'#f00'}}).appearance.main_color,'#f00');
 assert.equal(context.window.customCards.length,1);
+// Speed follows each route's own wattage, not grid total or a station's XT60 input.
+const speedConfig=merge({grid:{power:'sensor.grid',available_entity:'binary_sensor.grid'},auxiliary_1:{input_power:'sensor.a_in',grid_charge_power:'sensor.a_charge',output_power:'sensor.a_out',transfer_power:'sensor.a_transfer'},auxiliary_2:{input_power:'sensor.b_in',output_power:'sensor.b_out'},main:{ac_input_power:'sensor.m_ac',output_power:'sensor.m_out',solar_input_power:'sensor.m_pv'}});
+set('binary_sensor.grid','on');set('sensor.grid',1000);set('sensor.a_in',900);set('sensor.a_charge',50);set('sensor.a_out',1000);set('sensor.a_transfer',.15,'kW');set('sensor.b_in',200);set('sensor.b_out',80);set('sensor.m_ac',300);set('sensor.m_pv',600);
+assert.deepEqual(JSON.parse(JSON.stringify(model(speedConfig,states).flow_power)),{grid_auxiliary_1:50,grid_auxiliary_2:200,grid_main:300,auxiliary_1_main:150,auxiliary_2_main:80,grid_home:450,main_home:450});
+set('binary_sensor.grid','off');set('sensor.m_out',700);assert.equal(model(speedConfig,states).flow_power.main_home,700);
+speedConfig.home.power='sensor.home';set('sensor.home',90);assert.equal(model(speedConfig,states).flow_power.main_home,90);
+for(const value of [null,undefined,NaN,Infinity,-10,0])assert.equal(flowSpeed(value,3),0);
+const speeds=[3.1,10,50,100,500,1000,2400,1000000].map(w=>flowSpeed(w,3));
+assert(speeds.every((speed,i)=>Number.isFinite(speed)&&speed>0&&(i===0||speed>speeds[i-1])));
+assert(speeds.at(-1)<120);assert.equal(flowSpeed(100,3),100/3);
+assert.equal(flowSpeed(500,6),flowSpeed(500,3)/2);
 vm.runInContext(source,context);assert.equal(context.window.customCards.length,1);
-console.log('PASS: flow topology, mutually exclusive home source, unknown states, grid availability, independent transfer flows, two solar ports, color migration, missing data, unit conversion, exact threshold, total input fallback, missing home sensor fallback, input validation, duplicate registration.');
+console.log('PASS: flow topology, per-flow wattage and bounded speed, mutually exclusive home source, unknown states, grid availability, independent transfer flows, two solar ports, color migration, missing data, unit conversion, exact threshold, total input fallback, missing home sensor fallback, input validation, duplicate registration.');
