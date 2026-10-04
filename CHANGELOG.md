@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.2 — Stable
+
+- Keep the station #3 grid charging line at least 20 px below the Home block, including when a longer Home name adds a second heading line.
+- Preserve orthogonal routes, the separate grid-to-home line, block sizes, voltage and existing configuration.
+- Verify the clearance with zero, one and two consumer rows at 320–1150 px.
+
 ## 2.0.1 — Stable
 
 - Route grid charging of station #3 below the grid-to-home line, without crossing it. All lines remain orthogonal.

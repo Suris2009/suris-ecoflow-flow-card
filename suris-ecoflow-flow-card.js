@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.0.1 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.0.2 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.0.1';
+  const VERSION = '2.0.2';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -334,6 +334,9 @@
       const supplyTop = fullHeight * (this._diagram.clientWidth <= 520 ? .38 : .37) - shift;
       for (const key of ['grid', 'home']) this._nodes[key].style.top = `${supplyTop}px`;
       for (const key of ['main', 'auxiliary_1', 'auxiliary_2']) this._nodes[key].style.bottom = `${fullHeight * .01}px`;
+      // Keep room for the charging lane below Home, including multi-line names.
+      const requiredHeight = supplyTop + this._nodes.home.offsetHeight + 24 + this._nodes.auxiliary_2.offsetHeight + fullHeight * .01;
+      this._diagram.style.height = `${Math.max(fullHeight - shift, requiredHeight)}px`;
       const width = Math.min(130, (this._diagram.clientWidth - 84) / 3), offset = (this._diagram.clientWidth - width * 3 - 64) / 2;
       for (const node of this._consumerNodes.values()) { const slot = Number(node.dataset.slot); Object.assign(node.style, { left: `${offset + (width + 32) * (slot % 3)}px`, top: `${12 + (slot < 3 && rows === 2 ? 1 : 0) * 93}px`, width: `${width}px` }); }
     }
@@ -404,7 +407,7 @@
       const rect = (key) => { const r = (key.startsWith('consumer:') ? this._consumerNodes.get(key.slice(9)) : this._nodes[key]).getBoundingClientRect(); return { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height, right: r.right - base.left, bottom: r.bottom - base.top }; };
       const g = rect('grid'), a = rect('auxiliary_1'), b = rect('auxiliary_2'), m = rect('main'), h = rect('home');
       const midY = g.y + g.h / 2, rightCorridor = (m.right + b.x) / 2;
-      const homeLane = Math.max(h.bottom + 10, m.y + 12), chargingLane = homeLane - 6;
+      const homeLane = Math.max(h.bottom + 10, m.y + 12), chargingLane = Math.max(h.bottom + 20, m.y + 6);
       const routes = {
         grid_auxiliary_1: `M ${a.x + a.w * .25} ${g.bottom} V ${a.y}`,
         grid_auxiliary_2: `M ${g.right} ${g.y + g.h * .70} H ${rightCorridor} V ${chargingLane} H ${b.x + b.w * .90} V ${b.y}`,
