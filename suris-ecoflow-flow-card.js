@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.0.0-beta.2 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.0.0-beta.3 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.0.0-beta.2';
+  const VERSION = '2.0.0-beta.3';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -17,8 +17,8 @@
     uk: { grid: 'Міська мережа', main: 'Головна EcoFlow', home: 'Дім', title: 'Енергопотоки', input: 'Вхід', output: 'Вихід', soc: 'Заряд', ac: 'Мережа', source: 'Джерело', unknown: 'Невідомо', unavailable: 'Недоступно', select: 'Вибери сутності в редакторі картки', settings: 'Налаштування', homePowerLabel: 'Вхід дому (необов’язково)', homeDerived: 'Без окремого датчика: від мережі — загальна потужність мінус заряджання трьох станцій; від EcoFlow — вихід головної станції. Відсутні або недоступні входи станцій у розрахунку вважаються нулем. Вхід дому від мережі розрахунковий.', sourceHint: 'Мережа є — дім від міської мережі. Мережі немає — дім від головної EcoFlow. Вибери датчик наявності мережі в блоці міської мережі.', flowHint: 'Штрихи без стрілок рухаються від джерела до споживача. Більша потужність кожної лінії — більша швидкість. Більший базовий час — повільніший рух. Потік активний, коли потужність перевищує поріг. Відсутні або недоступні показники відображаються як —.', mainHint: 'Для лінії мережа → головна EcoFlow потрібна окрема потужність AC-входу. Загальний вхід не використовується як AC-вхід.', auxHint: 'Потужність передачі на головну станцію: вибери DC-вихід, якщо загальний вихід включає інші навантаження. Якщо поле порожнє, використовується загальний вихід.', editorError: 'Редактор Home Assistant ще завантажується. Закрий та відкрий редактор картки ще раз.', more: 'Докладніше', watts: 'W', mismatch: 'Стан міської мережі не розпізнано', setup: 'Вибери датчик наявності міської мережі' },
     en: { grid: 'City grid', main: 'Main EcoFlow', home: 'Home', title: 'Energy flows', input: 'Input', output: 'Output', soc: 'Charge', ac: 'Grid', source: 'Source', unknown: 'Unknown', unavailable: 'Unavailable', select: 'Select entities in the card editor', settings: 'Settings', homePowerLabel: 'Home input power (optional)', homeDerived: 'Without a separate sensor: grid power minus the three station charging powers when on grid; main station output when on EcoFlow. Missing or unavailable station inputs count as zero in this calculation. Home input from the grid is calculated.', sourceHint: 'Grid available — home powered by grid. Grid absent — home powered by the main EcoFlow. Select the grid availability sensor in the city grid section.', flowHint: 'Dashes without arrows move from source to load. Higher power on each line increases its speed. A larger base time slows movement. A flow is active above the threshold. Missing or unavailable readings appear as —.', mainHint: 'A separate AC input power entity is required for grid → main EcoFlow. Total input is never treated as AC input.', auxHint: 'Transfer power: use DC output if total output includes other loads. When empty, total output is used.', editorError: 'The Home Assistant editor is still loading. Close and reopen the card editor.', more: 'More information', watts: 'W', mismatch: 'Unrecognized grid availability state', setup: 'Select the grid availability sensor' }
   };
-  Object.assign(TEXT.uk, { consumers: 'Індивідуальні споживачі', consumer: 'Споживач', addConsumer: 'Додати споживача', removeConsumer: 'Видалити', consumerPower: 'Датчик потужності (W / kW)', consumerIcon: 'Іконка', consumerColor: 'Колір рамки споживача', consumerHint: 'Додай до 20 приладів. Зверху видно до шести активних із найбільшою потужністю. Поріг активності береться з налаштувань потоків. Потрібен датчик потужності, а не енергії kWh. Колір застосовується до рамки приладу. Спільні лінії рядів мають колір дому. Спочатку заповнюється нижній ряд.' });
-  Object.assign(TEXT.en, { consumers: 'Individual consumers', consumer: 'Consumer', addConsumer: 'Add consumer', removeConsumer: 'Remove', consumerPower: 'Power sensor (W / kW)', consumerIcon: 'Icon', consumerColor: 'Consumer border color', consumerHint: 'Add up to 20 devices. The six active devices with the highest power appear at the top. Activity uses the flow threshold. Select power sensors, not kWh energy sensors. Each device color applies to its border. Shared row lines use the home color. The lower row fills first.' });
+  Object.assign(TEXT.uk, { consumers: 'Індивідуальні споживачі', consumer: 'Споживач', addConsumer: 'Додати споживача', removeConsumer: 'Видалити', consumerPower: 'Датчик потужності (W / kW)', consumerIcon: 'Іконка', consumerColor: 'Колір рамки споживача', consumerHint: 'Додай до 20 приладів. Зверху видно до шести активних із найбільшою потужністю. Поріг активності береться з налаштувань потоків. Потрібен датчик потужності, а не енергії kWh. Колір застосовується до рамки приладу. Спільні лінії рядів мають колір дому. Спочатку заповнюється нижній ряд. Без одного чи обох рядів висота автоматично зменшується.' });
+  Object.assign(TEXT.en, { consumers: 'Individual consumers', consumer: 'Consumer', addConsumer: 'Add consumer', removeConsumer: 'Remove', consumerPower: 'Power sensor (W / kW)', consumerIcon: 'Icon', consumerColor: 'Consumer border color', consumerHint: 'Add up to 20 devices. The six active devices with the highest power appear at the top. Activity uses the flow threshold. Select power sensors, not kWh energy sensors. Each device color applies to its border. Shared row lines use the home color. The lower row fills first. Height shrinks automatically when one or both rows are unused.' });
   const t = (config) => TEXT[config?.language] || TEXT.uk;
   const draftConfig = (config = {}) => {
     const result = { ...DEFAULTS, ...config };
@@ -319,8 +319,14 @@
       });
     }
     _layoutConsumers() {
+      const rows = Math.ceil(this._consumerNodes.size / 3), shift = (2 - rows) * 93;
+      const fullHeight = Math.min(720, Math.max(540, this._diagram.clientWidth * .65));
+      this._diagram.style.height = `${fullHeight - shift}px`; this._diagram.dataset.consumerRows = String(rows);
+      const supplyTop = fullHeight * (this._diagram.clientWidth <= 520 ? .38 : .37) - shift;
+      for (const key of ['grid', 'home']) this._nodes[key].style.top = `${supplyTop}px`;
+      for (const key of ['main', 'auxiliary_1', 'auxiliary_2']) this._nodes[key].style.bottom = `${fullHeight * .01}px`;
       const width = Math.min(130, (this._diagram.clientWidth - 84) / 3), offset = (this._diagram.clientWidth - width * 3 - 64) / 2;
-      for (const node of this._consumerNodes.values()) { const slot = Number(node.dataset.slot); Object.assign(node.style, { left: `${offset + (width + 32) * (slot % 3)}px`, top: `${12 + (slot < 3 ? 1 : 0) * 93}px`, width: `${width}px` }); }
+      for (const node of this._consumerNodes.values()) { const slot = Number(node.dataset.slot); Object.assign(node.style, { left: `${offset + (width + 32) * (slot % 3)}px`, top: `${12 + (slot < 3 && rows === 2 ? 1 : 0) * 93}px`, width: `${width}px` }); }
     }
     _syncFlows() {
       if (!this._config) return;
@@ -451,8 +457,17 @@
   };
   const entityField = (name, power = true) => ({ name, selector: { entity: power ? { domain: 'sensor' } : {} } });
   const textField = (name) => ({ name, selector: { text: {} } });
+  const rgbToHsl = hex => {
+    const [r, g, b] = [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16) / 255), max = Math.max(r, g, b), min = Math.min(r, g, b), delta = max - min, light = (max + min) / 2;
+    const hue = !delta ? 0 : max === r ? ((g - b) / delta + (g < b ? 6 : 0)) * 60 : max === g ? ((b - r) / delta + 2) * 60 : ((r - g) / delta + 4) * 60;
+    return [hue, delta ? delta / (1 - Math.abs(2 * light - 1)) * 100 : 0, light * 100];
+  };
+  const hslToHex = ([h, s, l]) => {
+    s /= 100; l /= 100; const a = s * Math.min(l, 1 - l);
+    return '#' + [0, 8, 4].map(n => { const k = (n + h / 30) % 12; return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, '0'); }).join('');
+  };
   class SurisEcoFlowFlowEditor extends HTMLElement {
-    constructor() { super(); this.attachShadow({ mode: 'open' }); this._forms = []; }
+    constructor() { super(); this.attachShadow({ mode: 'open' }); this._forms = []; this._colorControls = new Map(); }
     setConfig(config) {
       const serialized = JSON.stringify(config);
       if (serialized === JSON.stringify(this._config) || serialized === this._lastPublished) return;
@@ -471,6 +486,7 @@
         if (JSON.stringify(form.data) !== JSON.stringify(data)) form.data = data;
         if (section === 'auxiliary_1' || section === 'auxiliary_2' || section.startsWith('consumer:')) { const name = data.name || DEFAULTS[section]?.name || t(this._config).consumer; form.parentNode.querySelector('summary').textContent = name; if (section.startsWith('consumer:')) form.parentNode.querySelector('.consumer-remove').setAttribute('aria-label', `${t(this._config).removeConsumer}: ${name}`); }
       }
+      this._refreshColors();
     }
     _validateDraft() {
       let valid = true;
@@ -490,13 +506,61 @@
       this._lastPublished = serialized;
       this.dispatchEvent(new CustomEvent('config-changed', { bubbles: true, composed: true, detail: { config } }));
     }
+    _colorPicker(section, key, label) {
+      const en = this._config.language === 'en', details = document.createElement('details'); details.className = 'color-picker';
+      details.dataset.colorSection = section; details.dataset.colorKey = key; details.open = this._openColors?.has(`${section}.${key}`) || false;
+      const summary = document.createElement('summary'), chip = document.createElement('span'), title = document.createElement('span'); chip.className = 'color-chip'; title.textContent = label; summary.append(chip, title); details.append(summary);
+      const mixer = document.createElement('div'); mixer.className = 'color-mixer';
+      const top = document.createElement('div'), native = document.createElement('input'), code = document.createElement('output'); top.className = 'color-top'; native.type = 'color'; native.className = 'color-native'; native.setAttribute('aria-label', en ? 'Choose custom color' : 'Обрати власний колір'); code.className = 'color-code'; top.append(native, code); mixer.append(top);
+      const control = { section, key, chip, native, code, sliders: {}, outputs: {}, hsl: [0, 100, 50], last: null }; this._colorControls.set(`${section}.${key}`, control);
+      const choose = (color, hsl) => {
+        control.last = color || null; if (color) control.hsl = hsl || rgbToHsl(color);
+        if (section.startsWith('consumer:')) this._config = { ...this._config, consumers: this._config.consumers.map(item => item.id === section.slice(9) ? { ...item, [key]: color } : item) };
+        else this._config = { ...this._config, [section]: { ...this._config[section], [key]: color } };
+        this._refreshForms(); this._publishConfig();
+      };
+      native.addEventListener('input', () => choose(native.value));
+      const presets = document.createElement('div'); presets.className = 'color-presets';
+      for (const color of ['#ff3b30', '#ff8800', '#ffcc00', '#6bcf37', '#008000', '#20b8a6', '#29a7ff', '#254bdb', '#8a4fe8', '#e84393', '#8d3449', '#8a8f98']) {
+        const button = document.createElement('button'); button.type = 'button'; button.style.setProperty('--swatch', color); button.dataset.color = color; button.setAttribute('aria-label', `${en ? 'Color' : 'Колір'} ${color}`); button.addEventListener('click', () => choose(color)); presets.append(button);
+      }
+      control.presets = presets; mixer.append(presets);
+      const labels = en ? ['Hue', 'Saturation', 'Brightness'] : ['Відтінок', 'Насиченість', 'Яскравість'];
+      ['hue', 'saturation', 'brightness'].forEach((name, index) => {
+        const label = document.createElement('label'), caption = document.createElement('span'), output = document.createElement('output'), input = document.createElement('input'); label.className = 'color-slider'; caption.textContent = labels[index]; input.type = 'range'; input.min = '0'; input.max = index === 0 ? '360' : '100'; input.step = '1'; input.dataset.component = name; input.setAttribute('aria-label', labels[index]);
+        input.addEventListener('input', () => { const hsl = [...control.hsl]; hsl[index] = Number(input.value); choose(hslToHex(hsl), hsl); }); label.append(caption, output, input); mixer.append(label); control.sliders[name] = input; control.outputs[name] = output;
+      });
+      const reset = document.createElement('button'); reset.type = 'button'; reset.className = 'color-reset'; reset.textContent = en ? 'Default color' : 'Типовий колір'; reset.addEventListener('click', () => choose('')); mixer.append(reset); details.append(mixer); return details;
+    }
+    _refreshColors() {
+      for (const control of this._colorControls.values()) {
+        const raw = String(this._formData(control.section)?.[control.key] || '').trim();
+        const color = raw || (control.section.startsWith('consumer:') ? '#4b9fff' : this._config.appearance[control.key.startsWith('auxiliary_') ? 'solar_color' : control.key] || DEFAULTS.appearance[control.key]);
+        if (!globalThis.CSS?.supports('color', color)) continue;
+        if (control.resolvedColor !== color) {
+        const probe = document.createElement('span'); probe.style.color = color; this.shadowRoot.append(probe); const computed = getComputedStyle(probe).color; probe.remove();
+        const canvas = document.createElement('canvas'); canvas.width = canvas.height = 1; const ctx = canvas.getContext('2d'); ctx.fillStyle = computed; ctx.fillRect(0, 0, 1, 1); const rgb = [...ctx.getImageData(0, 0, 1, 1).data].slice(0, 3); const hex = '#' + rgb.map(value => value.toString(16).padStart(2, '0')).join('');
+        control.hex = hex; control.resolvedColor = color;
+        }
+        const hex = control.hex;
+        if (control.last !== raw) { control.hsl = rgbToHsl(hex); control.last = raw; }
+        control.chip.style.background = color; control.native.value = hex; control.code.textContent = hex;
+        const [h, sat, light] = control.hsl;
+        for (const [index, name] of ['hue', 'saturation', 'brightness'].entries()) { control.sliders[name].value = String(control.hsl[index]); control.outputs[name].textContent = `${Math.round(control.hsl[index])}${index === 0 ? '°' : '%'}`; }
+        control.sliders.hue.style.background = 'linear-gradient(to right,red,#ff0,#0f0,#0ff,#00f,#f0f,red)';
+        control.sliders.saturation.style.background = `linear-gradient(to right,hsl(${h} 0% ${light}%),hsl(${h} 100% ${light}%))`;
+        control.sliders.brightness.style.background = `linear-gradient(to right,#000,hsl(${h} ${sat}% 50%),#fff)`;
+        for (const button of control.presets.children) button.setAttribute('aria-pressed', String(button.dataset.color === hex));
+      }
+    }
     _build() {
       if (!this._config) return;
       const openSections = new Set([...this.shadowRoot.querySelectorAll('details[open]')].map(details => details.dataset.section));
-      const c = this._config, text = t(c); this._forms = []; this._validation = null;
+      this._openColors = new Set([...this.shadowRoot.querySelectorAll('.color-picker[open]')].map(details => `${details.dataset.colorSection}.${details.dataset.colorKey}`));
+      const c = this._config, text = t(c); this._forms = []; this._validation = null; this._colorControls = new Map();
       this._consumerStructure = JSON.stringify(c.consumers.map(consumer => consumer.id));
       this._schemaLanguage = c.language === 'en' ? 'en' : 'uk';
-      this.shadowRoot.innerHTML = '<style>:host{display:block}details{border:1px solid var(--divider-color,#777);border-radius:10px;padding:12px;margin:12px 0}summary{cursor:pointer;font-weight:600;padding:4px 0}ha-form{display:block;margin-top:12px}p{font-size:13px;color:var(--secondary-text-color);line-height:1.5}.error{color:var(--error-color,#d44)}button{padding:8px 12px;border:1px solid var(--divider-color,#777);border-radius:8px;background:var(--secondary-background-color,#222);color:var(--primary-text-color,#eee);cursor:pointer}button:disabled{opacity:.5;cursor:default}.consumer-remove{margin-top:12px}</style>';
+      this.shadowRoot.innerHTML = '<style>:host{display:block}details{border:1px solid var(--divider-color,#777);border-radius:10px;padding:12px;margin:12px 0}summary{cursor:pointer;font-weight:600;padding:4px 0}ha-form{display:block;margin-top:12px}p{font-size:13px;color:var(--secondary-text-color);line-height:1.5}.error{color:var(--error-color,#d44)}button{padding:8px 12px;border:1px solid var(--divider-color,#777);border-radius:8px;background:var(--secondary-background-color,#222);color:var(--primary-text-color,#eee);cursor:pointer}button:disabled{opacity:.5;cursor:default}.consumer-remove{margin-top:12px}.color-picker{padding:8px;margin:10px 0}.color-picker summary{display:flex;align-items:center;gap:8px;font-size:14px}.color-chip{width:24px;height:24px;border:1px solid var(--divider-color,#777);border-radius:6px;flex:none}.color-mixer{display:grid;gap:10px;margin-top:12px}.color-top{display:flex;gap:12px;align-items:center}.color-native{width:50px;height:42px;padding:2px;border:1px solid var(--divider-color,#777);border-radius:8px;background:transparent;cursor:pointer}.color-code{font:14px monospace}.color-presets{display:flex;flex-wrap:wrap;gap:7px}.color-presets button{width:36px;height:36px;min-width:36px;padding:0;border:2px solid var(--divider-color,#777);border-radius:7px;background:var(--swatch)}.color-presets button[aria-pressed="true"]{outline:2px solid var(--primary-text-color,#222);outline-offset:2px}.color-slider{display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px}.color-slider input{grid-column:1 / -1;width:100%;height:30px;margin:0;border-radius:8px;appearance:none;border:1px solid var(--divider-color,#777);cursor:pointer}.color-slider input::-webkit-slider-thumb{appearance:none;width:18px;height:24px;border:2px solid #fff;box-shadow:0 0 2px #222;border-radius:5px;background:transparent}.color-slider input::-moz-range-thumb{width:15px;height:22px;border:2px solid #fff;border-radius:5px;background:transparent}.color-reset{justify-self:start}</style>';
       if (!customElements.get('ha-form')) {
         const warning = document.createElement('p'); warning.className = 'error'; warning.textContent = text.editorError; this.shadowRoot.append(warning);
         ensureForm().then(() => { if (this.isConnected && !this._forms.length && customElements.get('ha-form')) this._build(); });
@@ -510,7 +574,7 @@
         ['auxiliary_2', c.auxiliary_2.name || DEFAULTS.auxiliary_2.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
         ['main', text.main, [...stationSchema, entityField('ac_input_power'), entityField('solar_input_power'), entityField('solar_input_power_2'), entityField('home_feed_power')], text.mainHint],
         ['home', text.home, [textField('name'), entityField('power')], `${text.sourceHint} ${text.homeDerived}`],
-        ['appearance', c.language === 'en' ? 'Flow appearance' : 'Вигляд потоків', [textField('grid_color'), textField('auxiliary_1_color'), textField('auxiliary_2_color'), textField('main_color'), { name: 'threshold', selector: { number: { min: 0, max: 1000, step: 1, mode: 'box', unit_of_measurement: text.watts } } }, { name: 'duration', selector: { number: { min: .5, max: 20, step: .5, mode: 'box', unit_of_measurement: 's' } } }], `${text.flowHint} ${c.language === 'en' ? 'Each source color applies to its border and outgoing flows. Home uses its active source color. Colors: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). An empty field restores the default color.' : 'Колір джерела застосовується до його рамки та вихідних потоків. Рамка дому має колір активного джерела. Кольори: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). Порожнє поле повертає типовий колір.'}`]
+        ['appearance', c.language === 'en' ? 'Flow appearance' : 'Вигляд потоків', [textField('grid_color'), textField('auxiliary_1_color'), textField('auxiliary_2_color'), textField('main_color'), { name: 'threshold', selector: { number: { min: 0, max: 1000, step: 1, mode: 'box', unit_of_measurement: text.watts } } }, { name: 'duration', selector: { number: { min: .5, max: 20, step: .5, mode: 'box', unit_of_measurement: 's' } } }], `${text.flowHint} ${c.language === 'en' ? 'Open a color below to choose a swatch or mix hue, saturation and brightness. Each source color applies to its border and outgoing flows. Home uses its active source color. Colors: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). An empty field restores the default color.' : 'Відкрий колір нижче, щоб обрати зразок або змішати відтінок, насиченість і яскравість. Колір джерела застосовується до його рамки та вихідних потоків. Рамка дому має колір активного джерела. Кольори: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). Порожнє поле повертає типовий колір.'}`]
       ];
       for (const consumer of c.consumers) sections.push([`consumer:${consumer.id}`, consumer.name || text.consumer, [textField('name'), entityField('power'), { name: 'icon', selector: { icon: {} } }, textField('color')], '']);
       for (const [section, label, schema, hint] of sections) {
@@ -529,6 +593,8 @@
           this._refreshForms(); this._publishConfig();
         });
         this._forms.push(form); details.append(form);
+        if (section === 'appearance') for (const key of ['grid_color', 'auxiliary_1_color', 'auxiliary_2_color', 'main_color']) details.append(this._colorPicker(section, key, (FIELD_LABELS[c.language] || FIELD_LABELS.uk)[key]));
+        if (section.startsWith('consumer:')) details.append(this._colorPicker(section, 'color', text.consumerColor));
         if (section.startsWith('consumer:')) {
           const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'consumer-remove'; remove.textContent = text.removeConsumer;
           remove.setAttribute('aria-label', `${text.removeConsumer}: ${label}`);
@@ -547,10 +613,10 @@
         const details = [...this.shadowRoot.querySelectorAll('details')].find(item => item.dataset.section === `consumer:${consumer.id}`); if (details) details.open = true;
         this._publishConfig();
       });
-      const firstConsumer = [...this.shadowRoot.querySelectorAll('details')].find(details => details.dataset.section.startsWith('consumer:'));
+      const firstConsumer = [...this.shadowRoot.querySelectorAll('details')].find(details => details.dataset.section?.startsWith('consumer:'));
       for (const element of [consumerHeading, consumerHint, add]) this.shadowRoot.insertBefore(element, firstConsumer || null);
       this._validation = document.createElement('p'); this._validation.setAttribute('role', 'status'); this._validation.hidden = true; this.shadowRoot.append(this._validation);
-      this._validateDraft();
+      this._refreshColors(); this._validateDraft();
     }
   }
   if (!customElements.get(TAG)) customElements.define(TAG, SurisEcoFlowFlowCard);

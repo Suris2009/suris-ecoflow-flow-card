@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.0-beta.3 — Pre-release
+
+- Resize the diagram automatically for zero, one or two visible consumer rows; remove 93 px per unused row.
+- Move the remaining row and supply blocks upward without changing block sizes, rankings, lower-first filling or orthogonal flow geometry.
+- Add a native color picker, twelve preset swatches, live hue/saturation/brightness sliders, a current color preview and HEX display for every source and individual consumer.
+- Keep existing text color fields, named colors, HEX/RGB/HSL and alpha input; visual mixing selects an opaque color. Add one-click default restoration.
+- Preserve slider focus, color component choices through black/white, opened color panels and Home Assistant configuration feedback.
+- Add compact-layout and color-mixer previews, a one-row demo and Ukrainian/English setup instructions.
+- Verify all active counts at 320–1150 px, shrinking/growing layouts, node bounds, routes, live color updates, native color entry and default reset.
+
 ## 2.0.0-beta.2 — Pre-release
 
 - Replace separate home-to-consumer feeds with one shared line per row and short vertical branches.
