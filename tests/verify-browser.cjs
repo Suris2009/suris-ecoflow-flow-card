@@ -57,7 +57,7 @@ const root = path.resolve(__dirname, '..');
    }
   }
   const transfer=geometry.paths.find(route=>route.name==='auxiliary_1_main'),home=geometry.paths.find(route=>route.name==='main_home');
-  assert.equal(transfer.start.x,transfer.end.x,`${label}: first station transfer is not vertical`);
+  assert.equal(transfer.start.y,transfer.end.y,`${label}: side station transfer is not horizontal`);
   assert.equal((transfer.d.match(/[HV]/g)||[]).length,1,`${label}: first station transfer has extra bends`);
   assert.equal((home.d.match(/[HV]/g)||[]).length,2,`${label}: main-to-home flow must have one corner`);
   assert(Math.abs(home.length-Math.abs(home.end.x-home.start.x)-Math.abs(home.end.y-home.start.y))<.25,`${label}: main-to-home flow has a detour`);
@@ -70,7 +70,7 @@ const root = path.resolve(__dirname, '..');
    const area=points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p.x*q.y-q.x*p.y},0);
    return{key,expected,active:node.classList.contains('supplying'),state:border._animation.playState,area,frames:border._animation.effect.getKeyframes().map(f=>f.strokeDashoffset),display:getComputedStyle(border).display,stroke:getComputedStyle(path).stroke,color:getComputedStyle(node).getPropertyValue('--node-color').trim(),dash:getComputedStyle(path).strokeDasharray};
   }));
-  for(const border of result){assert.equal(border.active,border.expected,`${label}: wrong supplying outline ${border.key}`);if(border.key==='home'){assert(border.solid);continue}assert(border.area>0,`${label}: counterclockwise outline ${border.key}`);assert.deepEqual(border.frames,['0px','-14px']);assert.equal(border.state,border.expected?'running':'paused');assert.equal(border.display,border.expected?'block':'none');assert.equal(border.dash,'7px, 7px')}
+  for(const border of result){assert.equal(border.active,border.expected,`${label}: wrong supplying outline ${border.key}`);if(border.key==='home')assert.equal(border.active,false);assert(border.area>0,`${label}: counterclockwise outline ${border.key}`);assert.deepEqual(border.frames,['0px','-14px']);assert.equal(border.state,border.expected?'running':'paused');assert.equal(border.display,border.expected?'block':'none');assert.equal(border.dash,'7px, 7px')}
  };
  await verifyRoutes('desktop');
  await verifyBorders('stations supply');
