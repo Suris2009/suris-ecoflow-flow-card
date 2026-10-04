@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.1 — Stable
+
+- Route grid charging of station #3 below the grid-to-home line, without crossing it. All lines remain orthogonal.
+- Give Home a slightly thicker, stationary 3 px outline while preserving the inner width for single-line labels and readings.
+- Add an optional Home voltage sensor in the visual editor (`home.voltage`). Its reading appears below Input in V; unconfigured rows are hidden and unavailable values show `—`.
+- Retain existing entities, colors, consumers and settings. Verify routing and text layout at widths from 320 to 1150 px.
+
 ## 2.0.0 — Stable
 
 Promote 2.0.0-beta.3 to the stable version 2 release, retaining its behavior and configuration. Existing version 1 and version 2 beta card settings are preserved.

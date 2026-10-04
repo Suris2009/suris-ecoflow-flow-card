@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.0.0 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.0.1 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.0.0';
+  const VERSION = '2.0.1';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -19,6 +19,8 @@
   };
   Object.assign(TEXT.uk, { consumers: 'Індивідуальні споживачі', consumer: 'Споживач', addConsumer: 'Додати споживача', removeConsumer: 'Видалити', consumerPower: 'Датчик потужності (W / kW)', consumerIcon: 'Іконка', consumerColor: 'Колір рамки споживача', consumerHint: 'Додай до 20 приладів. Зверху видно до шести активних із найбільшою потужністю. Поріг активності береться з налаштувань потоків. Потрібен датчик потужності, а не енергії kWh. Колір застосовується до рамки приладу. Спільні лінії рядів мають колір дому. Спочатку заповнюється нижній ряд. Без одного чи обох рядів висота автоматично зменшується.' });
   Object.assign(TEXT.en, { consumers: 'Individual consumers', consumer: 'Consumer', addConsumer: 'Add consumer', removeConsumer: 'Remove', consumerPower: 'Power sensor (W / kW)', consumerIcon: 'Icon', consumerColor: 'Consumer border color', consumerHint: 'Add up to 20 devices. The six active devices with the highest power appear at the top. Activity uses the flow threshold. Select power sensors, not kWh energy sensors. Each device color applies to its border. Shared row lines use the home color. The lower row fills first. Height shrinks automatically when one or both rows are unused.' });
+  Object.assign(TEXT.uk, { voltage: 'Напруга' });
+  Object.assign(TEXT.en, { voltage: 'Voltage' });
   const t = (config) => TEXT[config?.language] || TEXT.uk;
   const draftConfig = (config = {}) => {
     const result = { ...DEFAULTS, ...config };
@@ -136,7 +138,7 @@
       grid_home: gridAvailable && source === 'grid' && positive(homePower),
       main_home: source === 'main' && positive(homePower)
     };
-    return { main, auxiliary_1, auxiliary_2, grid: { output: p(c.grid.power) }, home: { power: homePower, source, power_origin: powerOrigin }, consumers: (c.consumers || []).map(consumer => ({ ...consumer, entity: consumer.power, power: p(consumer.power) })), flows, flow_power };
+    return { main, auxiliary_1, auxiliary_2, grid: { output: p(c.grid.power) }, home: { power: homePower, voltage: readNumber(states, c.home.voltage), source, power_origin: powerOrigin }, consumers: (c.consumers || []).map(consumer => ({ ...consumer, entity: consumer.power, power: p(consumer.power) })), flows, flow_power };
   };
   // Equal wattage has equal visual speed, regardless of a route's length.
   const flowSpeed = (watts, duration) => Number.isFinite(watts) && watts > 0
@@ -163,6 +165,8 @@
     .grid{left:0;top:37%;width:22%}.home{right:0;top:37%;width:22%}.auxiliary_1{left:0;bottom:1%;width:25%}.auxiliary_2{right:0;bottom:1%;width:25%}.main{left:36%;bottom:1%;width:28%;min-height:max(220px,28cqw)}
     .status{margin-top:8px;color:var(--secondary-text-color,#aaa);font-size:12px;min-height:16px;text-align:center}.status:empty{display:none}
     @container(max-width:520px){.diagram{height:540px}.node{padding:8px 5px;gap:6px;border-radius:9px;min-height:137px}.node h3{font-size:12px}.node .icon{height:29px;margin:0}.row{font-size:11px;gap:2px}.row .value{margin-left:auto}.grid,.home{width:24%;top:38%}.auxiliary_1{left:0;width:25%;bottom:1%}.auxiliary_2{right:0;width:25%;bottom:1%}.main{left:33%;width:34%;min-height:202px}}
+    .node.home{border-width:3px;padding-inline:9px}.row[hidden]{display:none}
+    @container(max-width:520px){.node.home{padding-inline:4px}}
     .node.consumer{height:72px;min-height:72px;padding:4px;gap:3px;border-radius:9px}.consumer h3{font-size:clamp(11px,1.5cqw,13px);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}.consumer .icon{height:22px;margin:0;color:var(--node-color)}.consumer ha-icon{--mdc-icon-size:22px;width:22px;height:22px}.consumer ha-icon:not(:defined){display:none}.consumer ha-icon:defined+.fallback{display:none}.consumer .fallback{height:22px}.consumer .fallback svg{width:22px}.consumer .value{width:100%;text-align:center;font-size:12px;line-height:16px}.consumer:focus-within{outline:1px solid var(--node-color);outline-offset:2px}
     @media(prefers-reduced-motion:reduce){.flow .flow-dashes{display:none}.flow.active .flow-track{stroke-width:3;opacity:.92}}
   `;
@@ -237,7 +241,10 @@
           border._animation.pause(); this._borders[key] = border;
         }
         if (key === 'grid') this._row(node, 'output', text.output);
-        else if (key === 'home') this._row(node, 'power', text.input);
+        else if (key === 'home') {
+          this._row(node, 'power', text.input); this._row(node, 'voltage', text.voltage);
+          this._values['home.voltage'].parentElement.hidden = !c.home.voltage;
+        }
         else {
           this._row(node, 'soc', text.soc); this._row(node, 'input', text.input);
           if (key === 'main') { this._row(node, 'ac', text.ac); this._row(node, 'solar_1', 'XT60(1)'); this._row(node, 'solar_2', 'XT60(2)'); }
@@ -253,6 +260,7 @@
       this.shadowRoot.querySelector('h2').textContent = c.title;
       for (const key of ['grid', 'auxiliary_1', 'auxiliary_2', 'main']) this.style.setProperty(`--flow-${key}`, c.appearance[`${key}_color`]);
       for (const [key, node] of Object.entries(this._nodes)) node.querySelector('h3').textContent = c[key].name || text[key] || key;
+      this._values['home.voltage'].parentElement.hidden = !c.home.voltage;
     }
     _update() {
       if (!this._config || !this._values) return;
@@ -265,11 +273,12 @@
         const [node, field] = key.split('.'); let value = data[node][field];
         let entity = c[node][field === 'soc' ? 'soc' : `${field}_power`];
         if (node === 'grid') entity = c.grid.power;
-        if (node === 'home') entity = c.home.power;
+        if (node === 'home') entity = field === 'voltage' ? c.home.voltage : c.home.power;
         if (node === 'main' && field === 'ac') entity = c.main.ac_input_power;
         if (node === 'main' && field === 'solar_1') entity = c.main.solar_input_power;
         if (node === 'main' && field === 'solar_2') entity = c.main.solar_input_power_2;
         if (field === 'soc') value = value != null && value >= 0 && value <= 100 ? `${formatter.format(value)}%` : '—';
+        else if (field === 'voltage') value = value != null && value >= 0 ? `${formatter.format(value)} V` : '—';
         else value = powerText(value, c.language);
         button.textContent = value;
         if (entity) button.dataset.entity = entity; else delete button.dataset.entity;
@@ -395,10 +404,10 @@
       const rect = (key) => { const r = (key.startsWith('consumer:') ? this._consumerNodes.get(key.slice(9)) : this._nodes[key]).getBoundingClientRect(); return { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height, right: r.right - base.left, bottom: r.bottom - base.top }; };
       const g = rect('grid'), a = rect('auxiliary_1'), b = rect('auxiliary_2'), m = rect('main'), h = rect('home');
       const midY = g.y + g.h / 2, rightCorridor = (m.right + b.x) / 2;
-      const homeLane = Math.max(h.bottom + 10, m.y + 12), chargingLane = homeLane + 10;
+      const homeLane = Math.max(h.bottom + 10, m.y + 12), chargingLane = homeLane - 6;
       const routes = {
         grid_auxiliary_1: `M ${a.x + a.w * .25} ${g.bottom} V ${a.y}`,
-        grid_auxiliary_2: `M ${g.right} ${g.y + g.h * .20} H ${rightCorridor} V ${chargingLane} H ${b.x + b.w * .25} V ${b.y}`,
+        grid_auxiliary_2: `M ${g.right} ${g.y + g.h * .70} H ${rightCorridor} V ${chargingLane} H ${b.x + b.w * .90} V ${b.y}`,
         grid_main: `M ${g.right} ${g.y + g.h * .80} H ${(g.right + m.x) / 2} V ${m.y + m.h * .55} H ${m.x}`,
         grid_home: `M ${g.right} ${midY} H ${h.x}`,
         auxiliary_1_main: `M ${a.right} ${a.y + a.h / 2} H ${m.x}`,
@@ -455,6 +464,8 @@
     uk: { title: 'Заголовок', language: 'Мова', name: 'Назва', power: 'Потужність', input_power: 'Загальна вхідна потужність', output_power: 'Загальна вихідна потужність', soc: 'Заряд батареї (%)', ac_input_power: 'Потужність входу від міської мережі (AC)', solar_input_power: 'Потужність входу XT60(1) (DC)', solar_input_power_2: 'Потужність входу XT60(2) (DC)', grid_charge_power: 'Потужність заряджання від мережі (необов’язково)', transfer_power: 'Потужність передачі на головну EcoFlow (необов’язково)', home_feed_power: 'Потужність виходу на дім (необов’язково)', available_entity: 'Наявність міської мережі', available_state: 'Стан «мережа є»', source_entity: 'Сутність джерела живлення дому', grid_state: 'Стан «дім від міської мережі»', main_state: 'Стан «дім від головної EcoFlow»', grid_color: 'Колір мережі: рамка та потоки', auxiliary_1_color: 'Колір EcoFlow №2: рамка та потік', auxiliary_2_color: 'Колір EcoFlow №3: рамка та потік', solar_color: 'Колір передачі між станціями', main_color: 'Колір головної EcoFlow: рамка та потік', threshold: 'Поріг активного потоку (Вт)', duration: 'Базовий час руху (с)' },
     en: { title: 'Title', language: 'Language', name: 'Name', power: 'Power', input_power: 'Total input power', output_power: 'Total output power', soc: 'Battery charge (%)', ac_input_power: 'City grid input power (AC)', solar_input_power: 'XT60(1) input power (DC)', solar_input_power_2: 'XT60(2) input power (DC)', grid_charge_power: 'Grid charging power (optional)', transfer_power: 'Transfer power to main EcoFlow (optional)', home_feed_power: 'Output power to home (optional)', available_entity: 'Grid availability', available_state: 'Grid available state', source_entity: 'Home power source entity', grid_state: 'State: home powered by grid', main_state: 'State: home powered by main EcoFlow', grid_color: 'Grid border and flow color', auxiliary_1_color: 'EcoFlow #2 border and flow color', auxiliary_2_color: 'EcoFlow #3 border and flow color', solar_color: 'Station transfer color', main_color: 'Main EcoFlow border and flow color', threshold: 'Active flow threshold (W)', duration: 'Base movement time (s)' }
   };
+  Object.assign(FIELD_LABELS.uk, { voltage: 'Напруга дому (необов’язково)' });
+  Object.assign(FIELD_LABELS.en, { voltage: 'Home voltage (optional)' });
   const entityField = (name, power = true) => ({ name, selector: { entity: power ? { domain: 'sensor' } : {} } });
   const textField = (name) => ({ name, selector: { text: {} } });
   const rgbToHsl = hex => {
@@ -573,7 +584,7 @@
         ['auxiliary_1', c.auxiliary_1.name || DEFAULTS.auxiliary_1.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
         ['auxiliary_2', c.auxiliary_2.name || DEFAULTS.auxiliary_2.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
         ['main', text.main, [...stationSchema, entityField('ac_input_power'), entityField('solar_input_power'), entityField('solar_input_power_2'), entityField('home_feed_power')], text.mainHint],
-        ['home', text.home, [textField('name'), entityField('power')], `${text.sourceHint} ${text.homeDerived}`],
+        ['home', text.home, [textField('name'), entityField('power'), { name: 'voltage', selector: { entity: { domain: 'sensor', device_class: 'voltage' } } }], `${text.sourceHint} ${text.homeDerived}`],
         ['appearance', c.language === 'en' ? 'Flow appearance' : 'Вигляд потоків', [textField('grid_color'), textField('auxiliary_1_color'), textField('auxiliary_2_color'), textField('main_color'), { name: 'threshold', selector: { number: { min: 0, max: 1000, step: 1, mode: 'box', unit_of_measurement: text.watts } } }, { name: 'duration', selector: { number: { min: .5, max: 20, step: .5, mode: 'box', unit_of_measurement: 's' } } }], `${text.flowHint} ${c.language === 'en' ? 'Open a color below to choose a swatch or mix hue, saturation and brightness. Each source color applies to its border and outgoing flows. Home uses its active source color. Colors: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). An empty field restores the default color.' : 'Відкрий колір нижче, щоб обрати зразок або змішати відтінок, насиченість і яскравість. Колір джерела застосовується до його рамки та вихідних потоків. Рамка дому має колір активного джерела. Кольори: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). Порожнє поле повертає типовий колір.'}`]
       ];
       for (const consumer of c.consumers) sections.push([`consumer:${consumer.id}`, consumer.name || text.consumer, [textField('name'), entityField('power'), { name: 'icon', selector: { icon: {} } }, textField('color')], '']);
