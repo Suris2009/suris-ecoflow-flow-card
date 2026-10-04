@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 const manifest = JSON.parse(fs.readFileSync(path.join(root, 'hacs.json'), 'utf8'));
 const source = fs.readFileSync(path.join(root, manifest.filename), 'utf8');
-assert(/^[0-9]+\.[0-9]+\.[0-9]+$/.test(pkg.version), 'Expected a stable semantic version');
+assert(/^[0-9]+\.[0-9]+\.[0-9]+(?:-beta\.[1-9][0-9]*)?$/.test(pkg.version), 'Expected a stable version or numbered beta');
 assert.equal(manifest.filename, `${pkg.name}.js`);
 assert.equal(manifest.content_in_root, true);
 assert.equal(manifest.render_readme, true);
