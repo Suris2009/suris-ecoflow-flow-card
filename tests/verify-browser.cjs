@@ -62,7 +62,25 @@ const root = path.resolve(__dirname, '..');
   assert.equal((home.d.match(/[HV]/g)||[]).length,2,`${label}: main-to-home flow must have one corner`);
   assert(Math.abs(home.length-Math.abs(home.end.x-home.start.x)-Math.abs(home.end.y-home.start.y))<.25,`${label}: main-to-home flow has a detour`);
  };
+ const verifyBorders=async label=>{
+  const result=await page.evaluate(()=>Object.entries(card._nodes).map(([key,node])=>{
+   const expected=Object.keys(card._data.flows).some(name=>name.startsWith(`${key}_`)&&card._data.flows[name]),border=card._borders[key];
+   if(!border)return{key,expected,active:node.classList.contains('supplying'),solid:getComputedStyle(node).borderTopStyle==='solid'};
+   const path=border.firstElementChild,len=path.getTotalLength(),points=Array.from({length:100},(_,i)=>path.getPointAtLength(len*i/100));
+   const area=points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p.x*q.y-q.x*p.y},0);
+   return{key,expected,active:node.classList.contains('supplying'),state:border._animation.playState,area,frames:border._animation.effect.getKeyframes().map(f=>f.strokeDashoffset),display:getComputedStyle(border).display,stroke:getComputedStyle(path).stroke,color:getComputedStyle(node).getPropertyValue('--node-color').trim(),dash:getComputedStyle(path).strokeDasharray};
+  }));
+  for(const border of result){assert.equal(border.active,border.expected,`${label}: wrong supplying outline ${border.key}`);if(border.key==='home'){assert(border.solid);continue}assert(border.area>0,`${label}: counterclockwise outline ${border.key}`);assert.deepEqual(border.frames,['0px','-14px']);assert.equal(border.state,border.expected?'running':'paused');assert.equal(border.display,border.expected?'block':'none');assert.equal(border.dash,'7px, 7px')}
+ };
  await verifyRoutes('desktop');
+ await verifyBorders('stations supply');
+ const beforeBorder=await page.evaluate(async()=>{await card._borders.main._animation.ready;return{time:card._borders.main._animation.currentTime,offset:getComputedStyle(card._borders.main.firstElementChild).strokeDashoffset,rate:card._borders.main._animation.playbackRate}});
+ await page.waitForTimeout(120);
+ assert.notEqual(await page.evaluate(()=>getComputedStyle(card._borders.main.firstElementChild).strokeDashoffset),beforeBorder.offset,'Outline does not move');
+ await page.evaluate(()=>{states['sensor.home'].state='1000';refresh()});
+ const afterBorder=await page.evaluate(async()=>{await card._borders.main._animation.ready;return{time:card._borders.main._animation.currentTime,rate:card._borders.main._animation.playbackRate}});
+ assert(afterBorder.rate>beforeBorder.rate&&afterBorder.time>=beforeBorder.time-.1,'Outline speed failed or restarted');
+ await page.evaluate(()=>{states['sensor.home'].state='320';refresh()});
  assert.deepEqual(await page.evaluate(()=>active()),['auxiliary_1_main','auxiliary_2_main','main_home']);
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelectorAll('.flow circle, animateMotion, marker').length),0);
  const flowState=async name=>page.evaluate(async name=>{const flow=card.shadowRoot.querySelector(`[data-flow="${name}"]`);await flow._animation.ready;return{rate:flow._animation.playbackRate,state:flow._animation.playState,time:flow._animation.currentTime,offset:getComputedStyle(flow.querySelector('.flow-dashes')).strokeDashoffset}},name);
@@ -80,6 +98,7 @@ const root = path.resolve(__dirname, '..');
  for(const value of ['3','0','-10','unavailable','unknown']){
   await page.evaluate(value=>{states['sensor.home'].state=value;refresh()},value);
   assert.equal((await flowState('main_home')).state,'paused');
+  await verifyBorders(`home supply stopped: ${value}`);
   assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('[data-flow="main_home"] .flow-dashes')).visibility),'hidden');
  }
  await page.evaluate(()=>{states['sensor.home'].state='320';refresh()});
@@ -181,7 +200,7 @@ const root = path.resolve(__dirname, '..');
  }
  const mainColor=field('appearance','main_color');
  for(const [color,expected]of [['red','rgb(255, 0, 0)'],['green','rgb(0, 128, 0)'],['orange','rgb(255, 165, 0)'],['#f00','rgb(255, 0, 0)'],['rgb(0, 128, 255)','rgb(0, 128, 255)'],['hsl(120, 100%, 25%)','rgb(0, 128, 0)']]){
-  await mainColor.fill(color);assert.deepEqual(await page.evaluate(()=>({border:getComputedStyle(card.shadowRoot.querySelector('.main')).borderTopColor,flow:getComputedStyle(card.shadowRoot.querySelector('[data-flow="main_home"] .flow-dashes')).stroke})),{border:expected,flow:expected});await assertEditorStable();
+  await mainColor.fill(color);assert.deepEqual(await page.evaluate(()=>({border:getComputedStyle((card._nodes.main.classList.contains('supplying')?card._borders.main.firstElementChild:card._nodes.main)).getPropertyValue(card._nodes.main.classList.contains('supplying')?'stroke':'border-top-color'),flow:getComputedStyle(card.shadowRoot.querySelector('[data-flow="main_home"] .flow-dashes')).stroke})),{border:expected,flow:expected});await assertEditorStable();
  }
  for(const color of ['#f008','#ff000080','rgba(255, 0, 0, 0.5)','hsla(120, 100%, 25%, 0.5)','lightseagreen']){await mainColor.fill(color);assert.equal(await page.evaluate(()=>published.at(-1).appearance.main_color),color);await assertEditorStable()}
  const beforeDraft=await page.evaluate(()=>published.length);await mainColor.fill('#');assert.equal(await page.evaluate(()=>published.length),beforeDraft);
@@ -189,7 +208,7 @@ const root = path.resolve(__dirname, '..');
  await mainColor.fill('red');assert.equal(await page.evaluate(()=>published.at(-1).main.name),'Нова назва');await assertEditorStable();
  const duration=field('appearance','duration');const beforeNumber=await page.evaluate(()=>published.length);await duration.fill('-');assert.equal(await duration.inputValue(),'-');assert.equal(await page.evaluate(()=>published.length),beforeNumber);await duration.fill('0');assert.equal(await page.evaluate(()=>published.length),beforeNumber);await duration.fill('0.5');assert.equal(await page.evaluate(()=>card._config.appearance.duration),.5);
  await duration.fill('');assert.equal(await duration.inputValue(),'');assert.equal(await page.evaluate(()=>card._config.appearance.duration),3);await assertEditorStable();
- await mainColor.fill('');assert.equal(await mainColor.inputValue(),'');assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('.main')).borderTopColor),'rgb(39, 217, 213)');
+ await mainColor.fill('');assert.equal(await mainColor.inputValue(),'');assert.equal(await page.evaluate(()=>getComputedStyle((card._nodes.main.classList.contains('supplying')?card._borders.main.firstElementChild:card._nodes.main)).getPropertyValue(card._nodes.main.classList.contains('supplying')?'stroke':'border-top-color')),'rgb(39, 217, 213)');
  await field('appearance','main_color').fill('red');await field('','language').fill('en');
  assert(await page.evaluate(()=>[...editor.shadowRoot.querySelectorAll('details')].every(details=>details.open)));
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .solar_2 .label').textContent),'XT60(2)');
@@ -223,7 +242,7 @@ const root = path.resolve(__dirname, '..');
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .solar_2 .value').textContent),'150 W');
  assert((await page.evaluate(()=>active())).includes('auxiliary_2_main'));assert(!(await page.evaluate(()=>active())).includes('auxiliary_1_main'));
  const colors=await page.evaluate(()=>{
-  const border=key=>getComputedStyle(card.shadowRoot.querySelector('.node.'+key)).borderTopColor;
+  const border=key=>getComputedStyle((card._nodes[key].classList.contains('supplying')?card._borders[key].firstElementChild:card._nodes[key])).getPropertyValue(card._nodes[key].classList.contains('supplying')?'stroke':'border-top-color');
   const flow=name=>getComputedStyle(card.shadowRoot.querySelector('[data-flow="'+name+'"] .flow-dashes')).stroke;
   return{grid:[border('grid'),flow('grid_main'),flow('grid_home')],main:[border('main'),flow('main_home'),border('home')],a:[border('auxiliary_1'),flow('auxiliary_1_main')],b:[border('auxiliary_2'),flow('auxiliary_2_main')]};
  });
@@ -241,6 +260,7 @@ const root = path.resolve(__dirname, '..');
  });assert(invalid);
  await page.evaluate(()=>{states['sensor.main_pv'].attributes.unit_of_measurement='W';states['binary_sensor.source'].state='off';states['binary_sensor.grid_available'].state='off';states['sensor.a_in'].state='0';states['sensor.b_in'].state='0';states['sensor.a_out'].state='100';states['sensor.b_out'].state='0';states['sensor.main_ac'].state='0';states['sensor.main_pv'].state='100';states['sensor.pv2'].state='0';states['sensor.main_out'].state='449';states['sensor.home'].state='449';states['sensor.grid'].state='0';config.auxiliary_1.name='Delta';config.auxiliary_2.name='River';config.main.name='Delta 2';config.appearance={...config.appearance,grid_color:'blue',auxiliary_1_color:'green',auxiliary_2_color:'orange',main_color:'red'};card.setConfig(config);refresh()});
  await verifyRoutes('updated desktop');
+ await verifyBorders('main supplies home');
  await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-desktop.png')});
  await page.setViewportSize({width:390,height:800});
  await page.evaluate(()=>{document.body.style.margin='8px';for(const [name,value]of Object.entries({'--ha-card-background':'linear-gradient(135deg, #ece7f2, #b9d9ed)','--primary-text-color':'#172239','--secondary-text-color':'#4d5666','--divider-color':'#888d9b'}))card.style.setProperty(name,value)});
@@ -251,6 +271,7 @@ const root = path.resolve(__dirname, '..');
   await page.evaluate(language=>{card.setConfig({...config,language});refresh()},language);
   for(const [watts,expected] of [[999,'999 W'],[1000,'1 kW'],[2468,language==='uk'?'2,47 kW':'2.47 kW'],[12345,language==='uk'?'12,35 kW':'12.35 kW'],[99999,'100 kW']]){
    await page.evaluate(watts=>{states['sensor.grid'].state=String(watts);refresh()},watts);
+   await verifyBorders(`${language}: ${watts} W`);
    assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.grid .value').textContent),expected);
    for(const width of [320,352,390,422]){
     await page.setViewportSize({width,height:800});
@@ -278,6 +299,7 @@ const root = path.resolve(__dirname, '..');
  assert.deepEqual(layout.overflows,[]);assert.deepEqual(layout.outside,[]);
  for(let i=0;i<layout.rects.length;i++)for(let j=i+1;j<layout.rects.length;j++){const a=layout.rects[i].rect,b=layout.rects[j].rect;assert(!(a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top),`Overlapping nodes ${layout.rects[i].key}, ${layout.rects[j].key}`)}
  await verifyRoutes('mobile');
+ await verifyBorders('mobile outlines');
  for (const width of [320, 768]) {
   await page.setViewportSize({width,height:900});await page.waitForTimeout(60);
   const problems=await page.evaluate(()=>[...card.shadowRoot.querySelectorAll('.node')].filter(n=>n.scrollWidth>n.clientWidth+1||n.scrollHeight>n.clientHeight+1).map(n=>n.dataset.key));
@@ -285,14 +307,14 @@ const root = path.resolve(__dirname, '..');
   await verifyRoutes(`${width}px`);
  }
  await page.emulateMedia({reducedMotion:'reduce'});
- await page.waitForFunction(()=>Object.values(card._flows).every(flow=>flow._animation.playState==='paused'));
+ await page.waitForFunction(()=>Object.values(card._flows).every(flow=>flow._animation.playState==='paused')&&Object.values(card._borders).every(border=>border._animation.playState==='paused'));
  assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('.flow-dashes')).display),'none');
  await page.emulateMedia({reducedMotion:'no-preference'});
- await page.waitForFunction(()=>card._flows.main_home._animation.playState==='running');
- await page.evaluate(()=>card.remove());assert(await page.evaluate(()=>Object.values(card._flows).every(flow=>flow._animation.playState==='paused')));
- await page.evaluate(()=>document.querySelector('#host').append(card));await page.waitForFunction(()=>card._flows.main_home._animation.playState==='running');
+ await page.waitForFunction(()=>card._flows.main_home._animation.playState==='running'&&card._borders.main._animation.playState==='running');
+ await page.evaluate(()=>card.remove());assert(await page.evaluate(()=>Object.values(card._flows).every(flow=>flow._animation.playState==='paused')&&Object.values(card._borders).every(border=>border._animation.playState==='paused')));
+ await page.evaluate(()=>document.querySelector('#host').append(card));await page.waitForFunction(()=>card._flows.main_home._animation.playState==='running'&&card._borders.main._animation.playState==='running');
  await page.evaluate(()=>{const card2=document.createElement('suris-ecoflow-flow-card');card2.setConfig({type:'custom:suris-ecoflow-flow-card'});document.body.append(card2)});
  assert.deepEqual(errors,[]);
- console.log('PASS: source switching, seven orthogonal flows, correct endpoints, matching dash paths and wattage-dependent speed, straight first-station transfer, one-corner home feed, unavailable data, kW conversion, unsupported units, threshold, XT60 labels, independent battery charge levels, unavailable charge, transparent light/dark/gradient themes, home input without approximation symbol, named/HEX/RGB/HSL colors, total input, editor clearing and typing, focus and cursor, draft validation, configuration feedback, saved selections, stable preview, more-info, all rows on one line at mobile widths, W/kW in both languages, mobile bounds, reduced motion, empty configuration.');
+ console.log('PASS: clockwise supplying outlines, continuous wattage-dependent outline speed, source switching, seven orthogonal flows, correct endpoints, matching dash paths and wattage-dependent speed, straight first-station transfer, one-corner home feed, unavailable data, kW conversion, unsupported units, threshold, XT60 labels, independent battery charge levels, unavailable charge, transparent light/dark/gradient themes, home input without approximation symbol, named/HEX/RGB/HSL colors, total input, editor clearing and typing, focus and cursor, draft validation, configuration feedback, saved selections, stable preview, more-info, all rows on one line at mobile widths, W/kW in both languages, mobile bounds, reduced motion, empty configuration.');
  await browser.close();
 })().catch(error=>{console.error(error);process.exit(1)});
