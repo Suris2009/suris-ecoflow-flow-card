@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.0.0 — Stable
+
+Promote 2.0.0-beta.3 to the stable version 2 release, retaining its behavior and configuration. Existing version 1 and version 2 beta card settings are preserved.
+
+- Configure up to 20 home consumers through the visual editor; display the six strongest active devices without scrolling.
+- Use one orthogonal home feeder per row and short vertical branches in the home color; keep independent consumer border colors and a solid, stationary home outline.
+- Fill the lower row first, retain tile positions during strongest-six replacements, and shrink the card by 93 px for each unused consumer row.
+- Choose colors visually with twelve swatches, a native picker, live hue/saturation/brightness mixing, preview and HEX output, or use existing CSS text color fields.
+- Keep independent XT60(1)/XT60(2) readings, automatic home power calculation, battery charge icons and wattage-dependent flow and source-outline animation.
+- Update Ukrainian and English installation and upgrade guides for the stable release; remove the beta label from the card picker.
+- Validate source/power logic, editor interaction, color mixing, ranking, reduced motion, mobile row fitting and orthogonal layout geometry at 320–1150 px.
+
 ## 2.0.0-beta.3 — Pre-release
 
 - Resize the diagram automatically for zero, one or two visible consumer rows; remove 93 px per unused row.

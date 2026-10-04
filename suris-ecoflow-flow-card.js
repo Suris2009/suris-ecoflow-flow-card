@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.0.0-beta.3 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.0.0 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.0.0-beta.3';
+  const VERSION = '2.0.0';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -622,6 +622,6 @@
   if (!customElements.get(TAG)) customElements.define(TAG, SurisEcoFlowFlowCard);
   if (!customElements.get(`${TAG}-editor`)) customElements.define(`${TAG}-editor`, SurisEcoFlowFlowEditor);
   window.customCards = window.customCards || [];
-  if (!window.customCards.some((card) => card.type === TAG)) window.customCards.push({ type: TAG, name: 'Suris EcoFlow Flow Card', description: 'Beta 2: three EcoFlow stations and up to 20 home consumers. Visual editor.', preview: true });
+  if (!window.customCards.some((card) => card.type === TAG)) window.customCards.push({ type: TAG, name: 'Suris EcoFlow Flow Card', description: 'Three EcoFlow stations and up to 20 home consumers. Visual editor.', preview: true });
   console.info(`%c SURIS ECOFLOW FLOW CARD %c ${VERSION}`, 'background:#27d9d5;color:#111;padding:4px', 'padding:4px');
 })();

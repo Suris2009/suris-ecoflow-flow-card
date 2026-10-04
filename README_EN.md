@@ -1,8 +1,8 @@
-# Suris EcoFlow Flow Card 2.0.0-beta.3
+# Suris EcoFlow Flow Card 2.0.0
 
-[Українська інструкція](README.md) · [Beta release](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.0-beta.3) · [Stable 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
+[Українська інструкція](README.md) · [Download 2.0.0](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.0) · [Previous 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
 
-**Pre-release:** version 2 layout and settings are still being refined. Stable 0.1.12 remains available.
+**Stable release 2.0.0.** Upgrading from version 1 or a version 2 beta preserves the card configuration.
 
 A Home Assistant dashboard card with a visual entity editor. City grid is on the left, home on the right, and the main EcoFlow sits between the two auxiliary stations at the bottom. Up to six active home consumers appear above them, without scrolling. The card automatically shrinks when one or both consumer rows are unused. Power readings stay inside the blocks; lines show only moving flow.
 
@@ -28,7 +28,7 @@ As devices switch on or off, the card resizes automatically. A single row moves 
 
 1. Open **HACS → ⋮ → Custom repositories**.
 2. Add `https://github.com/Suris2009/suris-ecoflow-flow-card`, category **Dashboard** (Lovelace / Plugin in older versions).
-3. Download **2.0.0-beta.3**. If it is not offered, enable this repository's HACS pre-release switch entity and turn it on. These entities may be disabled by default; find the repository's entity under **Settings → Devices & services → Entities**, enable it, then turn it on. See the [official HACS explanation](https://www.hacs.dev/docs/use/entities/switch/). Manual installation below is also available.
+3. Download **2.0.0**. If the card is already installed, open its HACS entry and install the available update.
 4. Reload the Home Assistant frontend. If HACS did not add the resource, add `/hacsfiles/suris-ecoflow-flow-card/suris-ecoflow-flow-card.js` as a **JavaScript module** in dashboard resources.
 5. Open **Edit dashboard → Add card → Suris EcoFlow Flow Card**. Choose your entities in the visual editor. YAML is optional.
 
@@ -36,9 +36,9 @@ This repository is added as a custom HACS repository; inclusion in the default c
 
 ## Manual installation
 
-1. Download `suris-ecoflow-flow-card.js` from the beta release. Put it in the `www` folder beside your Home Assistant `configuration.yaml`, commonly `/config/www`. If you just created `www` for the first time, restart Home Assistant.
+1. Download `suris-ecoflow-flow-card.js` from the 2.0.0 release. Put it in the `www` folder beside your Home Assistant `configuration.yaml`, commonly `/config/www`. If you just created `www` for the first time, restart Home Assistant.
 2. Open **Settings → Dashboards → ⋮ → Resources → Add resource**. Enable Advanced mode in your user profile if Resources is hidden.
-3. URL: `/local/suris-ecoflow-flow-card.js?v=2.0.0-beta.3`; type: **JavaScript module**.
+3. URL: `/local/suris-ecoflow-flow-card.js?v=2.0.0`; type: **JavaScript module**.
 4. Reload the frontend, then add and configure the card through the visual editor. Clear the frontend cache if the old version remains visible.
 
 ## Configure the stations and home
@@ -112,11 +112,11 @@ All lines have right-angle routes; no diagonals. Supplying grid and station bloc
 
 All power rows stay on one line. Values below 1000 W use W; values from 1000 W use kW with up to two decimal places. Supported input units include W, kW, mW, MW, Вт and кВт; a reading without a unit is treated as W. Wh / kWh are not power. Missing readings show `—`; real zero shows `0 W`. Station battery icons fill from valid 0–100% readings. The blocks have nearly transparent backgrounds and follow the Home Assistant theme.
 
-## Upgrade from version 1 or roll back
+## Upgrade from version 1 or a beta, or roll back
 
-Update the same resource to the beta and reload the frontend. The card type remains `custom:suris-ecoflow-flow-card`. Existing station entities, names, colors and flow settings are retained. Add consumers in the editor; no consumers are added automatically. Without active consumers, the card shrinks automatically. Do not add a duplicate resource or recreate the card.
+Update the same resource to **2.0.0** and reload the frontend. The card type remains `custom:suris-ecoflow-flow-card`. Existing station entities, names, colors and flow settings are retained. When upgrading from version 1, add consumers in the editor; none are added automatically. Existing consumer settings from version 2 betas are retained. Without active consumers, the card shrinks automatically. Do not add a duplicate resource or recreate the card.
 
-To roll back, save a copy of the card YAML, install **0.1.12** through HACS or replace the same JS file with the stable asset, and reload the frontend. Version 1 does not display consumers; station settings remain compatible.
+To roll back, save a copy of the card YAML, install **0.1.12** through HACS or replace the same JS file with the version 1 asset, and reload the frontend. Version 1 does not display consumers; station settings remain compatible.
 
 ## If something is missing
 
