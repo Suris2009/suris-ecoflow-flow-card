@@ -25,6 +25,14 @@ const root = path.resolve(__dirname, '..');
   window.visibleIds=()=>[...card._consumerNodes.keys()].sort();
   window.makeConsumers=()=>{const names=['Бойлер','Чайник','Пральна','Холодильник','Освітлення','Розетки'];const icons=['mdi:water-boiler','mdi:kettle','mdi:washing-machine','mdi:fridge','mdi:lightbulb','mdi:power-socket-eu'];const colors=['#ec5565','#d89400','#835ed6','#179ba1','#1c9f5c','#5478d6'];return Array.from({length:20},(_,i)=>({id:`load_${i}`,name:names[i]||`Прилад ${i+1}`,power:`sensor.load_${i}`,icon:icons[i]||'mdi:power-plug',color:colors[i]||'#4b9fff'}))};
  });
+ await page.evaluate(()=>{states['sensor.home_voltage']={state:'229.6',attributes:{unit_of_measurement:'V'}};config.home={voltage:'sensor.home_voltage'};card.setConfig(config);refresh()});
+ assert.equal(await page.evaluate(()=>card._values['home.voltage'].textContent),'230 V');
+ assert.equal(await page.evaluate(()=>getComputedStyle(card._nodes.home).borderTopWidth),'3px');
+ await page.evaluate(()=>{states['sensor.home_voltage'].state='unavailable';refresh()});
+ assert.equal(await page.evaluate(()=>card._values['home.voltage'].textContent),'—');
+ await page.evaluate(()=>{delete config.home.voltage;card.setConfig(config)});
+ assert(await page.evaluate(()=>card._values['home.voltage'].parentElement.hidden));
+ await page.evaluate(()=>{config.home.voltage='sensor.home_voltage';states['sensor.home_voltage'].state='229.6';card.setConfig(config);refresh()});
  const baselineHeight=await page.locator('suris-ecoflow-flow-card').evaluate(card=>card.getBoundingClientRect().height);
  await page.evaluate(()=>{config.consumers=makeConsumers();for(let i=0;i<20;i++)states[`sensor.load_${i}`]={state:String(600-i*25),attributes:{unit_of_measurement:'W'}};card.setConfig(config);refresh()});
  assert.deepEqual(await page.evaluate(()=>visibleIds()),['load_0','load_1','load_2','load_3','load_4','load_5']);
@@ -52,9 +60,22 @@ const root = path.resolve(__dirname, '..');
    for(const p of route.points){assert(p.x>=-.3&&p.y>=-.3&&p.x<=result.width+.3&&p.y<=result.height+.3,`${label}: path outside ${route.name}`);for(const [key,n]of nodes)if(key!==source&&key!==target)assert(!(p.x>n.x+.3&&p.x<n.right-.3&&p.y>n.y+.3&&p.y<n.bottom-.3),`${label}: ${route.name} crosses ${key} at ${p.x},${p.y}`)}
   }
 
+  const segments=route=>{const tokens=route.d.match(/[MHV]|-?\d+(?:\.\d+)?/g);let x=0,y=0,out=[];for(let i=0;i<tokens.length;){const command=tokens[i++],old={x,y};if(command==='M'){x=+tokens[i++];y=+tokens[i++]}else{if(command==='H')x=+tokens[i++];else y=+tokens[i++];out.push([old,{x,y}])}}return out};
+  const charging=segments(result.paths.find(p=>p.name==='grid_auxiliary_2'));
+  for(const name of ['grid_home','grid_main'])for(const [a,b]of charging)for(const [c,d]of segments(result.paths.find(p=>p.name===name))){
+   const overlapX=Math.min(Math.max(a.x,b.x),Math.max(c.x,d.x))-Math.max(Math.min(a.x,b.x),Math.min(c.x,d.x));
+   const overlapY=Math.min(Math.max(a.y,b.y),Math.max(c.y,d.y))-Math.max(Math.min(a.y,b.y),Math.min(c.y,d.y));
+   assert(!(overlapX>=-.01&&overlapY>=-.01),`${label}: station #3 charging intersects ${name}`);
+  }
   assert(result.nodes.auxiliary_1.right<result.nodes.main.x&&result.nodes.main.right<result.nodes.auxiliary_2.x,`${label}: stations must flank main`);
  };
  for(const width of [320,352,390,422,540,768,1150]){await page.setViewportSize({width,height:1000});await page.waitForTimeout(80);await verifyLayout(`${width}px`)}
+ // Preserve one-line phone readings even with the longer historical home label.
+ for(const width of [320,352,390,422]){
+  await page.setViewportSize({width,height:1000});await page.waitForTimeout(80);
+  assert(await page.evaluate(()=>{const row=card._values['home.power'].parentElement,label=row.querySelector('.label');label.textContent='Споживання';card._values['home.power'].textContent='12,35 kW';card._fitRows();const a=label.getBoundingClientRect(),b=card._values['home.power'].getBoundingClientRect();return getComputedStyle(label).whiteSpace==='nowrap'&&a.right<=b.left+1&&b.right<=row.getBoundingClientRect().right+1}));
+ }
+ await page.evaluate(()=>{card._values['home.power'].parentElement.querySelector('.label').textContent='Вхід';refresh()});
  // Retained tiles and station animations survive a strongest-consumer replacement.
  await page.evaluate(()=>{window.retainedNode=card._consumerNodes.get('load_0');window.retainedAnimation=card._flows.grid_home._animation;window.previousOrder=[...card._consumerOrder];states['sensor.load_19'].state='2000';refresh()});
  assert.deepEqual(await page.evaluate(()=>visibleIds()),['load_0','load_1','load_19','load_2','load_3','load_4']);
@@ -86,10 +107,12 @@ const root = path.resolve(__dirname, '..');
   }
  }
  await page.evaluate(()=>{window.info=[];card.addEventListener('hass-more-info',event=>info.push(event.detail.entityId))});await page.locator('suris-ecoflow-flow-card .consumer[data-key="consumer:load_0"] .value').click();assert.deepEqual(await page.evaluate(()=>info),['sensor.load_0']);
+ await page.locator('suris-ecoflow-flow-card .home .voltage .value').click();assert.deepEqual(await page.evaluate(()=>info),['sensor.load_0','sensor.home_voltage']);
  await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>Object.values(card._flows).every(flow=>flow._animation.playState==='paused')&&Object.values(card._borders).every(border=>border._animation.playState==='paused'));await page.emulateMedia({reducedMotion:'no-preference'});
  await page.evaluate(()=>{for(let i=0;i<20;i++)states[`sensor.load_${i}`].state='0';refresh()});assert.equal(await page.evaluate(()=>card._consumerNodes.size),0);assert.equal(await page.evaluate(()=>Object.keys(card._flows).length),7);assert.equal(await page.evaluate(()=>card._nodes.home.classList.contains('supplying')),false);
  // Real text entry, round-trip feedback, array add/remove, and the limit of twenty.
  await page.evaluate(async()=>{window.editor=await customElements.get('suris-ecoflow-flow-card').getConfigElement();editor.setConfig({...config,consumers:[]});editor.hass={states};document.body.append(editor);window.published=[];editor.addEventListener('config-changed',event=>{published.push(JSON.parse(JSON.stringify(event.detail.config)));card.setConfig(event.detail.config);editor.setConfig(event.detail.config)})});
+ assert(await page.evaluate(()=>editor._forms.find(form=>form.dataset.section==='home').schema.some(field=>field.name==='voltage'&&field.selector.entity.device_class==='voltage')));
  const add=page.locator('suris-ecoflow-flow-card-editor button[data-action="add-consumer"]');await add.click();
  const consumerForm=page.locator('suris-ecoflow-flow-card-editor ha-form[data-section="consumer:consumer_1"]');
  await page.evaluate(()=>{window.originalConsumerForm=editor._forms.at(-1);window.originalConsumerInput=originalConsumerForm.shadowRoot.querySelector('[data-field="color"]')});
