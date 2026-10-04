@@ -1,0 +1,118 @@
+# Suris EcoFlow Flow Card 2.0.0-beta.1
+
+[Українська інструкція](README.md) · [Beta release](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.0-beta.1) · [Stable 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
+
+**Pre-release:** version 2 layout and settings are still being refined. Stable 0.1.12 remains available.
+
+A Home Assistant dashboard card with a visual entity editor. City grid is on the left, home on the right, and the main EcoFlow sits between the two auxiliary stations at the bottom. Up to six active home consumers appear above them, without scrolling or increasing the diagram height. Power readings stay inside the blocks; lines show only moving flow.
+
+This is a **dashboard card**, not a device integration. Install your EcoFlow and meter integrations first so their entities are available in Home Assistant. The card displays readings; it does not switch relays, outputs or appliances. It runs locally without external libraries, CDN or a build step.
+
+![Mobile example with six consumers](preview-mobile.png)
+
+## Install with HACS
+
+1. Open **HACS → ⋮ → Custom repositories**.
+2. Add `https://github.com/Suris2009/suris-ecoflow-flow-card`, category **Dashboard** (Lovelace / Plugin in older versions).
+3. Download **2.0.0-beta.1**. If it is not offered, enable this repository's HACS pre-release switch entity and turn it on. These entities may be disabled by default; find the repository's entity under **Settings → Devices & services → Entities**, enable it, then turn it on. See the [official HACS explanation](https://www.hacs.dev/docs/use/entities/switch/). Manual installation below is also available.
+4. Reload the Home Assistant frontend. If HACS did not add the resource, add `/hacsfiles/suris-ecoflow-flow-card/suris-ecoflow-flow-card.js` as a **JavaScript module** in dashboard resources.
+5. Open **Edit dashboard → Add card → Suris EcoFlow Flow Card**. Choose your entities in the visual editor. YAML is optional.
+
+This repository is added as a custom HACS repository; inclusion in the default catalog is not assumed. Keep only one resource for this card. When moving from a manual installation, remove its old `/local/` resource after adding the HACS resource; keep your configured dashboard card.
+
+## Manual installation
+
+1. Download `suris-ecoflow-flow-card.js` from the beta release. Put it in the `www` folder beside your Home Assistant `configuration.yaml`, commonly `/config/www`. If you just created `www` for the first time, restart Home Assistant.
+2. Open **Settings → Dashboards → ⋮ → Resources → Add resource**. Enable Advanced mode in your user profile if Resources is hidden.
+3. URL: `/local/suris-ecoflow-flow-card.js?v=2.0.0-beta.1`; type: **JavaScript module**.
+4. Reload the frontend, then add and configure the card through the visual editor. Clear the frontend cache if the old version remains visible.
+
+## Configure the stations and home
+
+| Block | Entities to select |
+| --- | --- |
+| City grid | Total power, availability entity and its available state (`on` by default) |
+| Each auxiliary EcoFlow | Charge %, total input, total output; optionally separate grid charging and transfer-to-main power |
+| Main EcoFlow | Charge %, total input, total output, separate AC grid input, independent XT60(1) and XT60(2) DC inputs; optionally a dedicated home output |
+| Home | Optional input power sensor; leave empty for automatic calculation |
+
+The two home sources are city grid and main EcoFlow. When the availability entity reports the configured available state, home is supplied by grid; when a binary entity reports its opposite state, home is supplied by the main station. No home switching entity is needed. An unknown, unavailable or unrecognized availability state stops both home supply lines and grid charging flows. Zero power alone is not treated as a grid outage.
+
+Without a home sensor, the card calculates **home grid input = total grid power − auxiliary 1 grid charging − auxiliary 2 grid charging − main AC input**, bounded at zero. Auxiliary charging uses its dedicated charging sensor when selected, otherwise total input. Missing or unavailable charging readings count as zero in this calculation, so an offline station that is actually charging can overestimate home input. When the stations are off, home receives the entire grid reading. Example: grid 1000 W minus station charging of 100, 200 and 300 W gives home 400 W. The meters may update at different times, so this is a calculated reading.
+
+When supplied by the main station, home uses the selected dedicated home output or otherwise the main total output. A selected home input sensor overrides either calculation; if that sensor becomes unavailable, the card shows `—`. Clear the field to restore automatic calculation.
+
+Main station rows:
+
+| Row | Meaning |
+| --- | --- |
+| Charge | Battery state of charge in %; also controls battery icon fill |
+| Input | Total input sensor, or sum of selected AC and XT60 sensors when all selected readings are available |
+| Grid | Separate AC input power; total input never substitutes for AC input |
+| XT60(1) | First DC input port |
+| XT60(2) | Second DC input port |
+| Output | Total station output |
+
+XT60 ports are independent of the auxiliary stations. Their readings do not decide auxiliary transfer flow. Each auxiliary transfer uses its dedicated transfer entity or otherwise total output. If other loads use that station, select a separate DC transfer sensor. The older first solar input field maps to XT60(1); replace an old combined solar sensor with the actual first-port sensor where needed.
+
+## Add up to 20 individual consumers
+
+1. Open the card editor and **Individual consumers**.
+2. Click **Add consumer**, give it a name, select its **power** sensor and choose an icon with the Home Assistant icon picker.
+3. Set its color: `red`, `green`, `orange`, `#ff8800`, `rgb(255, 136, 0)` or `hsl(32, 100%, 50%)`. Do not add quotes in the visual field. **The same color is used for that device's border and home → device line.**
+4. Save the card. Repeat for up to 20 devices. Remove deletes only the entry from this card, not the Home Assistant entity.
+
+Use power sensors in **W / kW**, for example from smart plugs, rather than accumulated energy sensors in **kWh**. The six highest-power active devices appear in two rows of three. Activity means power strictly above the flow threshold, **3 W by default**. Zero, negative, unknown and unavailable readings are hidden. Change the threshold in Flow appearance if needed.
+
+A stronger device replaces the weakest visible one. Other visible tiles keep their slots; ties favor devices already displayed. No paging or scrolling is needed. Long names are shortened inside tiles, with full names in tooltips. Click a power reading for the entity's more-info dialog.
+
+Consumer readings **do not subtract from home input or replace it**. They explain part of the household total; hidden and unconfigured loads can also draw power. Each consumer line runs at a speed based on its own wattage. The home outline moves clockwise while it supplies visible consumers.
+
+Optional YAML fragment to append to an existing card configuration, keeping the grid and station sections:
+
+```yaml
+consumers:
+  - id: boiler
+    name: Boiler
+    power: sensor.boiler_power
+    icon: mdi:water-boiler
+    color: orange
+  - id: fridge
+    name: Fridge
+    power: sensor.fridge_power
+    icon: mdi:fridge
+    color: "#20b8c8"
+```
+
+Replace the example entities. `id` is a stable card identifier, not a Home Assistant entity. The editor creates it automatically. In YAML, use unique Latin letters, digits, `_` and `-`; quote HEX colors.
+
+## Colors, readings and animations
+
+Set separate source colors for grid, each auxiliary station and main station in **Flow appearance**. Each color applies to its station border, battery fill and outgoing lines. Home uses its active source's color, or a neutral border when the source is unknown. Individual consumers use their own colors. Empty color fields restore defaults. Incomplete color text stays editable while the last valid preview remains displayed.
+
+All lines have right-angle routes; no diagonals. Supplying blocks have clockwise moving dashed outlines, while inactive outlines are solid. More watts makes movement faster, with a bounded speed. Increasing Base movement time slows all lines. Live power changes adjust animation speed without restarting it. System reduced-motion settings make active flows static.
+
+All power rows stay on one line. Values below 1000 W use W; values from 1000 W use kW with up to two decimal places. Supported input units include W, kW, mW, MW, Вт and кВт; a reading without a unit is treated as W. Wh / kWh are not power. Missing readings show `—`; real zero shows `0 W`. Station battery icons fill from valid 0–100% readings. The blocks have nearly transparent backgrounds and follow the Home Assistant theme.
+
+## Upgrade from version 1 or roll back
+
+Update the same resource to the beta and reload the frontend. The card type remains `custom:suris-ecoflow-flow-card`. Existing station entities, names, colors and flow settings are retained. Add consumers in the editor; no consumers are added automatically. Without consumers, the upper region stays empty. Do not add a duplicate resource or recreate the card.
+
+To roll back, save a copy of the card YAML, install **0.1.12** through HACS or replace the same JS file with the stable asset, and reload the frontend. Version 1 does not display consumers; station settings remain compatible.
+
+## If something is missing
+
+| Symptom | Check |
+| --- | --- |
+| Consumer not visible | Power sensor selected, available reading above the threshold, and within the six strongest |
+| Wrong consumer color | Enter a valid CSS color without quotes in the visual editor; use quotes for HEX in YAML |
+| No grid or home supply line | Availability entity and its raw available state are configured; corresponding power exceeds the threshold |
+| Home differs from meter | Home excludes station charging; unavailable charging sensors count as zero; meter updates may differ in time |
+| Main Input shows `—` | Select total input, or make every selected individual input sensor available |
+| Old layout after upgrade | One resource only, correct downloaded version, frontend reloaded / cache cleared |
+
+## Demo and development
+
+Open `demo.html` beside the JS file for fictional readings, seven configured consumers, strongest-six replacement and inactive-consumer examples. See [desktop preview](preview-desktop.png). This demo does not connect to your devices.
+
+Run `npm install`, `npm test` and `node scripts/validate-release.cjs`. Browser tests use Playwright; `SURIS_CHROMIUM_PATH` can point to an installed Chromium. Tests cover power/source logic, consumer ranking, limits, editor draft typing and color changes, animation continuity, reduced motion and layout/route geometry at 320–1150 px. [Release instructions](RELEASING.md).

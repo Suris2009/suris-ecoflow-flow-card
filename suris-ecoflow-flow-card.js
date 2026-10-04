@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v0.1.12 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.0.0-beta.1 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '0.1.12';
+  const VERSION = '2.0.0-beta.1';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -10,13 +10,15 @@
     grid: { name: 'Міська мережа' },
     auxiliary_1: { name: 'EcoFlow №2' }, auxiliary_2: { name: 'EcoFlow №3' },
     main: { name: 'Головна EcoFlow' },
-    home: { name: 'Дім' },
+    home: { name: 'Дім' }, consumers: [],
     appearance: { grid_color: '#4b9fff', solar_color: '#ffcc42', main_color: '#27d9d5', threshold: 3, duration: 3 }
   };
   const TEXT = {
     uk: { grid: 'Міська мережа', main: 'Головна EcoFlow', home: 'Дім', title: 'Енергопотоки', input: 'Вхід', output: 'Вихід', soc: 'Заряд', ac: 'Мережа', source: 'Джерело', unknown: 'Невідомо', unavailable: 'Недоступно', select: 'Вибери сутності в редакторі картки', settings: 'Налаштування', homePowerLabel: 'Вхід дому (необов’язково)', homeDerived: 'Без окремого датчика: від мережі — загальна потужність мінус заряджання трьох станцій; від EcoFlow — вихід головної станції. Відсутні або недоступні входи станцій у розрахунку вважаються нулем. Вхід дому від мережі розрахунковий.', sourceHint: 'Мережа є — дім від міської мережі. Мережі немає — дім від головної EcoFlow. Вибери датчик наявності мережі в блоці міської мережі.', flowHint: 'Штрихи без стрілок рухаються від джерела до споживача. Більша потужність кожної лінії — більша швидкість. Більший базовий час — повільніший рух. Потік активний, коли потужність перевищує поріг. Відсутні або недоступні показники відображаються як —.', mainHint: 'Для лінії мережа → головна EcoFlow потрібна окрема потужність AC-входу. Загальний вхід не використовується як AC-вхід.', auxHint: 'Потужність передачі на головну станцію: вибери DC-вихід, якщо загальний вихід включає інші навантаження. Якщо поле порожнє, використовується загальний вихід.', editorError: 'Редактор Home Assistant ще завантажується. Закрий та відкрий редактор картки ще раз.', more: 'Докладніше', watts: 'W', mismatch: 'Стан міської мережі не розпізнано', setup: 'Вибери датчик наявності міської мережі' },
     en: { grid: 'City grid', main: 'Main EcoFlow', home: 'Home', title: 'Energy flows', input: 'Input', output: 'Output', soc: 'Charge', ac: 'Grid', source: 'Source', unknown: 'Unknown', unavailable: 'Unavailable', select: 'Select entities in the card editor', settings: 'Settings', homePowerLabel: 'Home input power (optional)', homeDerived: 'Without a separate sensor: grid power minus the three station charging powers when on grid; main station output when on EcoFlow. Missing or unavailable station inputs count as zero in this calculation. Home input from the grid is calculated.', sourceHint: 'Grid available — home powered by grid. Grid absent — home powered by the main EcoFlow. Select the grid availability sensor in the city grid section.', flowHint: 'Dashes without arrows move from source to load. Higher power on each line increases its speed. A larger base time slows movement. A flow is active above the threshold. Missing or unavailable readings appear as —.', mainHint: 'A separate AC input power entity is required for grid → main EcoFlow. Total input is never treated as AC input.', auxHint: 'Transfer power: use DC output if total output includes other loads. When empty, total output is used.', editorError: 'The Home Assistant editor is still loading. Close and reopen the card editor.', more: 'More information', watts: 'W', mismatch: 'Unrecognized grid availability state', setup: 'Select the grid availability sensor' }
   };
+  Object.assign(TEXT.uk, { consumers: 'Індивідуальні споживачі', consumer: 'Споживач', addConsumer: 'Додати споживача', removeConsumer: 'Видалити', consumerPower: 'Датчик потужності (W / kW)', consumerIcon: 'Іконка', consumerColor: 'Колір рамки та лінії від дому', consumerHint: 'Додай до 20 приладів. Зверху видно до шести активних із найбільшою потужністю. Поріг активності береться з налаштувань потоків. Потрібен датчик потужності, а не енергії kWh. Колір застосовується до рамки приладу та його лінії від дому.' });
+  Object.assign(TEXT.en, { consumers: 'Individual consumers', consumer: 'Consumer', addConsumer: 'Add consumer', removeConsumer: 'Remove', consumerPower: 'Power sensor (W / kW)', consumerIcon: 'Icon', consumerColor: 'Consumer border and home line color', consumerHint: 'Add up to 20 devices. The six active devices with the highest power appear at the top. Activity uses the flow threshold. Select power sensors, not kWh energy sensors. Each color applies to the device border and its line from home.' });
   const t = (config) => TEXT[config?.language] || TEXT.uk;
   const draftConfig = (config = {}) => {
     const result = { ...DEFAULTS, ...config };
@@ -24,6 +26,17 @@
       if (config[key] != null && (typeof config[key] !== 'object' || Array.isArray(config[key]))) throw new Error(`${key} must be an object`);
       result[key] = { ...DEFAULTS[key], ...config[key] };
     }
+    if (config.consumers != null && !Array.isArray(config.consumers)) throw new Error('Consumers must be a list');
+    if ((config.consumers || []).length > 20) throw new Error('Maximum 20 consumers');
+    const ids = new Set();
+    result.consumers = (config.consumers || []).map((item, index) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error('Each consumer must be an object');
+      let id = String(item.id || `consumer_${index + 1}`), suffix = 1;
+      if (!/^[a-zA-Z0-9_-]{1,64}$/.test(id)) throw new Error('Consumer ID must contain letters, numbers, hyphens or underscores');
+      while (ids.has(id)) id = `consumer_${index + 1}_${suffix++}`;
+      ids.add(id);
+      return { ...item, id, name: String(item.name ?? ''), power: String(item.power ?? ''), icon: String(item.icon ?? ''), color: String(item.color ?? '') };
+    });
     const a = result.appearance;
     a.auxiliary_1_color ??= a.solar_color;
     a.auxiliary_2_color ??= a.solar_color;
@@ -43,8 +56,25 @@
       a[key] = color || (key.startsWith('auxiliary_') ? a.solar_color : DEFAULTS.appearance[key]);
       if (!/^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(a[key]) && !globalThis.CSS?.supports('color', a[key])) throw new Error(`${key}: enter a CSS color such as red, #ff0000 or rgb(255, 0, 0)`);
     }
+    for (const consumer of result.consumers) {
+      consumer.name ||= `${t(result).consumer} ${result.consumers.indexOf(consumer) + 1}`;
+      consumer.icon ||= 'mdi:power-plug'; consumer.color = consumer.color.trim() || '#4b9fff';
+      if (!/^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(consumer.color) && !globalThis.CSS?.supports('color', consumer.color)) throw new Error('Enter a valid consumer CSS color');
+    }
     return result;
   };
+  const selectConsumers = (consumers, previous = [], threshold = 3) => {
+    const previousRank = id => { const index = previous.indexOf(id); return index < 0 ? 100 : index; };
+    const ranked = consumers.map((consumer, index) => ({ ...consumer, index })).filter(consumer => Number.isFinite(consumer.power) && consumer.power > threshold)
+      .sort((a, b) => b.power - a.power || previousRank(a.id) - previousRank(b.id) || a.index - b.index).slice(0, 6);
+    const selected = new Map(ranked.map(consumer => [consumer.id, consumer])), slots = Array(6).fill(null);
+    previous.slice(0, 6).forEach((id, slot) => { if (selected.has(id)) { slots[slot] = selected.get(id); selected.delete(id); } });
+    for (const consumer of ranked) if (selected.has(consumer.id)) { slots[slots.indexOf(null)] = consumer; selected.delete(consumer.id); }
+    return slots;
+  };
+  const powerText = (value, language) => value == null ? '—' : Math.abs(value) >= 1000
+    ? `${new Intl.NumberFormat(language === 'en' ? 'en' : 'uk', { maximumFractionDigits: 2, useGrouping: false }).format(value / 1000)} kW`
+    : `${new Intl.NumberFormat(language === 'en' ? 'en' : 'uk', { maximumFractionDigits: 0 }).format(value)} W`;
   const readNumber = (states, id, power = false) => {
     const state = id && states?.[id];
     if (!state || state.state == null || String(state.state).trim() === '') return null;
@@ -106,7 +136,7 @@
       grid_home: gridAvailable && source === 'grid' && positive(homePower),
       main_home: source === 'main' && positive(homePower)
     };
-    return { main, auxiliary_1, auxiliary_2, grid: { output: p(c.grid.power) }, home: { power: homePower, source, power_origin: powerOrigin }, flows, flow_power };
+    return { main, auxiliary_1, auxiliary_2, grid: { output: p(c.grid.power) }, home: { power: homePower, source, power_origin: powerOrigin }, consumers: (c.consumers || []).map(consumer => ({ ...consumer, entity: consumer.power, power: p(consumer.power) })), flows, flow_power };
   };
   // Equal wattage has equal visual speed, regardless of a route's length.
   const flowSpeed = (watts, duration) => Number.isFinite(watts) && watts > 0
@@ -115,6 +145,7 @@
     const paths = {
       battery: '<rect x="13" y="13" width="38" height="45" rx="4"/><path d="M25 13V7h14v6"/><rect class="battery-fill" x="19" y="52" width="26" height="0" rx="1"/><path class="battery-unknown" d="M26 35h12"/>',
       grid: '<path d="M32 5L13 59M32 5l19 54M20 38h24M24 26h16M28 15h8M10 26h44M7 38h50M15 59h34M20 38l24 14M44 38L20 52M24 26l20 12M40 26L20 38"/>',
+      plug: '<path d="M23 8v16M41 8v16M17 24h30v11a15 15 0 0 1-15 15v10M23 24h18"/>',
       home: '<path d="M7 30L32 8l25 22M15 25v32h34V25"/><path d="M26 57V39h12v18"/>'
     };
     return `<svg viewBox="0 0 64 64" aria-hidden="true">${paths[kind]}</svg>`;
@@ -125,13 +156,14 @@
     .wrap{container-type:inline-size}h2{font-size:22px;font-weight:600;margin:0 0 8px}.diagram{position:relative;height:clamp(540px,65cqw,720px)}
     .lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
     .flow path{fill:none;stroke:var(--divider-color,#60656d);stroke-width:1.5;stroke-linejoin:miter;stroke-linecap:butt;opacity:.40}.flow.active .flow-track{stroke:var(--color);opacity:.28}.flow .flow-dashes{stroke:var(--color);stroke-width:3;stroke-linecap:round;stroke-dasharray:7 21;opacity:.95;visibility:hidden}.flow.active .flow-dashes{visibility:visible}
-    .node{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0;background:transparent;background:color-mix(in srgb,var(--ha-card-background,var(--card-background-color,#1c1c1c)) 8%,transparent);border:2px solid var(--node-color,var(--divider-color,#60656d));border-radius:12px;padding:12px 10px;z-index:1;min-height:max(140px,22cqw);height:auto}
+    .node{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0;background:transparent;background:color-mix(in srgb,var(--ha-card-background,var(--card-background-color,#1c1c1c)) 8%,transparent);border:2px solid var(--node-color,var(--divider-color,#60656d));border-radius:12px;padding:12px 10px;z-index:1;min-height:140px;height:auto}
     .node.supplying{border-color:transparent}.node-border{position:absolute;overflow:visible;pointer-events:none;display:none;z-index:2}.node-border.active{display:block}.node-border path{fill:none;stroke:var(--node-color);stroke-width:2;stroke-linecap:round;stroke-dasharray:7 7}
     .node h3{font-size:clamp(12px,1.9cqw,20px);line-height:1.25;text-align:center;margin:0;font-weight:600;overflow-wrap:anywhere}.node .icon{display:flex;justify-content:center;height:clamp(30px,5cqw,56px);margin:4px 0}.icon svg{height:100%;width:64px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.icon .battery-fill{fill:var(--node-color,var(--flow-main));stroke:none}
     .row{display:flex;align-items:baseline;justify-content:space-between;gap:4px;flex-wrap:nowrap;font-size:clamp(11px,1.6cqw,17px);line-height:1.35;min-width:0}.label{color:var(--secondary-text-color,#aaa);white-space:nowrap}.value{flex-shrink:0;font:inherit;color:inherit;font-weight:600;text-align:right;white-space:nowrap;background:none;border:0;padding:0;min-width:0}.value[data-entity]{cursor:pointer}.value:focus-visible{outline:2px solid var(--flow-main);outline-offset:2px}.value:disabled{opacity:1}
-    .grid{left:0;top:37%;width:22%}.home{right:0;top:37%;width:22%}.auxiliary_1{left:29%;top:3%;width:22%}.auxiliary_2{left:55%;top:3%;width:22%}.main{left:36%;bottom:1%;width:28%;min-height:max(220px,28cqw)}
+    .grid{left:0;top:37%;width:22%}.home{right:0;top:37%;width:22%}.auxiliary_1{left:0;bottom:1%;width:25%}.auxiliary_2{right:0;bottom:1%;width:25%}.main{left:36%;bottom:1%;width:28%;min-height:max(220px,28cqw)}
     .status{margin-top:8px;color:var(--secondary-text-color,#aaa);font-size:12px;min-height:16px;text-align:center}.status:empty{display:none}
-    @container(max-width:520px){.diagram{height:540px}.node{padding:8px 5px;gap:6px;border-radius:9px;min-height:137px}.node h3{font-size:12px}.node .icon{height:29px;margin:0}.row{font-size:11px;gap:2px}.row .value{margin-left:auto}.grid,.home{width:24%;top:38%}.auxiliary_1{left:26%;width:25%;top:5%}.auxiliary_2{left:54%;width:25%;top:5%}.main{left:33%;width:34%;min-height:202px}}
+    @container(max-width:520px){.diagram{height:540px}.node{padding:8px 5px;gap:6px;border-radius:9px;min-height:137px}.node h3{font-size:12px}.node .icon{height:29px;margin:0}.row{font-size:11px;gap:2px}.row .value{margin-left:auto}.grid,.home{width:24%;top:38%}.auxiliary_1{left:0;width:25%;bottom:1%}.auxiliary_2{right:0;width:25%;bottom:1%}.main{left:33%;width:34%;min-height:202px}}
+    .node.consumer{height:72px;min-height:72px;padding:4px;gap:3px;border-radius:9px}.consumer h3{font-size:clamp(11px,1.5cqw,13px);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}.consumer .icon{height:22px;margin:0;color:var(--node-color)}.consumer ha-icon{--mdc-icon-size:22px;width:22px;height:22px}.consumer ha-icon:not(:defined){display:none}.consumer ha-icon:defined+.fallback{display:none}.consumer .fallback{height:22px}.consumer .value{width:100%;text-align:center;font-size:12px;line-height:16px}.consumer:focus-within{outline:1px solid var(--node-color);outline-offset:2px}
     @media(prefers-reduced-motion:reduce){.flow .flow-dashes{display:none}.flow.active .flow-track{stroke-width:3;opacity:.92}}
   `;
   class SurisEcoFlowFlowCard extends HTMLElement {
@@ -190,7 +222,7 @@
       this.shadowRoot.innerHTML = `<style>${CSS}</style><ha-card><div class="wrap"><h2></h2><div class="diagram"><svg class="lines" aria-hidden="true"></svg></div><div class="status" role="status"></div></div></ha-card>`;
       this.shadowRoot.querySelector('h2').textContent = c.title;
       this._diagram = this.shadowRoot.querySelector('.diagram'); this._svg = this.shadowRoot.querySelector('.lines');
-      this._nodes = {}; this._values = {}; this._flows = {}; this._borders = {};
+      this._nodes = {}; this._values = {}; this._flows = {}; this._borders = {}; this._consumerNodes = new Map(); this._consumerOrder = [];
       for (const key of ['grid', 'auxiliary_1', 'auxiliary_2', 'main']) this.style.setProperty(`--flow-${key}`, c.appearance[`${key}_color`]);
       for (const key of ['grid', 'auxiliary_1', 'auxiliary_2', 'main', 'home']) {
         const node = document.createElement('section'); node.className = `node ${key}`; node.dataset.key = key;
@@ -198,7 +230,7 @@
         const heading = document.createElement('h3'); heading.textContent = c[key].name || text[key] || key;
         const artwork = document.createElement('div'); artwork.className = 'icon'; artwork.innerHTML = icon(key === 'grid' ? 'grid' : key === 'home' ? 'home' : 'battery');
         node.append(heading, artwork);
-        if (key !== 'home') {
+        {
           const border = document.createElementNS(NS, 'svg'); border.classList.add('node-border'); border.setAttribute('aria-hidden', 'true'); border.style.setProperty('--node-color', `var(--flow-${key})`);
           const path = document.createElementNS(NS, 'path'); border.append(path); this._diagram.append(border);
           border._animation = path.animate([{ strokeDashoffset: '0px' }, { strokeDashoffset: '-14px' }], { duration: 1000, iterations: Infinity });
@@ -238,8 +270,7 @@
         if (node === 'main' && field === 'solar_1') entity = c.main.solar_input_power;
         if (node === 'main' && field === 'solar_2') entity = c.main.solar_input_power_2;
         if (field === 'soc') value = value != null && value >= 0 && value <= 100 ? `${formatter.format(value)}%` : '—';
-        else if (value != null && Math.abs(value) >= 1000) value = `${new Intl.NumberFormat(c.language === 'en' ? 'en' : 'uk', { maximumFractionDigits: 2, useGrouping: false }).format(value / 1000)} kW`;
-        else value = value == null ? '—' : `${formatter.format(value)} ${text.watts}`;
+        else value = powerText(value, c.language);
         button.textContent = value;
         if (entity) button.dataset.entity = entity; else delete button.dataset.entity;
         button.disabled = !entity;
@@ -257,8 +288,37 @@
       }
       const status = this.shadowRoot.querySelector('.status');
       status.textContent = !c.grid.available_entity ? text.setup : data.home.source === 'unknown' ? text.mismatch : '';
-      this._nodes.home.style.setProperty('--node-color', data.home.source === 'unknown' ? 'var(--divider-color,#60656d)' : `var(--flow-${data.home.source})`);
-      this._syncFlows();
+      const homeColor = data.home.source === 'unknown' ? 'var(--divider-color,#60656d)' : `var(--flow-${data.home.source})`;
+      this._nodes.home.style.setProperty('--node-color', homeColor); this._borders.home.style.setProperty('--node-color', homeColor);
+      this._renderConsumers(); this._drawPaths(); this._syncFlows();
+    }
+    _renderConsumers() {
+      const slots = selectConsumers(this._data.consumers, this._consumerOrder, this._config.appearance.threshold);
+      this._consumerOrder = slots.map(consumer => consumer?.id || null);
+      const selected = new Set(slots.filter(Boolean).map(consumer => consumer.id));
+      for (const [id, node] of this._consumerNodes) if (!selected.has(id)) { node.remove(); this._consumerNodes.delete(id); this.style.removeProperty(`--consumer-${id}`); }
+      slots.forEach((consumer, slot) => {
+        if (!consumer) return;
+        let node = this._consumerNodes.get(consumer.id);
+        if (!node) {
+          node = document.createElement('section'); node.className = 'node consumer'; node.dataset.key = `consumer:${consumer.id}`;
+          const heading = document.createElement('h3'), artwork = document.createElement('div'); artwork.className = 'icon';
+          const haIcon = document.createElement('ha-icon'), fallback = document.createElement('span'); fallback.className = 'fallback'; fallback.innerHTML = icon('plug'); artwork.append(haIcon, fallback);
+          const value = document.createElement('button'); value.className = 'value'; value.type = 'button';
+          value.addEventListener('click', () => { if (value.dataset.entity) this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: value.dataset.entity } })); });
+          node.append(heading, artwork, value); this._consumerNodes.set(consumer.id, node); this._diagram.append(node);
+        }
+        node.dataset.slot = String(slot); node.querySelector('h3').textContent = consumer.name; node.querySelector('h3').title = consumer.name;
+        node.querySelector('ha-icon').setAttribute('icon', consumer.icon);
+        this.style.setProperty(`--consumer-${consumer.id}`, consumer.color); node.style.setProperty('--node-color', `var(--consumer-${consumer.id})`);
+        const value = node.querySelector('.value'); value.textContent = powerText(consumer.power, this._config.language); value.dataset.entity = consumer.entity;
+        value.title = `${consumer.entity}: ${this._states[consumer.entity]?.state ?? ''}`; value.setAttribute('aria-label', `${consumer.name}: ${value.textContent}`);
+        const name = `home_consumer_${consumer.id}`; this._data.flows[name] = true; this._data.flow_power[name] = consumer.power;
+      });
+    }
+    _layoutConsumers() {
+      const width = Math.min(130, (this._diagram.clientWidth - 64) / 3), offset = (this._diagram.clientWidth - width * 3 - 64) / 2;
+      for (const node of this._consumerNodes.values()) { const slot = Number(node.dataset.slot); Object.assign(node.style, { left: `${offset + (width + 32) * (slot % 3)}px`, top: `${12 + Math.floor(slot / 3) * 93}px`, width: `${width}px` }); }
     }
     _syncFlows() {
       if (!this._config) return;
@@ -322,46 +382,53 @@
     }
     _drawPaths() {
       if (!this._diagram || !this.isConnected) return;
-      this._fitRows(); this._drawBorders();
+      this._fitRows(); this._layoutConsumers(); this._drawBorders();
       const base = this._diagram.getBoundingClientRect(); if (!base.width || !base.height) return;
-      const rect = (key) => { const r = this._nodes[key].getBoundingClientRect(); return { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height, right: r.right - base.left, bottom: r.bottom - base.top }; };
+      const rect = (key) => { const r = (key.startsWith('consumer:') ? this._consumerNodes.get(key.slice(9)) : this._nodes[key]).getBoundingClientRect(); return { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height, right: r.right - base.left, bottom: r.bottom - base.top }; };
       const g = rect('grid'), a = rect('auxiliary_1'), b = rect('auxiliary_2'), m = rect('main'), h = rect('home');
-      const midY = g.y + g.h / 2;
-      const inputA = a.x + a.w * .25, inputB = b.x + b.w * .25;
-      const outputA = a.x + a.w * .70, outputB = b.x + b.w * .70;
-      const mainInputB = m.x + m.w * .70, mainAC = m.y + m.h * .55;
-      const gridMainX = m.x - (m.x - g.right) * .35;
-      const homeBottomInput = h.x + h.w * .50;
+      const midY = g.y + g.h / 2, rightCorridor = (m.right + b.x) / 2;
+      const homeLane = Math.max(h.bottom + 10, m.y + 12), chargingLane = homeLane + 10;
       const routes = {
-        grid_auxiliary_1: `M ${g.right} ${g.y + g.h * .16} H ${inputA} V ${a.bottom}`,
-        grid_auxiliary_2: `M ${g.right} ${g.y + g.h * .31} H ${inputB} V ${b.bottom}`,
-        grid_main: `M ${g.right} ${g.y + g.h * .80} H ${gridMainX} V ${mainAC} H ${m.x}`,
+        grid_auxiliary_1: `M ${a.x + a.w * .25} ${g.bottom} V ${a.y}`,
+        grid_auxiliary_2: `M ${g.right} ${g.y + g.h * .20} H ${rightCorridor} V ${chargingLane} H ${b.x + b.w * .25} V ${b.y}`,
+        grid_main: `M ${g.right} ${g.y + g.h * .80} H ${(g.right + m.x) / 2} V ${m.y + m.h * .55} H ${m.x}`,
         grid_home: `M ${g.right} ${midY} H ${h.x}`,
-        auxiliary_1_main: `M ${outputA} ${a.bottom} V ${m.y}`,
-        auxiliary_2_main: `M ${outputB} ${b.bottom} V ${m.y - 14} H ${mainInputB} V ${m.y}`,
-        main_home: `M ${m.right} ${m.y + m.h * .50} H ${homeBottomInput} V ${h.bottom}`
+        auxiliary_1_main: `M ${a.right} ${a.y + a.h / 2} H ${m.x}`,
+        auxiliary_2_main: `M ${b.x} ${b.y + b.h / 2} H ${m.right}`,
+        main_home: `M ${m.right} ${homeLane} H ${h.x + h.w / 2} V ${h.bottom}`
       };
+      for (const [id, node] of this._consumerNodes) {
+        const c = rect(`consumer:${id}`), slot = Number(node.dataset.slot), col = slot % 3;
+        const port = h.x + h.w * (.12 + slot * .152), lane = h.y - 4 * (slot + 1), target = c.x + c.w / 2;
+        if (slot >= 3) routes[`home_consumer_${id}`] = `M ${port} ${h.y} V ${lane} H ${target} V ${c.bottom}`;
+        else {
+          const corridor = col === 2 ? c.x - 10 : c.right + 10;
+          const upperLane = c.bottom + 4 * (col + 1);
+          routes[`home_consumer_${id}`] = `M ${port} ${h.y} V ${lane} H ${corridor} V ${upperLane} H ${target} V ${c.bottom}`;
+        }
+      }
       const geometry = JSON.stringify(routes); if (geometry === this._geometry && this._svg.childElementCount) return;
-      for (const flow of Object.values(this._flows)) flow._animation?.cancel();
+      const oldFlows = this._flows;
+      for (const [name, flow] of Object.entries(oldFlows)) if (!(name in routes)) flow._animation?.cancel();
       this._geometry = geometry; this._svg.setAttribute('viewBox', `0 0 ${base.width} ${base.height}`); this._svg.replaceChildren(); this._flows = {};
       const defs = document.createElementNS(NS, 'defs'), mask = document.createElementNS(NS, 'mask');
       mask.id = this._maskId; mask.setAttribute('maskUnits', 'userSpaceOnUse'); mask.style.maskType = 'luminance';
       for (const [attribute, value] of Object.entries({ x: 0, y: 0, width: base.width, height: base.height })) mask.setAttribute(attribute, String(value));
       const area = document.createElementNS(NS, 'rect'); area.setAttribute('width', String(base.width)); area.setAttribute('height', String(base.height)); area.setAttribute('fill', 'white'); mask.append(area);
-      for (const [key, node] of Object.entries(this._nodes)) {
+      for (const [key, node] of [...Object.entries(this._nodes), ...[...this._consumerNodes].map(([id, node]) => [`consumer:${id}`, node])]) {
         const bounds = rect(key), cutout = document.createElementNS(NS, 'rect');
         for (const [attribute, value] of Object.entries({ x: bounds.x, y: bounds.y, width: bounds.w, height: bounds.h, rx: parseFloat(getComputedStyle(node).borderTopLeftRadius) })) cutout.setAttribute(attribute, String(value));
         cutout.setAttribute('fill', 'black'); mask.append(cutout);
       }
       defs.append(mask); const layer = document.createElementNS(NS, 'g'); layer.setAttribute('mask', `url(#${this._maskId})`); this._svg.append(defs, layer);
       for (const [name, route] of Object.entries(routes)) {
-        const group = document.createElementNS(NS, 'g'); group.classList.add('flow'); group.dataset.flow = name;
+        const group = oldFlows[name] || document.createElementNS(NS, 'g'); group.classList.add('flow'); group.dataset.flow = name;
         const color = name.startsWith('grid') ? 'grid' : name === 'main_home' ? 'main' : name.startsWith('auxiliary_1') ? 'auxiliary_1' : 'auxiliary_2';
-        group.style.setProperty('--color', `var(--flow-${color})`);
-        const path = document.createElementNS(NS, 'path'); path.classList.add('flow-track'); path.setAttribute('d', route); group.append(path);
-        const dashes = document.createElementNS(NS, 'path'); dashes.classList.add('flow-dashes'); dashes.setAttribute('d', route); group.append(dashes);
-        group._animation = dashes.animate([{ strokeDashoffset: '0px' }, { strokeDashoffset: '-28px' }], { duration: 1000, iterations: Infinity });
-        group._animation.pause();
+        group.style.setProperty('--color', name.startsWith('home_consumer_') ? `var(--consumer-${name.slice(14)})` : `var(--flow-${color})`);
+        const path = group.querySelector('.flow-track') || document.createElementNS(NS, 'path'); path.classList.add('flow-track'); path.setAttribute('d', route); group.append(path);
+        const dashes = group.querySelector('.flow-dashes') || document.createElementNS(NS, 'path'); dashes.classList.add('flow-dashes'); dashes.setAttribute('d', route); group.append(dashes);
+        if (!group._animation) { group._animation = dashes.animate([{ strokeDashoffset: '0px' }, { strokeDashoffset: '-28px' }], { duration: 1000, iterations: Infinity });
+        group._animation.pause(); }
         group.classList.toggle('active', !!this._data?.flows[name]); this._flows[name] = group; layer.append(group);
       }
       this._syncFlows();
@@ -394,14 +461,14 @@
     set hass(hass) { this._hass = hass; for (const form of this._forms) form.hass = hass; }
     get hass() { return this._hass; }
     connectedCallback() { if (this._config && !this._forms.length) this._build(); }
-    _formData(section) { return section ? this._config[section] : { title: this._config.title, language: this._config.language }; }
+    _formData(section) { if (section.startsWith('consumer:')) return this._config.consumers.find(consumer => consumer.id === section.slice(9)); return section ? this._config[section] : { title: this._config.title, language: this._config.language }; }
     _refreshForms() {
       const language = this._config.language === 'en' ? 'en' : 'uk';
-      if (!this._forms.length || language !== this._schemaLanguage) { this._build(); return; }
+      if (!this._forms.length || language !== this._schemaLanguage || JSON.stringify(this._config.consumers.map(consumer => consumer.id)) !== this._consumerStructure) { this._build(); return; }
       for (const form of this._forms) {
         const section = form.dataset.section, data = this._formData(section);
         if (JSON.stringify(form.data) !== JSON.stringify(data)) form.data = data;
-        if (section === 'auxiliary_1' || section === 'auxiliary_2') form.parentNode.querySelector('summary').textContent = data.name || DEFAULTS[section].name;
+        if (section === 'auxiliary_1' || section === 'auxiliary_2' || section.startsWith('consumer:')) { const name = data.name || DEFAULTS[section]?.name || t(this._config).consumer; form.parentNode.querySelector('summary').textContent = name; if (section.startsWith('consumer:')) form.parentNode.querySelector('.consumer-remove').setAttribute('aria-label', `${t(this._config).removeConsumer}: ${name}`); }
       }
     }
     _validateDraft() {
@@ -426,8 +493,9 @@
       if (!this._config) return;
       const openSections = new Set([...this.shadowRoot.querySelectorAll('details[open]')].map(details => details.dataset.section));
       const c = this._config, text = t(c); this._forms = []; this._validation = null;
+      this._consumerStructure = JSON.stringify(c.consumers.map(consumer => consumer.id));
       this._schemaLanguage = c.language === 'en' ? 'en' : 'uk';
-      this.shadowRoot.innerHTML = '<style>:host{display:block}details{border:1px solid var(--divider-color,#777);border-radius:10px;padding:12px;margin:12px 0}summary{cursor:pointer;font-weight:600;padding:4px 0}ha-form{display:block;margin-top:12px}p{font-size:13px;color:var(--secondary-text-color);line-height:1.5}.error{color:var(--error-color,#d44)}</style>';
+      this.shadowRoot.innerHTML = '<style>:host{display:block}details{border:1px solid var(--divider-color,#777);border-radius:10px;padding:12px;margin:12px 0}summary{cursor:pointer;font-weight:600;padding:4px 0}ha-form{display:block;margin-top:12px}p{font-size:13px;color:var(--secondary-text-color);line-height:1.5}.error{color:var(--error-color,#d44)}button{padding:8px 12px;border:1px solid var(--divider-color,#777);border-radius:8px;background:var(--secondary-background-color,#222);color:var(--primary-text-color,#eee);cursor:pointer}button:disabled{opacity:.5;cursor:default}.consumer-remove{margin-top:12px}</style>';
       if (!customElements.get('ha-form')) {
         const warning = document.createElement('p'); warning.className = 'error'; warning.textContent = text.editorError; this.shadowRoot.append(warning);
         ensureForm().then(() => { if (this.isConnected && !this._forms.length && customElements.get('ha-form')) this._build(); });
@@ -443,22 +511,43 @@
         ['home', text.home, [textField('name'), entityField('power')], `${text.sourceHint} ${text.homeDerived}`],
         ['appearance', c.language === 'en' ? 'Flow appearance' : 'Вигляд потоків', [textField('grid_color'), textField('auxiliary_1_color'), textField('auxiliary_2_color'), textField('main_color'), { name: 'threshold', selector: { number: { min: 0, max: 1000, step: 1, mode: 'box', unit_of_measurement: text.watts } } }, { name: 'duration', selector: { number: { min: .5, max: 20, step: .5, mode: 'box', unit_of_measurement: 's' } } }], `${text.flowHint} ${c.language === 'en' ? 'Each source color applies to its border and outgoing flows. Home uses its active source color. Colors: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). An empty field restores the default color.' : 'Колір джерела застосовується до його рамки та вихідних потоків. Рамка дому має колір активного джерела. Кольори: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). Порожнє поле повертає типовий колір.'}`]
       ];
+      for (const consumer of c.consumers) sections.push([`consumer:${consumer.id}`, consumer.name || text.consumer, [textField('name'), entityField('power'), { name: 'icon', selector: { icon: {} } }, textField('color')], '']);
       for (const [section, label, schema, hint] of sections) {
         const details = document.createElement('details'); details.dataset.section = section; details.open = !section || openSections.has(section);
         const summary = document.createElement('summary'); summary.textContent = label; details.append(summary);
         if (hint) { const p = document.createElement('p'); p.textContent = hint; details.append(p); }
         const form = document.createElement('ha-form'); form.hass = this._hass; form.schema = schema;
         form.dataset.section = section; form.data = this._formData(section);
-        form.computeLabel = (field) => section === 'home' && field.name === 'power' ? t(this._config).homePowerLabel : (FIELD_LABELS[this._config.language] || FIELD_LABELS.uk)[field.name] || field.name;
+        form.computeLabel = (field) => section.startsWith('consumer:') ? ({ name: (FIELD_LABELS[c.language] || FIELD_LABELS.uk).name, power: text.consumerPower, icon: text.consumerIcon, color: text.consumerColor }[field.name] || field.name) : section === 'home' && field.name === 'power' ? t(this._config).homePowerLabel : (FIELD_LABELS[this._config.language] || FIELD_LABELS.uk)[field.name] || field.name;
         form.addEventListener('value-changed', (event) => {
           event.stopPropagation();
           const value = event.detail?.value;
           if (!value || typeof value !== 'object' || Array.isArray(value)) return;
-          this._config = section ? { ...this._config, [section]: { ...this._config[section], ...value } } : { ...this._config, ...value };
+          if (section.startsWith('consumer:')) this._config = { ...this._config, consumers: this._config.consumers.map(consumer => consumer.id === section.slice(9) ? { ...consumer, ...value, id: consumer.id } : consumer) };
+          else this._config = section ? { ...this._config, [section]: { ...this._config[section], ...value } } : { ...this._config, ...value };
           this._refreshForms(); this._publishConfig();
         });
-        this._forms.push(form); details.append(form); this.shadowRoot.append(details);
+        this._forms.push(form); details.append(form);
+        if (section.startsWith('consumer:')) {
+          const remove = document.createElement('button'); remove.type = 'button'; remove.className = 'consumer-remove'; remove.textContent = text.removeConsumer;
+          remove.setAttribute('aria-label', `${text.removeConsumer}: ${label}`);
+          remove.addEventListener('click', () => { this._config = { ...this._config, consumers: this._config.consumers.filter(consumer => consumer.id !== section.slice(9)) }; this._build(); this._publishConfig(); }); details.append(remove);
+        }
+        this.shadowRoot.append(details);
       }
+      const consumerHeading = document.createElement('h3'); consumerHeading.textContent = `${text.consumers} (${c.consumers.length}/20)`;
+      const consumerHint = document.createElement('p'); consumerHint.textContent = text.consumerHint;
+      const add = document.createElement('button'); add.type = 'button'; add.dataset.action = 'add-consumer'; add.textContent = text.addConsumer; add.disabled = c.consumers.length >= 20;
+      add.addEventListener('click', () => {
+        if (this._config.consumers.length >= 20) return;
+        let number = 1; while (this._config.consumers.some(consumer => consumer.id === `consumer_${number}`)) number++;
+        const consumer = { id: `consumer_${number}`, name: `${text.consumer} ${number}`, power: '', icon: 'mdi:power-plug', color: '#4b9fff' };
+        this._config = { ...this._config, consumers: [...this._config.consumers, consumer] }; this._build();
+        const details = [...this.shadowRoot.querySelectorAll('details')].find(item => item.dataset.section === `consumer:${consumer.id}`); if (details) details.open = true;
+        this._publishConfig();
+      });
+      const firstConsumer = [...this.shadowRoot.querySelectorAll('details')].find(details => details.dataset.section.startsWith('consumer:'));
+      for (const element of [consumerHeading, consumerHint, add]) this.shadowRoot.insertBefore(element, firstConsumer || null);
       this._validation = document.createElement('p'); this._validation.setAttribute('role', 'status'); this._validation.hidden = true; this.shadowRoot.append(this._validation);
       this._validateDraft();
     }
@@ -466,6 +555,6 @@
   if (!customElements.get(TAG)) customElements.define(TAG, SurisEcoFlowFlowCard);
   if (!customElements.get(`${TAG}-editor`)) customElements.define(`${TAG}-editor`, SurisEcoFlowFlowEditor);
   window.customCards = window.customCards || [];
-  if (!window.customCards.some((card) => card.type === TAG)) window.customCards.push({ type: TAG, name: 'Suris EcoFlow Flow Card', description: 'City grid, home and three EcoFlow stations. Visual entity editor.', preview: true });
+  if (!window.customCards.some((card) => card.type === TAG)) window.customCards.push({ type: TAG, name: 'Suris EcoFlow Flow Card', description: 'Beta 2: three EcoFlow stations and up to 20 home consumers. Visual editor.', preview: true });
   console.info(`%c SURIS ECOFLOW FLOW CARD %c ${VERSION}`, 'background:#27d9d5;color:#111;padding:4px', 'padding:4px');
 })();

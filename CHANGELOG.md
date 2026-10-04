@@ -1,5 +1,19 @@
 # Changelog
 
+## 2.0.0-beta.1 — Pre-release
+
+This is the first version 2 beta. Layout and settings will continue to evolve. Stable 0.1.12 remains available.
+
+- Configure up to 20 individual consumers in the visual editor: name, power entity, Home Assistant icon and independent CSS color.
+- Show the six active consumers with the highest power in two rows of three. Replace the weakest when a stronger device becomes active; retain other tile positions and existing devices when power is tied.
+- Match each consumer border and its orthogonal home feed to that consumer's color. Animate each line using its own wattage.
+- Move auxiliary stations to either side of the main station, preserving the diagram height. Keep all lines horizontal and vertical, without crossing node interiors.
+- Animate the home outline clockwise while it supplies visible consumers. Preserve reduced-motion behavior and live animation continuity.
+- Keep version 1 station entities, names, colors and flow settings. Consumer readings do not change the home power calculation.
+- Add beginner installation, beta opt-in, migration, rollback and consumer configuration guides in Ukrainian and English.
+- Verify twenty-device limits, ranking and replacement, visual editor typing and color drafts, persistence, mobile layouts from 320 px, wider layouts through 1150 px, route geometry, more-info and reduced motion.
+
+
 ## 0.1.12
 
 - Animate a dashed outline clockwise around each block supplying an active outgoing energy flow.
