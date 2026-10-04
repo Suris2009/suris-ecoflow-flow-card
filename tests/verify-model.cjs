@@ -113,3 +113,9 @@ set('sensor.kettle',1.2,'kWh');assert.equal(model(consumerConfig,states).consume
 assert.equal(merge({consumers:[{id:'one'},{id:'one'}]}).consumers.length,2);
 assert.notEqual(merge({consumers:[{id:'one'},{id:'one'}]}).consumers[0].id,merge({consumers:[{id:'one'},{id:'one'}]}).consumers[1].id);
 console.log('PASS: 20-consumer limit, top six selection, stable tie and slot replacement, invalid and inactive readings, independent consumer power units.');
+
+const sparse=Array.from(selectConsumers(devices,order));
+for(const device of devices)device.power=0;devices[2].power=50;devices[4].power=25;
+const compact=Array.from(selectConsumers(devices,sparse.map(device=>device?.id)));
+assert(compact[0]&&compact[1]&&compact.slice(2).every(device=>device===null));
+console.log('PASS: lower-first contiguous slots after inactive consumers disappear');

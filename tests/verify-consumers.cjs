@@ -38,12 +38,20 @@ const root = path.resolve(__dirname, '..');
    const overflow=all.filter(node=>node.scrollWidth>node.clientWidth+1||node.scrollHeight>node.clientHeight+1).map(node=>node.dataset.key);
    return{height:d.height,width:d.width,nodes,paths,overflow};
   });
-  assert.equal(result.paths.length,13,`${label}: six consumer routes required`);assert.deepEqual(result.overflow,[],`${label}: overflow`);
+  const consumerCount=Object.keys(result.nodes).filter(key=>key.startsWith('consumer:')).length;assert.equal(result.paths.length,7+consumerCount+Math.ceil(consumerCount/3),`${label}: shared row route count`);assert.deepEqual(result.overflow,[],`${label}: overflow`);
   for(const [key,n]of Object.entries(result.nodes)){assert(n.x>=-.1&&n.y>=-.1&&n.right<=result.width+.1&&n.bottom<=result.height+.1,`${label}: outside ${key}`)}
   const nodes=Object.entries(result.nodes);for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const [ka,a]=nodes[i],[kb,b]=nodes[j];assert(!(a.x<b.right&&a.right>b.x&&a.y<b.bottom&&a.bottom>b.y),`${label}: ${ka} overlaps ${kb}`)}
   const standard={grid_auxiliary_1:['grid','auxiliary_1'],grid_auxiliary_2:['grid','auxiliary_2'],grid_main:['grid','main'],grid_home:['grid','home'],auxiliary_1_main:['auxiliary_1','main'],auxiliary_2_main:['auxiliary_2','main'],main_home:['main','home']};
   const onBorder=(p,n)=>p.x>=n.x-.3&&p.x<=n.right+.3&&p.y>=n.y-.3&&p.y<=n.bottom+.3&&Math.min(Math.abs(p.x-n.x),Math.abs(p.x-n.right),Math.abs(p.y-n.y),Math.abs(p.y-n.bottom))<.3;
-  for(const route of result.paths){assert((route.d.match(/[A-Za-z]/g)||[]).every(command=>['M','H','V'].includes(command)),`${label}: diagonal ${route.name}`);const [source,target]=standard[route.name]||['home','consumer:'+route.name.slice(14)];assert(onBorder(route.start,result.nodes[source])&&onBorder(route.end,result.nodes[target]),`${label}: wrong endpoints ${route.name}`);for(const p of route.points){assert(p.x>=-.3&&p.y>=-.3&&p.x<=result.width+.3&&p.y<=result.height+.3,`${label}: path outside ${route.name}`);for(const [key,n]of nodes)if(key!==source&&key!==target)assert(!(p.x>n.x+.3&&p.x<n.right-.3&&p.y>n.y+.3&&p.y<n.bottom-.3),`${label}: ${route.name} crosses ${key} at ${p.x},${p.y}`)}}
+  for(const route of result.paths){
+   assert((route.d.match(/[A-Za-z]/g)||[]).every(command=>['M','H','V'].includes(command)),`${label}: diagonal ${route.name}`);
+   let source,target;
+   if(standard[route.name]){[source,target]=standard[route.name];assert(onBorder(route.start,result.nodes[source])&&onBorder(route.end,result.nodes[target]),`${label}: wrong endpoints ${route.name}`)}
+   else if(route.name.startsWith('home_row_')){source='home';assert(onBorder(route.start,result.nodes.home),`${label}: feeder must start on home`);assert.equal((route.d.match(/[HV]/g)||[]).length,2,`${label}: row feeder must have one turn`)}
+   else{target='consumer:'+route.name.slice(14);const row=result.paths.find(p=>p.name==='home_row_'+(result.nodes[target].y>90?'lower':'upper'));assert(onBorder(route.end,result.nodes[target]),`${label}: branch must end on consumer`);assert(Math.abs(route.start.y-row.end.y)<.2&&route.start.x>=row.end.x-.2&&route.start.x<=row.start.x+.2,`${label}: branch must start on shared row line`);assert.equal((route.d.match(/[HV]/g)||[]).length,1,`${label}: branch must be vertical`)}
+   for(const p of route.points){assert(p.x>=-.3&&p.y>=-.3&&p.x<=result.width+.3&&p.y<=result.height+.3,`${label}: path outside ${route.name}`);for(const [key,n]of nodes)if(key!==source&&key!==target)assert(!(p.x>n.x+.3&&p.x<n.right-.3&&p.y>n.y+.3&&p.y<n.bottom-.3),`${label}: ${route.name} crosses ${key} at ${p.x},${p.y}`)}
+  }
+
   assert(result.nodes.auxiliary_1.right<result.nodes.main.x&&result.nodes.main.right<result.nodes.auxiliary_2.x,`${label}: stations must flank main`);
  };
  for(const width of [320,352,390,422,540,768,1150]){await page.setViewportSize({width,height:1000});await page.waitForTimeout(80);await verifyLayout(`${width}px`)}
@@ -56,9 +64,23 @@ const root = path.resolve(__dirname, '..');
  for(const value of ['unavailable','unknown','0','-10','3']){await page.evaluate(value=>{states['sensor.load_19'].state=value;refresh()},value);assert(!(await page.evaluate(()=>visibleIds())).includes('load_19'))}
  await page.evaluate(()=>{states['sensor.load_19'].state='2';states['sensor.load_19'].attributes.unit_of_measurement='kW';refresh()});assert((await page.evaluate(()=>visibleIds())).includes('load_19'));
  await page.evaluate(()=>{states['sensor.load_19'].attributes.unit_of_measurement='kWh';refresh()});assert(!(await page.evaluate(()=>visibleIds())).includes('load_19'));
- // Independent CSS colors match each device outline and its home feed.
+ // Device borders stay independent; both shared rows and branches use the home color.
  await page.evaluate(()=>{config.consumers[0].color='orange';card.setConfig(config);refresh()});
- const color=await page.evaluate(()=>({border:getComputedStyle(card._consumerNodes.get('load_0')).borderTopColor,line:getComputedStyle(card._flows.home_consumer_load_0.querySelector('.flow-dashes')).stroke}));assert.deepEqual(color,{border:'rgb(255, 165, 0)',line:'rgb(255, 165, 0)'});
+ const color=await page.evaluate(()=>({border:getComputedStyle(card._consumerNodes.get('load_0')).borderTopColor,line:getComputedStyle(card._flows.home_consumer_load_0.querySelector('.flow-dashes')).stroke}));assert.deepEqual(color,{border:'rgb(255, 165, 0)',line:'rgb(41, 150, 255)'});
+ assert(await page.evaluate(()=>!card._nodes.home.classList.contains('supplying')&&getComputedStyle(card._nodes.home).borderTopStyle==='solid'&&card._borders.home._animation.playState==='paused'));
+ await page.evaluate(()=>{states['binary_sensor.grid'].state='off';refresh()});
+ assert(await page.evaluate(()=>Object.entries(card._flows).filter(([name])=>name.startsWith('home_')).every(([,flow])=>getComputedStyle(flow.querySelector('.flow-dashes')).stroke==='rgb(238, 34, 34)')));
+ assert(await page.evaluate(()=>!card._nodes.home.classList.contains('supplying')));
+ await page.evaluate(()=>{states['binary_sensor.grid'].state='on';refresh()});
+ // Sparse counts fill the lower row first, including after a device disappears.
+ for(const count of [1,2,3,4,5,6,2,4]){
+  await page.evaluate(count=>{for(let i=0;i<20;i++){states[`sensor.load_${i}`].state=String(i<count?600-i*25:0);states[`sensor.load_${i}`].attributes.unit_of_measurement='W'}refresh()},count);
+  assert.deepEqual(await page.evaluate(()=>[...card._consumerNodes.values()].map(n=>Number(n.dataset.slot)).sort((a,b)=>a-b)),Array.from({length:count},(_,i)=>i));
+  assert(await page.evaluate(()=>[...card._consumerNodes.values()].every(n=>parseFloat(n.style.top)===(Number(n.dataset.slot)<3?105:12))));
+  assert.equal(await page.evaluate(()=>!!card._flows.home_row_upper),count>3);
+  assert.equal(await page.evaluate(()=>card._data.flow_power.home_row_lower),Array.from({length:Math.min(count,3)},(_,i)=>600-i*25).reduce((a,b)=>a+b,0));
+  await verifyLayout(`lower-first ${count}`);
+ }
  await page.evaluate(()=>{window.info=[];card.addEventListener('hass-more-info',event=>info.push(event.detail.entityId))});await page.locator('suris-ecoflow-flow-card .consumer[data-key="consumer:load_0"] .value').click();assert.deepEqual(await page.evaluate(()=>info),['sensor.load_0']);
  await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>Object.values(card._flows).every(flow=>flow._animation.playState==='paused')&&Object.values(card._borders).every(border=>border._animation.playState==='paused'));await page.emulateMedia({reducedMotion:'no-preference'});
  await page.evaluate(()=>{for(let i=0;i<20;i++)states[`sensor.load_${i}`].state='0';refresh()});assert.equal(await page.evaluate(()=>card._consumerNodes.size),0);assert.equal(await page.evaluate(()=>Object.keys(card._flows).length),7);assert.equal(await page.evaluate(()=>card._nodes.home.classList.contains('supplying')),false);
@@ -71,12 +93,12 @@ const root = path.resolve(__dirname, '..');
  await name.fill('');await name.pressSequentially('Чайник');await power.fill('sensor.load_0');await icon.fill('mdi:kettle');
  for(const value of ['','r','re','red','','#','#f','#ff','#ff0','#ff00','#ff000','#ff0000']){await consumerColor.fill(value);assert.equal(await consumerColor.inputValue(),value);assert(await page.evaluate(()=>originalConsumerForm.isConnected&&originalConsumerInput.isConnected&&originalConsumerForm===editor._forms.at(-1)));assert(await consumerColor.evaluate(input=>input.getRootNode().activeElement===input))}
  await consumerColor.fill('orange');assert.equal(await page.evaluate(()=>published.at(-1).consumers[0].color),'orange');
- await page.evaluate(()=>{states['sensor.load_0'].state='100';refresh()});assert.deepEqual(await page.evaluate(()=>({border:getComputedStyle(card._consumerNodes.get('consumer_1')).borderTopColor,line:getComputedStyle(card._flows.home_consumer_consumer_1.querySelector('.flow-dashes')).stroke})),{border:'rgb(255, 165, 0)',line:'rgb(255, 165, 0)'});
+ await page.evaluate(()=>{states['sensor.load_0'].state='100';refresh()});assert.deepEqual(await page.evaluate(()=>({border:getComputedStyle(card._consumerNodes.get('consumer_1')).borderTopColor,line:getComputedStyle(card._flows.home_consumer_consumer_1.querySelector('.flow-dashes')).stroke})),{border:'rgb(255, 165, 0)',line:'rgb(41, 150, 255)'});
  for(let i=1;i<20;i++)await add.click();assert.equal(await page.evaluate(()=>editor._config.consumers.length),20);assert(await add.isDisabled());
  const remove=page.locator('suris-ecoflow-flow-card-editor details[data-section="consumer:consumer_1"] .consumer-remove');await remove.click();assert.equal(await page.evaluate(()=>editor._config.consumers.length),19);assert(!(await add.isDisabled()));assert(!(await page.evaluate(()=>card._consumerNodes.has('consumer_1'))));
  // Produce previews from the actual six-consumer layout, using illustrative readings.
  await page.evaluate(()=>{config.consumers=makeConsumers();for(let i=0;i<20;i++)states[`sensor.load_${i}`]={state:String(i<6?[1000,600,250,120,80,50][i]:0),attributes:{unit_of_measurement:'W'}};card.setConfig(config);refresh()});
  await page.setViewportSize({width:390,height:850});await page.waitForTimeout(80);await verifyLayout('preview mobile');await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-mobile.png')});
  await page.setViewportSize({width:1060,height:900});await page.waitForTimeout(80);await verifyLayout('preview desktop');await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-desktop.png')});
- assert.deepEqual(errors,[]);console.log('PASS: twenty configurable consumers, strongest six, stable ties and slots, W/kW filtering, per-device colors and home lines, unchanged mobile height, all orthogonal paths and node bounds, add/remove limits, icon picker schema, draft text and colors, focus, configuration feedback, more-info and reduced motion.');await browser.close();
+ assert.deepEqual(errors,[]);console.log('PASS: twenty configurable consumers, strongest six, stable ties and slots, W/kW filtering, independent borders, shared row feeders in home color, static home outline and lower-first filling, unchanged mobile height, all orthogonal paths and node bounds, add/remove limits, icon picker schema, draft text and colors, focus, configuration feedback, more-info and reduced motion.');await browser.close();
 })().catch(error=>{console.error(error);process.exit(1)});

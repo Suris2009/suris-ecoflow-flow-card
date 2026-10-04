@@ -64,7 +64,7 @@ const root = path.resolve(__dirname, '..');
  };
  const verifyBorders=async label=>{
   const result=await page.evaluate(()=>Object.entries(card._nodes).map(([key,node])=>{
-   const expected=Object.keys(card._data.flows).some(name=>name.startsWith(`${key}_`)&&card._data.flows[name]),border=card._borders[key];
+   const expected=key!=='home'&&Object.keys(card._data.flows).some(name=>name.startsWith(`${key}_`)&&card._data.flows[name]),border=card._borders[key];
    if(!border)return{key,expected,active:node.classList.contains('supplying'),solid:getComputedStyle(node).borderTopStyle==='solid'};
    const path=border.firstElementChild,len=path.getTotalLength(),points=Array.from({length:100},(_,i)=>path.getPointAtLength(len*i/100));
    const area=points.reduce((sum,p,i)=>{const q=points[(i+1)%points.length];return sum+p.x*q.y-q.x*p.y},0);
