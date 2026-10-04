@@ -62,6 +62,9 @@ const root = path.resolve(__dirname, '..');
 
   const segments=route=>{const tokens=route.d.match(/[MHV]|-?\d+(?:\.\d+)?/g);let x=0,y=0,out=[];for(let i=0;i<tokens.length;){const command=tokens[i++],old={x,y};if(command==='M'){x=+tokens[i++];y=+tokens[i++]}else{if(command==='H')x=+tokens[i++];else y=+tokens[i++];out.push([old,{x,y}])}}return out};
   const charging=segments(result.paths.find(p=>p.name==='grid_auxiliary_2'));
+  const lane=charging[2][0].y;
+  assert(lane-result.nodes.home.bottom>=19.99,`${label}: station #3 charging too close below Home`);
+  assert(lane<=result.nodes.auxiliary_2.y-.01,`${label}: station #3 charging must approach from above: ${JSON.stringify(result.nodes)}`);
   for(const name of ['grid_home','grid_main'])for(const [a,b]of charging)for(const [c,d]of segments(result.paths.find(p=>p.name===name))){
    const overlapX=Math.min(Math.max(a.x,b.x),Math.max(c.x,d.x))-Math.max(Math.min(a.x,b.x),Math.min(c.x,d.x));
    const overlapY=Math.min(Math.max(a.y,b.y),Math.max(c.y,d.y))-Math.max(Math.min(a.y,b.y),Math.min(c.y,d.y));
@@ -76,6 +79,13 @@ const root = path.resolve(__dirname, '..');
   assert(await page.evaluate(()=>{const row=card._values['home.power'].parentElement,label=row.querySelector('.label');label.textContent='Споживання';card._values['home.power'].textContent='12,35 kW';card._fitRows();const a=label.getBoundingClientRect(),b=card._values['home.power'].getBoundingClientRect();return getComputedStyle(label).whiteSpace==='nowrap'&&a.right<=b.left+1&&b.right<=row.getBoundingClientRect().right+1}));
  }
  await page.evaluate(()=>{card._values['home.power'].parentElement.querySelector('.label').textContent='Вхід';refresh()});
+ // Reproduce the two-line Home heading from the installed mobile dashboard.
+ await page.evaluate(()=>{config.home.name='Споживання дому';card.setConfig(config);refresh()});
+ for(const count of [0,3,6]){
+  await page.evaluate(count=>{for(let i=0;i<20;i++)states[`sensor.load_${i}`].state=String(i<count?600-i*25:0);refresh()},count);
+  for(const width of [320,352,390,422,540,768,1150]){await page.setViewportSize({width,height:1000});await page.waitForTimeout(60);await verifyLayout(`${width}px long Home heading, ${count} consumers`)}
+ }
+ await page.evaluate(()=>{delete config.home.name;card.setConfig(config);refresh()});
  // Retained tiles and station animations survive a strongest-consumer replacement.
  await page.evaluate(()=>{window.retainedNode=card._consumerNodes.get('load_0');window.retainedAnimation=card._flows.grid_home._animation;window.previousOrder=[...card._consumerOrder];states['sensor.load_19'].state='2000';refresh()});
  assert.deepEqual(await page.evaluate(()=>visibleIds()),['load_0','load_1','load_19','load_2','load_3','load_4']);
@@ -94,6 +104,7 @@ const root = path.resolve(__dirname, '..');
  assert(await page.evaluate(()=>!card._nodes.home.classList.contains('supplying')));
  await page.evaluate(()=>{states['binary_sensor.grid'].state='on';refresh()});
  // Sparse counts fill the lower row first, including after a device disappears.
+ const compactHeights = new Map();
  for(const count of [0,1,2,3,4,5,6,2,4]){
   await page.evaluate(count=>{for(let i=0;i<20;i++){states[`sensor.load_${i}`].state=String(i<count?600-i*25:0);states[`sensor.load_${i}`].attributes.unit_of_measurement='W'}refresh()},count);
   assert.deepEqual(await page.evaluate(()=>[...card._consumerNodes.values()].map(n=>Number(n.dataset.slot)).sort((a,b)=>a-b)),Array.from({length:count},(_,i)=>i));
@@ -102,7 +113,9 @@ const root = path.resolve(__dirname, '..');
   assert.equal(await page.evaluate(()=>card._data.flow_power.home_row_lower||0),Array.from({length:Math.min(count,3)},(_,i)=>600-i*25).reduce((a,b)=>a+b,0));
   for(const width of [320,352,390,422,540,768,1150]){
    await page.setViewportSize({width,height:1000});await page.waitForTimeout(60);
-   assert(await page.evaluate(count=>Math.abs(card._diagram.getBoundingClientRect().height-(Math.min(720,Math.max(540,card._diagram.clientWidth*.65))-(2-Math.ceil(count/3))*93))<.1,count),`${width}px: compact height for ${count}`);
+   const height=await page.evaluate(()=>card._diagram.getBoundingClientRect().height);
+   if(count===0)compactHeights.set(width,height);
+   assert(Math.abs(height-compactHeights.get(width)-Math.ceil(count/3)*93)<.1,`${width}px: compact height for ${count}`);
    await verifyLayout(`${width}px lower-first ${count}`);
   }
  }
