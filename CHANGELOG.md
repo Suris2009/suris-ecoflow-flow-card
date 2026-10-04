@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.12
+
+- Animate a dashed outline clockwise around each block supplying an active outgoing energy flow.
+- Keep the configured block color and use outgoing wattage to adjust the outline speed without restarting it.
+- Restore solid outlines when supply stops; keep the home outline solid and respect reduced motion.
+
 ## 0.1.11
 
 - Keep every reading on one line in all five blocks, including both upper stations, without widening the blocks.

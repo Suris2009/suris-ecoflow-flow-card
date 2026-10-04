@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v0.1.11 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v0.1.12 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '0.1.11';
+  const VERSION = '0.1.12';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -126,6 +126,7 @@
     .lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
     .flow path{fill:none;stroke:var(--divider-color,#60656d);stroke-width:1.5;stroke-linejoin:miter;stroke-linecap:butt;opacity:.40}.flow.active .flow-track{stroke:var(--color);opacity:.28}.flow .flow-dashes{stroke:var(--color);stroke-width:3;stroke-linecap:round;stroke-dasharray:7 21;opacity:.95;visibility:hidden}.flow.active .flow-dashes{visibility:visible}
     .node{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0;background:transparent;background:color-mix(in srgb,var(--ha-card-background,var(--card-background-color,#1c1c1c)) 8%,transparent);border:2px solid var(--node-color,var(--divider-color,#60656d));border-radius:12px;padding:12px 10px;z-index:1;min-height:max(140px,22cqw);height:auto}
+    .node.supplying{border-color:transparent}.node-border{position:absolute;overflow:visible;pointer-events:none;display:none;z-index:2}.node-border.active{display:block}.node-border path{fill:none;stroke:var(--node-color);stroke-width:2;stroke-linecap:round;stroke-dasharray:7 7}
     .node h3{font-size:clamp(12px,1.9cqw,20px);line-height:1.25;text-align:center;margin:0;font-weight:600;overflow-wrap:anywhere}.node .icon{display:flex;justify-content:center;height:clamp(30px,5cqw,56px);margin:4px 0}.icon svg{height:100%;width:64px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.icon .battery-fill{fill:var(--node-color,var(--flow-main));stroke:none}
     .row{display:flex;align-items:baseline;justify-content:space-between;gap:4px;flex-wrap:nowrap;font-size:clamp(11px,1.6cqw,17px);line-height:1.35;min-width:0}.label{color:var(--secondary-text-color,#aaa);white-space:nowrap}.value{flex-shrink:0;font:inherit;color:inherit;font-weight:600;text-align:right;white-space:nowrap;background:none;border:0;padding:0;min-width:0}.value[data-entity]{cursor:pointer}.value:focus-visible{outline:2px solid var(--flow-main);outline-offset:2px}.value:disabled{opacity:1}
     .grid{left:0;top:37%;width:22%}.home{right:0;top:37%;width:22%}.auxiliary_1{left:29%;top:3%;width:22%}.auxiliary_2{left:55%;top:3%;width:22%}.main{left:36%;bottom:1%;width:28%;min-height:max(220px,28cqw)}
@@ -169,6 +170,7 @@
       this._resize.disconnect(); this._unsubscribe?.(); this._unsubscribe = undefined;
       this._reducedMotion.removeEventListener('change', this._motionChange);
       for (const flow of Object.values(this._flows || {})) flow._animation?.pause();
+      for (const border of Object.values(this._borders || {})) border._animation?.pause();
     }
     getCardSize() { return Math.ceil((this.getBoundingClientRect().height || 580) / 50); }
     getGridOptions() { return { columns: 12, min_columns: 12 }; }
@@ -184,10 +186,11 @@
     _build() {
       const c = this._config, text = t(c); this._resize.disconnect();
       for (const flow of Object.values(this._flows || {})) flow._animation?.cancel();
+      for (const border of Object.values(this._borders || {})) border._animation?.cancel();
       this.shadowRoot.innerHTML = `<style>${CSS}</style><ha-card><div class="wrap"><h2></h2><div class="diagram"><svg class="lines" aria-hidden="true"></svg></div><div class="status" role="status"></div></div></ha-card>`;
       this.shadowRoot.querySelector('h2').textContent = c.title;
       this._diagram = this.shadowRoot.querySelector('.diagram'); this._svg = this.shadowRoot.querySelector('.lines');
-      this._nodes = {}; this._values = {}; this._flows = {};
+      this._nodes = {}; this._values = {}; this._flows = {}; this._borders = {};
       for (const key of ['grid', 'auxiliary_1', 'auxiliary_2', 'main']) this.style.setProperty(`--flow-${key}`, c.appearance[`${key}_color`]);
       for (const key of ['grid', 'auxiliary_1', 'auxiliary_2', 'main', 'home']) {
         const node = document.createElement('section'); node.className = `node ${key}`; node.dataset.key = key;
@@ -195,6 +198,12 @@
         const heading = document.createElement('h3'); heading.textContent = c[key].name || text[key] || key;
         const artwork = document.createElement('div'); artwork.className = 'icon'; artwork.innerHTML = icon(key === 'grid' ? 'grid' : key === 'home' ? 'home' : 'battery');
         node.append(heading, artwork);
+        if (key !== 'home') {
+          const border = document.createElementNS(NS, 'svg'); border.classList.add('node-border'); border.setAttribute('aria-hidden', 'true'); border.style.setProperty('--node-color', `var(--flow-${key})`);
+          const path = document.createElementNS(NS, 'path'); border.append(path); this._diagram.append(border);
+          border._animation = path.animate([{ strokeDashoffset: '0px' }, { strokeDashoffset: '-14px' }], { duration: 1000, iterations: Infinity });
+          border._animation.pause(); this._borders[key] = border;
+        }
         if (key === 'grid') this._row(node, 'output', text.output);
         else if (key === 'home') this._row(node, 'power', text.input);
         else {
@@ -262,6 +271,32 @@
           if (animation.playState !== 'running') animation.play();
         } else if (animation.playState !== 'paused') animation.pause();
       }
+      this._syncBorders();
+    }
+    _syncBorders() {
+      for (const [key, border] of Object.entries(this._borders || {})) {
+        const outgoing = Object.keys(this._data?.flows || {}).filter(name => name.startsWith(`${key}_`) && this._data.flows[name]);
+        const active = outgoing.length > 0, animation = border._animation;
+        this._nodes[key].classList.toggle('supplying', active); border.classList.toggle('active', active);
+        const watts = outgoing.reduce((total, name) => total + this._data.flow_power[name], 0);
+        animation.updatePlaybackRate(flowSpeed(watts, this._config.appearance.duration) / 14);
+        if (active && this.isConnected && !this._reducedMotion.matches) {
+          if (animation.playState !== 'running') animation.play();
+        } else if (animation.playState !== 'paused') animation.pause();
+      }
+    }
+    _drawBorders() {
+      const base = this._diagram.getBoundingClientRect();
+      for (const [key, border] of Object.entries(this._borders || {})) {
+        const node = this._nodes[key], { width: w, height: h, left, top } = node.getBoundingClientRect();
+        if (!w || !h) continue;
+        Object.assign(border.style, { left: `${left - base.left}px`, top: `${top - base.top}px`, width: `${w}px`, height: `${h}px` });
+        const r = Math.max(0, Math.min(parseFloat(getComputedStyle(node).borderTopLeftRadius) - 1, (w - 2) / 2, (h - 2) / 2));
+        // Begin on the top edge and trace right, down, left, up: clockwise.
+        const d = `M ${1 + r} 1 H ${w - 1 - r} A ${r} ${r} 0 0 1 ${w - 1} ${1 + r} V ${h - 1 - r} A ${r} ${r} 0 0 1 ${w - 1 - r} ${h - 1} H ${1 + r} A ${r} ${r} 0 0 1 1 ${h - 1 - r} V ${1 + r} A ${r} ${r} 0 0 1 ${1 + r} 1 Z`;
+        const path = border.firstElementChild;
+        if (path.getAttribute('d') !== d) { border.setAttribute('viewBox', `0 0 ${w} ${h}`); path.setAttribute('d', d); }
+      }
     }
     _fitRows() {
       if (!this.isConnected || !this._values) return;
@@ -287,7 +322,7 @@
     }
     _drawPaths() {
       if (!this._diagram || !this.isConnected) return;
-      this._fitRows();
+      this._fitRows(); this._drawBorders();
       const base = this._diagram.getBoundingClientRect(); if (!base.width || !base.height) return;
       const rect = (key) => { const r = this._nodes[key].getBoundingClientRect(); return { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height, right: r.right - base.left, bottom: r.bottom - base.top }; };
       const g = rect('grid'), a = rect('auxiliary_1'), b = rect('auxiliary_2'), m = rect('main'), h = rect('home');
