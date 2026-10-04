@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.0.0-beta.2 — Pre-release
+
+- Replace separate home-to-consumer feeds with one shared line per row and short vertical branches.
+- Use the home color for both shared row lines and all branches; retain independent consumer border colors.
+- Fill the lower row first, then the upper row. Compact gaps downward when active devices disappear, while keeping slots stable during strongest-six replacements.
+- Keep the home outline solid and stationary in every supply state.
+- Drive shared feeder speed from the visible row's total wattage and each branch from its own consumer power.
+- Preserve card height, twenty configurable consumers, six strongest active devices, right-angle routes and existing station configuration.
+- Verify sparse counts, source-dependent line colors, fixed home outline and orthogonal route geometry at phone and desktop widths.
+
+
 ## 2.0.0-beta.1 — Pre-release
 
 This is the first version 2 beta. Layout and settings will continue to evolve. Stable 0.1.12 remains available.

@@ -1,6 +1,6 @@
-# Suris EcoFlow Flow Card 2.0.0-beta.1
+# Suris EcoFlow Flow Card 2.0.0-beta.2
 
-[Українська інструкція](README.md) · [Beta release](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.0-beta.1) · [Stable 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
+[Українська інструкція](README.md) · [Beta release](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.0-beta.2) · [Stable 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
 
 **Pre-release:** version 2 layout and settings are still being refined. Stable 0.1.12 remains available.
 
@@ -14,7 +14,7 @@ This is a **dashboard card**, not a device integration. Install your EcoFlow and
 
 1. Open **HACS → ⋮ → Custom repositories**.
 2. Add `https://github.com/Suris2009/suris-ecoflow-flow-card`, category **Dashboard** (Lovelace / Plugin in older versions).
-3. Download **2.0.0-beta.1**. If it is not offered, enable this repository's HACS pre-release switch entity and turn it on. These entities may be disabled by default; find the repository's entity under **Settings → Devices & services → Entities**, enable it, then turn it on. See the [official HACS explanation](https://www.hacs.dev/docs/use/entities/switch/). Manual installation below is also available.
+3. Download **2.0.0-beta.2**. If it is not offered, enable this repository's HACS pre-release switch entity and turn it on. These entities may be disabled by default; find the repository's entity under **Settings → Devices & services → Entities**, enable it, then turn it on. See the [official HACS explanation](https://www.hacs.dev/docs/use/entities/switch/). Manual installation below is also available.
 4. Reload the Home Assistant frontend. If HACS did not add the resource, add `/hacsfiles/suris-ecoflow-flow-card/suris-ecoflow-flow-card.js` as a **JavaScript module** in dashboard resources.
 5. Open **Edit dashboard → Add card → Suris EcoFlow Flow Card**. Choose your entities in the visual editor. YAML is optional.
 
@@ -24,7 +24,7 @@ This repository is added as a custom HACS repository; inclusion in the default c
 
 1. Download `suris-ecoflow-flow-card.js` from the beta release. Put it in the `www` folder beside your Home Assistant `configuration.yaml`, commonly `/config/www`. If you just created `www` for the first time, restart Home Assistant.
 2. Open **Settings → Dashboards → ⋮ → Resources → Add resource**. Enable Advanced mode in your user profile if Resources is hidden.
-3. URL: `/local/suris-ecoflow-flow-card.js?v=2.0.0-beta.1`; type: **JavaScript module**.
+3. URL: `/local/suris-ecoflow-flow-card.js?v=2.0.0-beta.2`; type: **JavaScript module**.
 4. Reload the frontend, then add and configure the card through the visual editor. Clear the frontend cache if the old version remains visible.
 
 ## Configure the stations and home
@@ -59,14 +59,14 @@ XT60 ports are independent of the auxiliary stations. Their readings do not deci
 
 1. Open the card editor and **Individual consumers**.
 2. Click **Add consumer**, give it a name, select its **power** sensor and choose an icon with the Home Assistant icon picker.
-3. Set its color: `red`, `green`, `orange`, `#ff8800`, `rgb(255, 136, 0)` or `hsl(32, 100%, 50%)`. Do not add quotes in the visual field. **The same color is used for that device's border and home → device line.**
+3. Set its color: `red`, `green`, `orange`, `#ff8800`, `rgb(255, 136, 0)` or `hsl(32, 100%, 50%)`. Do not add quotes in the visual field. **This color applies to the device's border. Shared row lines and their branches use the home color, following its active source.**
 4. Save the card. Repeat for up to 20 devices. Remove deletes only the entry from this card, not the Home Assistant entity.
 
 Use power sensors in **W / kW**, for example from smart plugs, rather than accumulated energy sensors in **kWh**. The six highest-power active devices appear in two rows of three. Activity means power strictly above the flow threshold, **3 W by default**. Zero, negative, unknown and unavailable readings are hidden. Change the threshold in Flow appearance if needed.
 
 A stronger device replaces the weakest visible one. Other visible tiles keep their slots; ties favor devices already displayed. No paging or scrolling is needed. Long names are shortened inside tiles, with full names in tooltips. Click a power reading for the entity's more-info dialog.
 
-Consumer readings **do not subtract from home input or replace it**. They explain part of the household total; hidden and unconfigured loads can also draw power. Each consumer line runs at a speed based on its own wattage. The home outline moves clockwise while it supplies visible consumers.
+Consumer readings **do not subtract from home input or replace it**. They explain part of the household total; hidden and unconfigured loads can also draw power. The lower row fills first from left to right, followed by the upper row. When devices become inactive, lower-row gaps are filled from above. Each row has one shared home feeder with short vertical branches. Feeder speed follows the total power of visible devices in that row; each branch follows its device power. Both feeders and all branches use the home color. The home outline always remains solid and stationary.
 
 Optional YAML fragment to append to an existing card configuration, keeping the grid and station sections:
 
@@ -88,9 +88,9 @@ Replace the example entities. `id` is a stable card identifier, not a Home Assis
 
 ## Colors, readings and animations
 
-Set separate source colors for grid, each auxiliary station and main station in **Flow appearance**. Each color applies to its station border, battery fill and outgoing lines. Home uses its active source's color, or a neutral border when the source is unknown. Individual consumers use their own colors. Empty color fields restore defaults. Incomplete color text stays editable while the last valid preview remains displayed.
+Set separate source colors for grid, each auxiliary station and main station in **Flow appearance**. Each color applies to its station border, battery fill and outgoing lines. Home uses its active source's color, or a neutral border when the source is unknown. Individual consumers have their own border colors; their flow lines use the home color. Empty color fields restore defaults. Incomplete color text stays editable while the last valid preview remains displayed.
 
-All lines have right-angle routes; no diagonals. Supplying blocks have clockwise moving dashed outlines, while inactive outlines are solid. More watts makes movement faster, with a bounded speed. Increasing Base movement time slows all lines. Live power changes adjust animation speed without restarting it. System reduced-motion settings make active flows static.
+All lines have right-angle routes; no diagonals. Supplying grid and station blocks have clockwise moving dashed outlines, while inactive outlines are solid. The home outline always remains solid and stationary. More watts makes movement faster, with a bounded speed. Increasing Base movement time slows all lines. Live power changes adjust animation speed without restarting it. System reduced-motion settings make active flows static.
 
 All power rows stay on one line. Values below 1000 W use W; values from 1000 W use kW with up to two decimal places. Supported input units include W, kW, mW, MW, Вт and кВт; a reading without a unit is treated as W. Wh / kWh are not power. Missing readings show `—`; real zero shows `0 W`. Station battery icons fill from valid 0–100% readings. The blocks have nearly transparent backgrounds and follow the Home Assistant theme.
 

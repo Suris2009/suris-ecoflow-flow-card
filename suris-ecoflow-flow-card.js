@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.0.0-beta.1 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.0.0-beta.2 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.0.0-beta.1';
+  const VERSION = '2.0.0-beta.2';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -17,8 +17,8 @@
     uk: { grid: 'Міська мережа', main: 'Головна EcoFlow', home: 'Дім', title: 'Енергопотоки', input: 'Вхід', output: 'Вихід', soc: 'Заряд', ac: 'Мережа', source: 'Джерело', unknown: 'Невідомо', unavailable: 'Недоступно', select: 'Вибери сутності в редакторі картки', settings: 'Налаштування', homePowerLabel: 'Вхід дому (необов’язково)', homeDerived: 'Без окремого датчика: від мережі — загальна потужність мінус заряджання трьох станцій; від EcoFlow — вихід головної станції. Відсутні або недоступні входи станцій у розрахунку вважаються нулем. Вхід дому від мережі розрахунковий.', sourceHint: 'Мережа є — дім від міської мережі. Мережі немає — дім від головної EcoFlow. Вибери датчик наявності мережі в блоці міської мережі.', flowHint: 'Штрихи без стрілок рухаються від джерела до споживача. Більша потужність кожної лінії — більша швидкість. Більший базовий час — повільніший рух. Потік активний, коли потужність перевищує поріг. Відсутні або недоступні показники відображаються як —.', mainHint: 'Для лінії мережа → головна EcoFlow потрібна окрема потужність AC-входу. Загальний вхід не використовується як AC-вхід.', auxHint: 'Потужність передачі на головну станцію: вибери DC-вихід, якщо загальний вихід включає інші навантаження. Якщо поле порожнє, використовується загальний вихід.', editorError: 'Редактор Home Assistant ще завантажується. Закрий та відкрий редактор картки ще раз.', more: 'Докладніше', watts: 'W', mismatch: 'Стан міської мережі не розпізнано', setup: 'Вибери датчик наявності міської мережі' },
     en: { grid: 'City grid', main: 'Main EcoFlow', home: 'Home', title: 'Energy flows', input: 'Input', output: 'Output', soc: 'Charge', ac: 'Grid', source: 'Source', unknown: 'Unknown', unavailable: 'Unavailable', select: 'Select entities in the card editor', settings: 'Settings', homePowerLabel: 'Home input power (optional)', homeDerived: 'Without a separate sensor: grid power minus the three station charging powers when on grid; main station output when on EcoFlow. Missing or unavailable station inputs count as zero in this calculation. Home input from the grid is calculated.', sourceHint: 'Grid available — home powered by grid. Grid absent — home powered by the main EcoFlow. Select the grid availability sensor in the city grid section.', flowHint: 'Dashes without arrows move from source to load. Higher power on each line increases its speed. A larger base time slows movement. A flow is active above the threshold. Missing or unavailable readings appear as —.', mainHint: 'A separate AC input power entity is required for grid → main EcoFlow. Total input is never treated as AC input.', auxHint: 'Transfer power: use DC output if total output includes other loads. When empty, total output is used.', editorError: 'The Home Assistant editor is still loading. Close and reopen the card editor.', more: 'More information', watts: 'W', mismatch: 'Unrecognized grid availability state', setup: 'Select the grid availability sensor' }
   };
-  Object.assign(TEXT.uk, { consumers: 'Індивідуальні споживачі', consumer: 'Споживач', addConsumer: 'Додати споживача', removeConsumer: 'Видалити', consumerPower: 'Датчик потужності (W / kW)', consumerIcon: 'Іконка', consumerColor: 'Колір рамки та лінії від дому', consumerHint: 'Додай до 20 приладів. Зверху видно до шести активних із найбільшою потужністю. Поріг активності береться з налаштувань потоків. Потрібен датчик потужності, а не енергії kWh. Колір застосовується до рамки приладу та його лінії від дому.' });
-  Object.assign(TEXT.en, { consumers: 'Individual consumers', consumer: 'Consumer', addConsumer: 'Add consumer', removeConsumer: 'Remove', consumerPower: 'Power sensor (W / kW)', consumerIcon: 'Icon', consumerColor: 'Consumer border and home line color', consumerHint: 'Add up to 20 devices. The six active devices with the highest power appear at the top. Activity uses the flow threshold. Select power sensors, not kWh energy sensors. Each color applies to the device border and its line from home.' });
+  Object.assign(TEXT.uk, { consumers: 'Індивідуальні споживачі', consumer: 'Споживач', addConsumer: 'Додати споживача', removeConsumer: 'Видалити', consumerPower: 'Датчик потужності (W / kW)', consumerIcon: 'Іконка', consumerColor: 'Колір рамки споживача', consumerHint: 'Додай до 20 приладів. Зверху видно до шести активних із найбільшою потужністю. Поріг активності береться з налаштувань потоків. Потрібен датчик потужності, а не енергії kWh. Колір застосовується до рамки приладу. Спільні лінії рядів мають колір дому. Спочатку заповнюється нижній ряд.' });
+  Object.assign(TEXT.en, { consumers: 'Individual consumers', consumer: 'Consumer', addConsumer: 'Add consumer', removeConsumer: 'Remove', consumerPower: 'Power sensor (W / kW)', consumerIcon: 'Icon', consumerColor: 'Consumer border color', consumerHint: 'Add up to 20 devices. The six active devices with the highest power appear at the top. Activity uses the flow threshold. Select power sensors, not kWh energy sensors. Each device color applies to its border. Shared row lines use the home color. The lower row fills first.' });
   const t = (config) => TEXT[config?.language] || TEXT.uk;
   const draftConfig = (config = {}) => {
     const result = { ...DEFAULTS, ...config };
@@ -68,7 +68,7 @@
     const ranked = consumers.map((consumer, index) => ({ ...consumer, index })).filter(consumer => Number.isFinite(consumer.power) && consumer.power > threshold)
       .sort((a, b) => b.power - a.power || previousRank(a.id) - previousRank(b.id) || a.index - b.index).slice(0, 6);
     const selected = new Map(ranked.map(consumer => [consumer.id, consumer])), slots = Array(6).fill(null);
-    previous.slice(0, 6).forEach((id, slot) => { if (selected.has(id)) { slots[slot] = selected.get(id); selected.delete(id); } });
+    previous.slice(0, 6).forEach((id, slot) => { if (slot < ranked.length && selected.has(id)) { slots[slot] = selected.get(id); selected.delete(id); } });
     for (const consumer of ranked) if (selected.has(consumer.id)) { slots[slots.indexOf(null)] = consumer; selected.delete(consumer.id); }
     return slots;
   };
@@ -163,7 +163,7 @@
     .grid{left:0;top:37%;width:22%}.home{right:0;top:37%;width:22%}.auxiliary_1{left:0;bottom:1%;width:25%}.auxiliary_2{right:0;bottom:1%;width:25%}.main{left:36%;bottom:1%;width:28%;min-height:max(220px,28cqw)}
     .status{margin-top:8px;color:var(--secondary-text-color,#aaa);font-size:12px;min-height:16px;text-align:center}.status:empty{display:none}
     @container(max-width:520px){.diagram{height:540px}.node{padding:8px 5px;gap:6px;border-radius:9px;min-height:137px}.node h3{font-size:12px}.node .icon{height:29px;margin:0}.row{font-size:11px;gap:2px}.row .value{margin-left:auto}.grid,.home{width:24%;top:38%}.auxiliary_1{left:0;width:25%;bottom:1%}.auxiliary_2{right:0;width:25%;bottom:1%}.main{left:33%;width:34%;min-height:202px}}
-    .node.consumer{height:72px;min-height:72px;padding:4px;gap:3px;border-radius:9px}.consumer h3{font-size:clamp(11px,1.5cqw,13px);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}.consumer .icon{height:22px;margin:0;color:var(--node-color)}.consumer ha-icon{--mdc-icon-size:22px;width:22px;height:22px}.consumer ha-icon:not(:defined){display:none}.consumer ha-icon:defined+.fallback{display:none}.consumer .fallback{height:22px}.consumer .value{width:100%;text-align:center;font-size:12px;line-height:16px}.consumer:focus-within{outline:1px solid var(--node-color);outline-offset:2px}
+    .node.consumer{height:72px;min-height:72px;padding:4px;gap:3px;border-radius:9px}.consumer h3{font-size:clamp(11px,1.5cqw,13px);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}.consumer .icon{height:22px;margin:0;color:var(--node-color)}.consumer ha-icon{--mdc-icon-size:22px;width:22px;height:22px}.consumer ha-icon:not(:defined){display:none}.consumer ha-icon:defined+.fallback{display:none}.consumer .fallback{height:22px}.consumer .fallback svg{width:22px}.consumer .value{width:100%;text-align:center;font-size:12px;line-height:16px}.consumer:focus-within{outline:1px solid var(--node-color);outline-offset:2px}
     @media(prefers-reduced-motion:reduce){.flow .flow-dashes{display:none}.flow.active .flow-track{stroke-width:3;opacity:.92}}
   `;
   class SurisEcoFlowFlowCard extends HTMLElement {
@@ -289,7 +289,7 @@
       const status = this.shadowRoot.querySelector('.status');
       status.textContent = !c.grid.available_entity ? text.setup : data.home.source === 'unknown' ? text.mismatch : '';
       const homeColor = data.home.source === 'unknown' ? 'var(--divider-color,#60656d)' : `var(--flow-${data.home.source})`;
-      this._nodes.home.style.setProperty('--node-color', homeColor); this._borders.home.style.setProperty('--node-color', homeColor);
+      this.style.setProperty('--flow-home', homeColor); this._nodes.home.style.setProperty('--node-color', homeColor); this._borders.home.style.setProperty('--node-color', homeColor);
       this._renderConsumers(); this._drawPaths(); this._syncFlows();
     }
     _renderConsumers() {
@@ -313,12 +313,14 @@
         this.style.setProperty(`--consumer-${consumer.id}`, consumer.color); node.style.setProperty('--node-color', `var(--consumer-${consumer.id})`);
         const value = node.querySelector('.value'); value.textContent = powerText(consumer.power, this._config.language); value.dataset.entity = consumer.entity;
         value.title = `${consumer.entity}: ${this._states[consumer.entity]?.state ?? ''}`; value.setAttribute('aria-label', `${consumer.name}: ${value.textContent}`);
-        const name = `home_consumer_${consumer.id}`; this._data.flows[name] = true; this._data.flow_power[name] = consumer.power;
+        const name = `home_consumer_${consumer.id}`, row = slot < 3 ? 'home_row_lower' : 'home_row_upper';
+        this._data.flows[name] = true; this._data.flow_power[name] = consumer.power;
+        this._data.flows[row] = true; this._data.flow_power[row] = (this._data.flow_power[row] || 0) + consumer.power;
       });
     }
     _layoutConsumers() {
-      const width = Math.min(130, (this._diagram.clientWidth - 64) / 3), offset = (this._diagram.clientWidth - width * 3 - 64) / 2;
-      for (const node of this._consumerNodes.values()) { const slot = Number(node.dataset.slot); Object.assign(node.style, { left: `${offset + (width + 32) * (slot % 3)}px`, top: `${12 + Math.floor(slot / 3) * 93}px`, width: `${width}px` }); }
+      const width = Math.min(130, (this._diagram.clientWidth - 84) / 3), offset = (this._diagram.clientWidth - width * 3 - 64) / 2;
+      for (const node of this._consumerNodes.values()) { const slot = Number(node.dataset.slot); Object.assign(node.style, { left: `${offset + (width + 32) * (slot % 3)}px`, top: `${12 + (slot < 3 ? 1 : 0) * 93}px`, width: `${width}px` }); }
     }
     _syncFlows() {
       if (!this._config) return;
@@ -336,7 +338,7 @@
     _syncBorders() {
       for (const [key, border] of Object.entries(this._borders || {})) {
         const outgoing = Object.keys(this._data?.flows || {}).filter(name => name.startsWith(`${key}_`) && this._data.flows[name]);
-        const active = outgoing.length > 0, animation = border._animation;
+        const active = key !== 'home' && outgoing.length > 0, animation = border._animation;
         this._nodes[key].classList.toggle('supplying', active); border.classList.toggle('active', active);
         const watts = outgoing.reduce((total, name) => total + this._data.flow_power[name], 0);
         animation.updatePlaybackRate(flowSpeed(watts, this._config.appearance.duration) / 14);
@@ -397,15 +399,14 @@
         auxiliary_2_main: `M ${b.x} ${b.y + b.h / 2} H ${m.right}`,
         main_home: `M ${m.right} ${homeLane} H ${h.x + h.w / 2} V ${h.bottom}`
       };
-      for (const [id, node] of this._consumerNodes) {
-        const c = rect(`consumer:${id}`), slot = Number(node.dataset.slot), col = slot % 3;
-        const port = h.x + h.w * (.12 + slot * .152), lane = h.y - 4 * (slot + 1), target = c.x + c.w / 2;
-        if (slot >= 3) routes[`home_consumer_${id}`] = `M ${port} ${h.y} V ${lane} H ${target} V ${c.bottom}`;
-        else {
-          const corridor = col === 2 ? c.x - 10 : c.right + 10;
-          const upperLane = c.bottom + 4 * (col + 1);
-          routes[`home_consumer_${id}`] = `M ${port} ${h.y} V ${lane} H ${corridor} V ${upperLane} H ${target} V ${c.bottom}`;
-        }
+      for (const [row, lower] of [['lower', true], ['upper', false]]) {
+        const members = [...this._consumerNodes].filter(([, node]) => (Number(node.dataset.slot) < 3) === lower);
+        if (!members.length) continue;
+        const bounds = members.map(([id]) => rect(`consumer:${id}`)), lane = bounds[0].bottom + 10;
+        const port = lower ? h.x + h.w * .70 : base.width - 4;
+        const leftmost = Math.min(...bounds.map(c => c.x + c.w / 2));
+        routes[`home_row_${row}`] = `M ${port} ${h.y} V ${lane} H ${leftmost}`;
+        members.forEach(([id], index) => { const c = bounds[index]; routes[`home_consumer_${id}`] = `M ${c.x + c.w / 2} ${lane} V ${c.bottom}`; });
       }
       const geometry = JSON.stringify(routes); if (geometry === this._geometry && this._svg.childElementCount) return;
       const oldFlows = this._flows;
@@ -424,7 +425,7 @@
       for (const [name, route] of Object.entries(routes)) {
         const group = oldFlows[name] || document.createElementNS(NS, 'g'); group.classList.add('flow'); group.dataset.flow = name;
         const color = name.startsWith('grid') ? 'grid' : name === 'main_home' ? 'main' : name.startsWith('auxiliary_1') ? 'auxiliary_1' : 'auxiliary_2';
-        group.style.setProperty('--color', name.startsWith('home_consumer_') ? `var(--consumer-${name.slice(14)})` : `var(--flow-${color})`);
+        group.style.setProperty('--color', name.startsWith('home_') ? 'var(--flow-home)' : `var(--flow-${color})`);
         const path = group.querySelector('.flow-track') || document.createElementNS(NS, 'path'); path.classList.add('flow-track'); path.setAttribute('d', route); group.append(path);
         const dashes = group.querySelector('.flow-dashes') || document.createElementNS(NS, 'path'); dashes.classList.add('flow-dashes'); dashes.setAttribute('d', route); group.append(dashes);
         if (!group._animation) { group._animation = dashes.animate([{ strokeDashoffset: '0px' }, { strokeDashoffset: '-28px' }], { duration: 1000, iterations: Infinity });
