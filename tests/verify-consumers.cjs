@@ -99,10 +99,10 @@ const root = path.resolve(__dirname, '..');
  await page.evaluate(()=>{config.consumers[0].color='orange';card.setConfig(config);refresh()});
  const color=await page.evaluate(()=>({border:getComputedStyle(card._consumerNodes.get('load_0')).borderTopColor,line:getComputedStyle(card._flows.home_consumer_load_0.querySelector('.flow-dashes')).stroke}));assert.deepEqual(color,{border:'rgb(255, 165, 0)',line:'rgb(41, 150, 255)'});
  assert(await page.evaluate(()=>!card._nodes.home.classList.contains('supplying')&&getComputedStyle(card._nodes.home).borderTopStyle==='solid'&&card._borders.home._animation.playState==='paused'));
- await page.evaluate(()=>{states['binary_sensor.grid'].state='off';refresh()});
+ await page.evaluate(()=>{states['sensor.m_out'].state='320';states['binary_sensor.grid'].state='off';refresh()});
  assert(await page.evaluate(()=>Object.entries(card._flows).filter(([name])=>name.startsWith('home_')).every(([,flow])=>getComputedStyle(flow.querySelector('.flow-dashes')).stroke==='rgb(238, 34, 34)')));
  assert(await page.evaluate(()=>!card._nodes.home.classList.contains('supplying')));
- await page.evaluate(()=>{states['binary_sensor.grid'].state='on';refresh()});
+ await page.evaluate(()=>{states['sensor.m_out'].state='0';states['binary_sensor.grid'].state='on';refresh()});
  // Sparse counts fill the lower row first, including after a device disappears.
  const compactHeights = new Map();
  for(const count of [0,1,2,3,4,5,6,2,4]){

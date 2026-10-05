@@ -141,10 +141,10 @@ const root = path.resolve(__dirname, '..');
  const motion=await page.evaluateHandle(()=>card.shadowRoot.querySelector('.flow-dashes'));
  await page.evaluate(()=>{states['sensor.unrelated']={state:'12',attributes:{}};refresh()});
  assert(await page.evaluate(old=>old===card.shadowRoot.querySelector('.flow-dashes'),motion));
- await page.evaluate(()=>{states['binary_sensor.source'].state='on';states['binary_sensor.grid_available'].state='on';states['sensor.grid'].state='800';states['sensor.a_in'].state='200';states['sensor.b_in'].state='180';states['sensor.main_ac'].state='100';refresh()});
+ await page.evaluate(()=>{states['sensor.main_out'].state='0';states['binary_sensor.source'].state='on';states['binary_sensor.grid_available'].state='on';states['sensor.grid'].state='800';states['sensor.a_in'].state='200';states['sensor.b_in'].state='180';states['sensor.main_ac'].state='100';refresh()});
  assert.deepEqual(await page.evaluate(()=>active()),['auxiliary_1_main','auxiliary_2_main','grid_auxiliary_1','grid_auxiliary_2','grid_home','grid_main']);
  await page.evaluate(()=>{states['binary_sensor.grid_available'].state='unavailable';refresh()});
- assert(!(await page.evaluate(()=>active())).some(x=>x.endsWith('_home')));
+ assert((await page.evaluate(()=>active())).includes('grid_home'));
  await page.evaluate(()=>{states['binary_sensor.grid_available'].state='on';states['sensor.main_ac'].state='unavailable';states['sensor.main_pv'].state='unavailable';states['sensor.a_in'].state='unknown';refresh()});
  assert(!(await page.evaluate(()=>active())).includes('grid_main'));
  assert(!(await page.evaluate(()=>active())).includes('grid_auxiliary_1'));
@@ -188,7 +188,7 @@ const root = path.resolve(__dirname, '..');
   assert.deepEqual(await page.evaluate(()=>feedbackErrors),[]);
   assert(await page.evaluate(()=>originalForms.every((form,index)=>editor.shadowRoot.querySelectorAll('ha-form')[index]===form)&&originalInputs.every(input=>input.isConnected)&&[...editor.shadowRoot.querySelectorAll('details')].every(details=>details.open)&&originalNodes.every((node,index)=>card.shadowRoot.querySelectorAll('.node')[index]===node)),'Editing replaced fields or preview nodes');
  };
- for(const [section,name,value]of [['','title','Потоки'],['grid','name','Місто'],['grid','available_state','on'],['auxiliary_1','name','Рівер 2'],['auxiliary_2','name','Рівер 3'],['main','name','Дельта'],['home','name','Квартира'],['home','source_mode','output'],['main','solar_input_power_2','sensor.pv2'],['appearance','threshold','7'],['appearance','duration','4']]){
+ for(const [section,name,value]of [['','title','Потоки'],['grid','name','Місто'],['grid','available_state','on'],['auxiliary_1','name','Рівер 2'],['auxiliary_2','name','Рівер 3'],['main','name','Дельта'],['home','name','Квартира'],['main','solar_input_power_2','sensor.pv2'],['appearance','threshold','7'],['appearance','duration','4']]){
   const input=field(section,name);await input.fill('');assert.equal(await input.inputValue(),'');assert(await input.evaluate(input=>input.getRootNode().activeElement===input));await assertEditorStable();
   await input.pressSequentially(value,{delay:5});assert.equal(await input.inputValue(),value);await assertEditorStable();
  }
@@ -215,7 +215,7 @@ const root = path.resolve(__dirname, '..');
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .label').textContent),'Input');
  await page.evaluate(async()=>{const saved=published.at(-1);editor.remove();window.editor=await customElements.get('suris-ecoflow-flow-card').getConfigElement();editor.hass={states};editor.setConfig(saved);document.body.append(editor);for(const details of editor.shadowRoot.querySelectorAll('details'))details.open=true});
  assert.equal(await field('main','name').inputValue(),'Нова назва');assert.equal(await field('appearance','main_color').inputValue(),'red');assert.equal(await field('main','solar_input_power_2').inputValue(),'sensor.pv2');
- assert.equal(await field('home','source_mode').inputValue(),'output');
+ assert.equal(await field('home','source_mode').count(),0);
  await page.evaluate(()=>{editor.remove();card.setConfig(config);refresh()});
  await page.evaluate(()=>{delete config.home.power;states['binary_sensor.source'].state='on';states['binary_sensor.grid_available'].state='on';states['sensor.grid'].state='1000';states['sensor.a_in'].state='100';states['sensor.b_in'].state='200';states['sensor.main_ac'].state='300';card.setConfig(config);refresh()});
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'400 W');
@@ -230,7 +230,7 @@ const root = path.resolve(__dirname, '..');
  assert(!(await page.evaluate(()=>active())).includes('main_home'));
  await page.evaluate(()=>{states['sensor.a_in'].state='50';refresh()});
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'235 W');
- await page.evaluate(()=>{states['binary_sensor.grid_available'].state='off';refresh()});
+ await page.evaluate(()=>{states['sensor.main_out'].state='320';states['binary_sensor.grid_available'].state='off';refresh()});
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .power .value').textContent),'320 W');
  assert((await page.evaluate(()=>active())).includes('main_home'));
  await page.evaluate(()=>{config.home.power='sensor.home';card.setConfig(config);refresh()});
@@ -253,18 +253,20 @@ const root = path.resolve(__dirname, '..');
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .input .value').textContent),'—');
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .solar_2 .value').textContent),'150 W');assert((await page.evaluate(()=>active())).includes('auxiliary_2_main'));
  await page.evaluate(()=>{states['binary_sensor.grid_available'].state='on';refresh()});
- assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('.home')).borderTopColor),'rgb(17, 102, 204)');
+ assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('.home')).borderTopColor),'rgb(34, 204, 136)');
  await page.evaluate(()=>{states['binary_sensor.grid_available'].state='unavailable';refresh()});
- assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('.home')).borderTopColor),'rgb(96, 101, 109)');
+ assert.equal(await page.evaluate(()=>getComputedStyle(card.shadowRoot.querySelector('.home')).borderTopColor),'rgb(34, 204, 136)');
  // Home output detection remains independent of the optional grid outage indicator.
- await page.evaluate(()=>{card.setConfig({...config,home:{...config.home,source_mode:'output'}});refresh()});
+ await page.evaluate(()=>{card.setConfig({...config,home:{...config.home,source_mode:'grid'}});refresh()});
  assert((await page.evaluate(()=>active())).includes('main_home'));assert(!(await page.evaluate(()=>active())).includes('grid_home'));
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.status').textContent),'');
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.grid-outage').hidden),true);
- for(const state of ['on','off','unexpected','unavailable']){
+ const flowsBeforeIndicator=await page.evaluate(()=>active());
+ for(const state of ['on','off','unknown','unexpected','unavailable','']){
   await page.evaluate(state=>{states['binary_sensor.grid_available'].state=state;refresh()},state);
   assert((await page.evaluate(()=>active())).includes('main_home'));assert(!(await page.evaluate(()=>active())).includes('grid_home'));
   assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.grid-outage').hidden),state!=='off');
+  assert.deepEqual(await page.evaluate(()=>active()),flowsBeforeIndicator);
  }
  await page.evaluate(()=>{states['binary_sensor.grid_available'].state='off';refresh()});
  const outage=await page.evaluate(()=>{const node=card.shadowRoot.querySelector('.grid-outage'),style=getComputedStyle(node);return{text:node.textContent,color:style.color,animation:style.animationName,icon:getComputedStyle(card.shadowRoot.querySelector('.grid .icon svg')).visibility}});
@@ -282,11 +284,16 @@ const root = path.resolve(__dirname, '..');
  await page.evaluate(()=>{states['binary_sensor.grid_available'].state='on';states['sensor.main_out'].state='0';refresh()});
  assert((await page.evaluate(()=>active())).includes('grid_home'));assert(!(await page.evaluate(()=>active())).includes('main_home'));
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.grid-outage').hidden),true);
+ const gridFlowsBeforeIndicator=await page.evaluate(()=>active());
+ for(const state of ['off','unknown','unexpected','unavailable','']){
+  await page.evaluate(state=>{states['binary_sensor.grid_available'].state=state;refresh()},state);
+  assert.deepEqual(await page.evaluate(()=>active()),gridFlowsBeforeIndicator);
+ }
  await page.evaluate(()=>{states['sensor.main_out'].state='unavailable';refresh()});
  assert(!(await page.evaluate(()=>active())).includes('main_home'));assert(!(await page.evaluate(()=>active())).includes('grid_home'));
- await page.evaluate(()=>{states['sensor.main_out'].state='320';card.setConfig({...config,grid:{...config.grid,available_entity:''},home:{...config.home,source_mode:'output'}});refresh()});
+ await page.evaluate(()=>{states['sensor.main_out'].state='320';card.setConfig({...config,grid:{...config.grid,available_entity:''},home:{...config.home,source_mode:'grid'}});refresh()});
  assert((await page.evaluate(()=>active())).includes('main_home'));assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.grid-outage').hidden),true);
- await page.evaluate(()=>{card.setConfig({...config,language:'en',home:{...config.home,source_mode:'output'}});states['binary_sensor.grid_available'].state='off';refresh()});
+ await page.evaluate(()=>{card.setConfig({...config,language:'en',home:{...config.home,source_mode:'grid'}});states['binary_sensor.grid_available'].state='off';refresh()});
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.grid-outage').textContent),'No grid');
  await page.evaluate(()=>{states['binary_sensor.grid_available'].state='unavailable';card.setConfig(config);refresh()});
  console.log('PASS: independent main-output source detection, optional sensor, exclusive home flows, pulsing red outage label, mobile text fitting, language and reduced motion.');
