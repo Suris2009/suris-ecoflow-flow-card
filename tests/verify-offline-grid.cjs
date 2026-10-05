@@ -19,9 +19,18 @@ const root = path.resolve(__dirname, '..');
       window.refresh=()=>{card.hass={states:{...states}}};
       window.active=()=>Object.entries(card._flows).filter(([,flow])=>flow.classList.contains('active')).map(([name])=>name).sort();
     });
+    const assertFlowVisibility=async()=>{
+      const flows=await page.evaluate(()=>Object.entries(card._flows).map(([name,flow])=>({name,active:flow.classList.contains('active'),track:getComputedStyle(flow.querySelector('.flow-track')).visibility,dashes:getComputedStyle(flow.querySelector('.flow-dashes')).visibility})));
+      for(const flow of flows){
+        const expected=flow.active?'visible':'hidden';
+        assert.equal(flow.track,expected,`${flow.name} track visibility must follow activity`);
+        assert.equal(flow.dashes,expected,`${flow.name} dashes visibility must follow activity`);
+      }
+    };
     await page.waitForFunction(()=>Object.keys(card._flows).length===7);
     await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-offline-grid.png')});
     assert.deepEqual(await page.evaluate(()=>active()),['grid_home'],'258 W city grid must supply Home when all stations are idle or unavailable');
+    await assertFlowVisibility();
     assert.equal(await page.evaluate(()=>card._values['home.power'].textContent),'258 W');
     assert.equal(await page.evaluate(()=>card._values['home.voltage'].textContent),'221 V');
     assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.status').textContent),'');
@@ -37,23 +46,31 @@ const root = path.resolve(__dirname, '..');
     await page.evaluate(()=>{states['sensor.a_in'].state='50';refresh()});
     assert.equal(await page.evaluate(()=>card._values['home.power'].textContent),'208 W');
     assert.deepEqual(await page.evaluate(()=>active()),['grid_auxiliary_1','grid_home']);
+    await assertFlowVisibility();
     await page.evaluate(()=>{states['sensor.main_out'].state='320';refresh()});
     assert((await page.evaluate(()=>active())).includes('main_home'));assert(!(await page.evaluate(()=>active())).includes('grid_home'));
+    await assertFlowVisibility();
     await page.evaluate(()=>{states['sensor.main_out'].state='unavailable';states['sensor.grid'].state='unavailable';refresh()});
     assert(!(await page.evaluate(()=>active())).some(name=>name.endsWith('_home')));
     assert(!/Вибери|Select/.test(await page.evaluate(()=>card.shadowRoot.querySelector('.status').textContent)),'An unavailable configured sensor must not prompt entity selection');
-    const neutral=await page.evaluate(()=>({home:getComputedStyle(card._nodes.home).borderTopColor,line:getComputedStyle(card._flows.grid_home.querySelector('.flow-track')).stroke}));
+    const neutral=await page.evaluate(()=>({home:getComputedStyle(card._nodes.home).borderTopColor}));
     assert(!['rgb(255, 255, 255)','rgba(255, 255, 255, 0)'].includes(neutral.home));
-    assert(!['rgb(255, 255, 255)','rgba(255, 255, 255, 0)'].includes(neutral.line));
+    await assertFlowVisibility();
     await page.evaluate(()=>{states['sensor.grid'].state='258';states['sensor.a_in'].state='0';states['binary_sensor.grid'].state='on';refresh()});
     for(const width of [320,390,768,1040]){
       await page.setViewportSize({width,height:1000});
       assert.equal(await page.evaluate(()=>getComputedStyle(card._flows.grid_home.querySelector('.flow-dashes')).visibility),'visible');
       assert(await page.evaluate(()=>card._flows.grid_home.querySelector('.flow-dashes').getTotalLength()>10));
+      await assertFlowVisibility();
     }
+    await page.emulateMedia({reducedMotion:'reduce'});
+    await assertFlowVisibility();
+    assert.equal(await page.evaluate(()=>getComputedStyle(card._flows.grid_home.querySelector('.flow-dashes')).display),'none');
+    assert.equal(await page.evaluate(()=>getComputedStyle(card._flows.grid_home.querySelector('.flow-track')).visibility),'visible');
+    await page.emulateMedia({reducedMotion:'no-preference'});
     await page.setViewportSize({width:1040,height:1000});
     await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-offline-grid.png')});
     assert.deepEqual(errors,[]);
-    console.log('PASS: screenshot case, offline main station, 258 W grid-to-home flow, live animation, grid warning independence, charging subtraction, main output priority, visible unknown-source frame and tracks.');
+    console.log('PASS: offline main station, grid-to-home flow, live animation, grid warning independence, charging subtraction, main output priority, hidden inactive tracks, visible unknown-source frame and reduced motion.');
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});
