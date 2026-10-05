@@ -1,8 +1,8 @@
-# Suris EcoFlow Flow Card 2.0.3
+# Suris EcoFlow Flow Card 2.0.4
 
-[Українська інструкція](README.md) · [Download 2.0.3](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.3) · [Previous 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
+[Українська інструкція](README.md) · [Download 2.0.4](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.4) · [Previous 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
 
-**Stable release 2.0.3.** Upgrading from version 1 or a version 2 beta preserves the card configuration.
+**Stable release 2.0.4.** Upgrading from version 1 or a version 2 beta preserves the card configuration.
 
 A Home Assistant dashboard card with a visual entity editor. City grid is on the left, home on the right, and the main EcoFlow sits between the two auxiliary stations at the bottom. Up to six active home consumers appear above them, without scrolling. The card automatically shrinks when one or both consumer rows are unused. Power readings stay inside the blocks; lines show only moving flow.
 
@@ -28,7 +28,7 @@ As devices switch on or off, the card resizes automatically. A single row moves 
 
 1. Open **HACS → ⋮ → Custom repositories**.
 2. Add `https://github.com/Suris2009/suris-ecoflow-flow-card`, category **Dashboard** (Lovelace / Plugin in older versions).
-3. Download **2.0.3**. If the card is already installed, open its HACS entry and install the available update.
+3. Download **2.0.4**. If the card is already installed, open its HACS entry and install the available update.
 4. Reload the Home Assistant frontend. If HACS did not add the resource, add `/hacsfiles/suris-ecoflow-flow-card/suris-ecoflow-flow-card.js` as a **JavaScript module** in dashboard resources.
 5. Open **Edit dashboard → Add card → Suris EcoFlow Flow Card**. Choose your entities in the visual editor. YAML is optional.
 
@@ -36,9 +36,9 @@ This repository is added as a custom HACS repository; inclusion in the default c
 
 ## Manual installation
 
-1. Download `suris-ecoflow-flow-card.js` from the 2.0.3 release. Put it in the `www` folder beside your Home Assistant `configuration.yaml`, commonly `/config/www`. If you just created `www` for the first time, restart Home Assistant.
+1. Download `suris-ecoflow-flow-card.js` from the 2.0.4 release. Put it in the `www` folder beside your Home Assistant `configuration.yaml`, commonly `/config/www`. If you just created `www` for the first time, restart Home Assistant.
 2. Open **Settings → Dashboards → ⋮ → Resources → Add resource**. Enable Advanced mode in your user profile if Resources is hidden.
-3. URL: `/local/suris-ecoflow-flow-card.js?v=2.0.3`; type: **JavaScript module**.
+3. URL: `/local/suris-ecoflow-flow-card.js?v=2.0.4`; type: **JavaScript module**.
 4. Reload the frontend, then add and configure the card through the visual editor. Clear the frontend cache if the old version remains visible.
 
 ## Configure the stations and home
@@ -52,11 +52,11 @@ This repository is added as a custom HACS repository; inclusion in the default c
 
 To show the house voltage, select **Home voltage (optional)** in the **Home** section of the visual editor. The **Voltage** row appears below **Input**, in V. Without a selected sensor the row stays hidden; an unavailable reading shows `—`. Voltage is read from that sensor, not inferred from the grid or battery. In YAML, set `home.voltage: sensor.home_voltage`.
 
-In **Home → Home source detection**, choose **Main EcoFlow output** to select the home source independently of the grid status sensor. Output power above the flow threshold selects main EcoFlow; a valid non-negative reading at or below the threshold selects grid. Select the dedicated **Output power to home** in Main EcoFlow when other loads use the station; otherwise its total output is used. An unavailable, invalid or negative output leaves the home source unknown and stops both home supply lines. This is an inference from output power, not a measurement of the transfer switch.
+The home source is automatically selected from main EcoFlow output, independently of the grid status sensor. Output power above the flow threshold selects main EcoFlow; a valid non-negative reading at or below the threshold selects grid. Select the dedicated **Output power to home** in Main EcoFlow when other loads use the station; otherwise its total output is used. An unavailable, invalid or negative output leaves the home source unknown and stops both home supply lines. This is an inference from output power, not a measurement of the transfer switch.
 
-**Grid availability sensor** mode retains the previous source logic: the configured available state selects grid, the opposite binary state selects main, and an unknown or unrecognized state stops both home supply and grid charging flows. Existing configurations with a grid sensor retain this mode. Without a selected grid sensor the card uses main output automatically.
+Existing configurations automatically use main EcoFlow output after updating; no manual mode change is needed. Legacy `home.source_mode`, `home.source_entity`, `home.grid_state` and `home.main_state` fields are ignored. The source-mode selector has been removed.
 
-The optional **Grid availability** sensor also controls the indicator inside the city grid block. When it reports an outage, a red **No grid** label pulses in place of the tower icon. The name and power reading remain visible. It disappears when grid power returns, the sensor is cleared or its state is unknown. With reduced motion the label stays steady. In Main EcoFlow output mode, this sensor does not select the home source; a confirmed outage still stops grid charging flows.
+The optional **Grid availability** sensor only controls the indicator inside the city grid block. When it reports an outage, a red **No grid** label pulses in place of the tower icon. The name and power reading remain visible. It disappears when grid power returns, the sensor is cleared or its state is unknown. With reduced motion the label stays steady. No state of this sensor affects any flow. Station charging and transfers use their own power readings.
 
 Without a home sensor, the card calculates **home grid input = total grid power − auxiliary 1 grid charging − auxiliary 2 grid charging − main AC input**, bounded at zero. Auxiliary charging uses its dedicated charging sensor when selected, otherwise total input. Missing or unavailable charging readings count as zero in this calculation, so an offline station that is actually charging can overestimate home input. When the stations are off, home receives the entire grid reading. Example: grid 1000 W minus station charging of 100, 200 and 300 W gives home 400 W. The meters may update at different times, so this is a calculated reading.
 
@@ -120,7 +120,7 @@ All power rows stay on one line. Values below 1000 W use W; values from 1000 W u
 
 ## Upgrade from version 1 or a beta, or roll back
 
-Update the same resource to **2.0.3** and reload the frontend. The card type remains `custom:suris-ecoflow-flow-card`. Existing station entities, names, colors and flow settings are retained. When upgrading from version 1, add consumers in the editor; none are added automatically. Existing consumer settings from version 2 betas are retained. Without active consumers, the card shrinks automatically. Do not add a duplicate resource or recreate the card.
+Update the same resource to **2.0.4** and reload the frontend. The card type remains `custom:suris-ecoflow-flow-card`. Existing station entities, names, colors and flow settings are retained. When upgrading from version 1, add consumers in the editor; none are added automatically. Existing consumer settings from version 2 betas are retained. Without active consumers, the card shrinks automatically. Do not add a duplicate resource or recreate the card.
 
 To roll back, save a copy of the card YAML, install **0.1.12** through HACS or replace the same JS file with the version 1 asset, and reload the frontend. Version 1 does not display consumers; station settings remain compatible.
 
@@ -130,7 +130,7 @@ To roll back, save a copy of the card YAML, install **0.1.12** through HACS or r
 | --- | --- |
 | Consumer not visible | Power sensor selected, available reading above the threshold, and within the six strongest |
 | Wrong consumer color | Enter a valid CSS color without quotes in the visual editor; use quotes for HEX in YAML |
-| No grid or home supply line | Check Home source detection: main home output sensor, or the optional grid sensor and its raw available state; corresponding power exceeds the threshold |
+| No grid or home supply line | Check the main home output sensor and corresponding power readings; the grid availability sensor only controls the warning |
 | Home differs from meter | Home excludes station charging; unavailable charging sensors count as zero; meter updates may differ in time |
 | Main Input shows `—` | Select total input, or make every selected individual input sensor available |
 | Old layout after upgrade | One resource only, correct downloaded version, frontend reloaded / cache cleared |

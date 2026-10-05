@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.0.3 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.0.4 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.0.3';
+  const VERSION = '2.0.4';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -22,16 +22,16 @@
   Object.assign(TEXT.uk, { voltage: 'Напруга' });
   Object.assign(TEXT.en, { voltage: 'Voltage' });
   Object.assign(TEXT.uk, {
-    gridOff: 'Мережі немає', outputSource: 'За виходом головної EcoFlow', gridSource: 'За датчиком наявності мережі',
-    gridHint: 'Датчик необов’язковий. Якщо мережі немає, усередині її блоку блимає червоний напис «Мережі немає». Без датчика попередження приховане.',
-    sourceHint: 'За виходом головної EcoFlow: потужність виходу на дім вище порогу — дім від EcoFlow, нижче або рівна порогу — від мережі. Датчик мережі показує її стан окремо. За датчиком мережі: збережена попередня логіка. Без нього використовується вихід головної станції. Недоступна потужність не визначає джерело.',
+    gridOff: 'Мережі немає',
+    gridHint: 'Датчик необов’язковий. Якщо мережі немає, усередині її блоку блимає червоний напис «Мережі немає». Без датчика попередження приховане. Цей датчик не керує потоками.',
+    sourceHint: 'За виходом головної EcoFlow: потужність виходу на дім вище порогу — дім від EcoFlow, нижче або рівна порогу — від мережі. Датчик мережі керує лише червоним написом та не впливає на потоки. Недоступна потужність не визначає джерело.',
     setup: 'Вибери датчик виходу головної EcoFlow на дім або її загального виходу',
     mainHint: 'Для лінії мережа → головна EcoFlow потрібна окрема потужність AC-входу. Для визначення джерела дому за виходом вибери вихід на дім; загальний вихід підходить, лише якщо станція живить тільки дім.'
   });
   Object.assign(TEXT.en, {
-    gridOff: 'No grid', outputSource: 'Main EcoFlow output', gridSource: 'Grid availability sensor',
-    gridHint: 'The sensor is optional. When grid power is absent, a red No grid message pulses inside its block. Without a sensor the warning stays hidden.',
-    sourceHint: 'Main EcoFlow output: home feed power above the threshold selects EcoFlow; at or below the threshold selects grid. The grid sensor shows its status separately. Grid availability sensor retains the previous source logic; without it, main output is used. An unavailable output leaves the source unknown.',
+    gridOff: 'No grid',
+    gridHint: 'The sensor is optional. When grid power is absent, a red No grid message pulses inside its block. Without a sensor the warning stays hidden. This sensor never controls flows.',
+    sourceHint: 'Main EcoFlow output: home feed power above the threshold selects EcoFlow; at or below the threshold selects grid. The grid sensor only controls the red warning and never affects flows. An unavailable output leaves the source unknown.',
     setup: 'Select the main EcoFlow home feed or total output power sensor',
     mainHint: 'Grid → main EcoFlow requires a separate AC input sensor. For output-based home source detection, select the home feed output; total output is suitable only when the station supplies the home alone.'
   });
@@ -42,7 +42,7 @@
       if (config[key] != null && (typeof config[key] !== 'object' || Array.isArray(config[key]))) throw new Error(`${key} must be an object`);
       result[key] = { ...DEFAULTS[key], ...config[key] };
     }
-    result.home.source_mode ||= result.grid.available_entity ? 'grid' : 'output';
+    delete result.home.source_mode; // Legacy source modes never control flows.
     if (config.consumers != null && !Array.isArray(config.consumers)) throw new Error('Consumers must be a list');
     if ((config.consumers || []).length > 20) throw new Error('Maximum 20 consumers');
     const ids = new Set();
@@ -63,7 +63,6 @@
     const result = draftConfig(config), a = result.appearance;
     result.title ??= DEFAULTS.title;
     result.language = result.language === 'en' ? 'en' : 'uk';
-    if (!['grid', 'output'].includes(result.home.source_mode)) throw new Error('Home source mode must be grid or output');
     for (const key of ['grid', 'auxiliary_1', 'auxiliary_2', 'main', 'home']) result[key].name ||= DEFAULTS[key].name;
     const number = (key) => a[key] == null || a[key] === '' ? DEFAULTS.appearance[key] : Number(a[key]);
     a.threshold = number('threshold'); a.duration = number('duration');
@@ -123,18 +122,12 @@
     const gridAvailability = !c.grid.available_entity ? 'not_configured'
       : usableGrid && String(gridState) === availableState ? 'available'
         : usableGrid && (absentState ? String(gridState) === absentState : true) ? 'absent' : 'unknown';
-    const useGridSource = c.home.source_mode !== 'output' && !!c.grid.available_entity;
-    const source = useGridSource
-      ? gridAvailability === 'available' ? 'grid' : gridAvailability === 'absent' ? 'main' : 'unknown'
-      : feedPower != null && feedPower >= 0 ? positive(feedPower) ? 'main' : 'grid' : 'unknown';
+    const source = feedPower != null && feedPower >= 0 ? positive(feedPower) ? 'main' : 'grid' : 'unknown';
     const gridCharging = [
       p(c.auxiliary_1.grid_charge_power || c.auxiliary_1.input_power),
       p(c.auxiliary_2.grid_charge_power || c.auxiliary_2.input_power),
       main.ac
     ];
-    // Charging can continue while the main station supplies Home in automatic mode.
-    const gridAvailable = useGridSource ? gridAvailability === 'available'
-      : gridAvailability !== 'absent' && (source === 'grid' || positive(p(c.grid.power)) || gridCharging.some(positive));
     let homePower = p(c.home.power);
     let powerOrigin = c.home.power ? 'sensor' : 'unknown';
     if (!c.home.power && source === 'main') {
@@ -153,12 +146,12 @@
       grid_home: homePower, main_home: homePower
     };
     const flows = {
-      grid_auxiliary_1: gridAvailable && positive(flow_power.grid_auxiliary_1),
-      grid_auxiliary_2: gridAvailable && positive(flow_power.grid_auxiliary_2),
-      grid_main: gridAvailable && positive(main.ac),
+      grid_auxiliary_1: positive(flow_power.grid_auxiliary_1),
+      grid_auxiliary_2: positive(flow_power.grid_auxiliary_2),
+      grid_main: positive(main.ac),
       auxiliary_1_main: positive(flow_power.auxiliary_1_main),
       auxiliary_2_main: positive(flow_power.auxiliary_2_main),
-      grid_home: gridAvailable && source === 'grid' && positive(homePower),
+      grid_home: source === 'grid' && positive(homePower),
       main_home: source === 'main' && positive(homePower)
     };
     return { main, auxiliary_1, auxiliary_2, grid: { output: p(c.grid.power), availability: gridAvailability }, home: { power: homePower, voltage: readNumber(states, c.home.voltage), source, power_origin: powerOrigin }, consumers: (c.consumers || []).map(consumer => ({ ...consumer, entity: consumer.power, power: p(consumer.power) })), flows, flow_power };
@@ -328,7 +321,7 @@
         battery.querySelector('.battery-unknown').style.display = known ? 'none' : '';
       }
       const status = this.shadowRoot.querySelector('.status');
-      status.textContent = data.home.source === 'unknown' ? c.home.source_mode !== 'output' && c.grid.available_entity ? text.mismatch : text.setup : '';
+      status.textContent = data.home.source === 'unknown' ? text.setup : '';
       const homeColor = data.home.source === 'unknown' ? 'var(--divider-color,#60656d)' : `var(--flow-${data.home.source})`;
       this.style.setProperty('--flow-home', homeColor); this._nodes.home.style.setProperty('--node-color', homeColor); this._borders.home.style.setProperty('--node-color', homeColor);
       this._renderConsumers(); this._drawPaths(); this._syncFlows();
@@ -499,8 +492,8 @@
     uk: { title: 'Заголовок', language: 'Мова', name: 'Назва', power: 'Потужність', input_power: 'Загальна вхідна потужність', output_power: 'Загальна вихідна потужність', soc: 'Заряд батареї (%)', ac_input_power: 'Потужність входу від міської мережі (AC)', solar_input_power: 'Потужність входу XT60(1) (DC)', solar_input_power_2: 'Потужність входу XT60(2) (DC)', grid_charge_power: 'Потужність заряджання від мережі (необов’язково)', transfer_power: 'Потужність передачі на головну EcoFlow (необов’язково)', home_feed_power: 'Потужність виходу на дім (необов’язково)', available_entity: 'Наявність міської мережі', available_state: 'Стан «мережа є»', source_entity: 'Сутність джерела живлення дому', grid_state: 'Стан «дім від міської мережі»', main_state: 'Стан «дім від головної EcoFlow»', grid_color: 'Колір мережі: рамка та потоки', auxiliary_1_color: 'Колір EcoFlow №2: рамка та потік', auxiliary_2_color: 'Колір EcoFlow №3: рамка та потік', solar_color: 'Колір передачі між станціями', main_color: 'Колір головної EcoFlow: рамка та потік', threshold: 'Поріг активного потоку (Вт)', duration: 'Базовий час руху (с)' },
     en: { title: 'Title', language: 'Language', name: 'Name', power: 'Power', input_power: 'Total input power', output_power: 'Total output power', soc: 'Battery charge (%)', ac_input_power: 'City grid input power (AC)', solar_input_power: 'XT60(1) input power (DC)', solar_input_power_2: 'XT60(2) input power (DC)', grid_charge_power: 'Grid charging power (optional)', transfer_power: 'Transfer power to main EcoFlow (optional)', home_feed_power: 'Output power to home (optional)', available_entity: 'Grid availability', available_state: 'Grid available state', source_entity: 'Home power source entity', grid_state: 'State: home powered by grid', main_state: 'State: home powered by main EcoFlow', grid_color: 'Grid border and flow color', auxiliary_1_color: 'EcoFlow #2 border and flow color', auxiliary_2_color: 'EcoFlow #3 border and flow color', solar_color: 'Station transfer color', main_color: 'Main EcoFlow border and flow color', threshold: 'Active flow threshold (W)', duration: 'Base movement time (s)' }
   };
-  Object.assign(FIELD_LABELS.uk, { voltage: 'Напруга дому (необов’язково)', available_entity: 'Наявність міської мережі (необов’язково)', source_mode: 'Визначення джерела живлення дому' });
-  Object.assign(FIELD_LABELS.en, { voltage: 'Home voltage (optional)', available_entity: 'Grid availability (optional)', source_mode: 'Home source detection' });
+  Object.assign(FIELD_LABELS.uk, { voltage: 'Напруга дому (необов’язково)', available_entity: 'Наявність міської мережі (необов’язково)' });
+  Object.assign(FIELD_LABELS.en, { voltage: 'Home voltage (optional)', available_entity: 'Grid availability (optional)' });
   const entityField = (name, power = true) => ({ name, selector: { entity: power ? { domain: 'sensor' } : {} } });
   const textField = (name) => ({ name, selector: { text: {} } });
   const rgbToHsl = hex => {
@@ -619,7 +612,7 @@
         ['auxiliary_1', c.auxiliary_1.name || DEFAULTS.auxiliary_1.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
         ['auxiliary_2', c.auxiliary_2.name || DEFAULTS.auxiliary_2.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
         ['main', text.main, [...stationSchema, entityField('ac_input_power'), entityField('solar_input_power'), entityField('solar_input_power_2'), entityField('home_feed_power')], text.mainHint],
-        ['home', text.home, [textField('name'), { name: 'source_mode', selector: { select: { options: [{ value: 'output', label: text.outputSource }, { value: 'grid', label: text.gridSource }], mode: 'dropdown' } } }, entityField('power'), { name: 'voltage', selector: { entity: { domain: 'sensor', device_class: 'voltage' } } }], `${text.sourceHint} ${text.homeDerived}`],
+        ['home', text.home, [textField('name'), entityField('power'), { name: 'voltage', selector: { entity: { domain: 'sensor', device_class: 'voltage' } } }], `${text.sourceHint} ${text.homeDerived}`],
         ['appearance', c.language === 'en' ? 'Flow appearance' : 'Вигляд потоків', [textField('grid_color'), textField('auxiliary_1_color'), textField('auxiliary_2_color'), textField('main_color'), { name: 'threshold', selector: { number: { min: 0, max: 1000, step: 1, mode: 'box', unit_of_measurement: text.watts } } }, { name: 'duration', selector: { number: { min: .5, max: 20, step: .5, mode: 'box', unit_of_measurement: 's' } } }], `${text.flowHint} ${c.language === 'en' ? 'Open a color below to choose a swatch or mix hue, saturation and brightness. Each source color applies to its border and outgoing flows. Home uses its active source color. Colors: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). An empty field restores the default color.' : 'Відкрий колір нижче, щоб обрати зразок або змішати відтінок, насиченість і яскравість. Колір джерела застосовується до його рамки та вихідних потоків. Рамка дому має колір активного джерела. Кольори: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). Порожнє поле повертає типовий колір.'}`]
       ];
       for (const consumer of c.consumers) sections.push([`consumer:${consumer.id}`, consumer.name || text.consumer, [textField('name'), entityField('power'), { name: 'icon', selector: { icon: {} } }, textField('color')], '']);

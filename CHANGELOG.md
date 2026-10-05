@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.4 — Stable
+
+- Remove grid availability from all flow decisions, including existing configurations and saved legacy source modes. The sensor only controls the red outage warning inside the city grid block.
+- Determine Home supply from the main station home feed or total output; determine station charging and transfer flows from their own power readings.
+- Remove the source-mode selector. No manual mode change is required after updating.
+- Verify unchanged flows across every grid indicator state, with main and grid Home supply, plus editor migration and responsive warning text.
+
 ## 2.0.3 — Stable
 
 - Make the grid availability sensor optional. Without it, detect the home source from the main station home feed or total output power.
