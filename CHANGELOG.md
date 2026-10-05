@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.3 — Stable
+
+- Make the grid availability sensor optional. Without it, detect the home source from the main station home feed or total output power.
+- Add Home source detection in the visual editor: main output works independently of the grid status sensor; existing configurations retain their grid-sensor source mode.
+- Show a red pulsing Мережі немає / No grid message inside the city grid block when its optional sensor reports an outage. Hide it when power returns, the sensor is not configured or its state is unknown; use steady text with reduced motion.
+- Retain exclusive home supply flows, direct home power sensors, grid charging readings, all settings and existing route geometry.
+- Verify source switching, indicator states, editor persistence, unsupported and unavailable output readings, mobile text fitting and reduced motion.
+
 ## 2.0.2 — Stable
 
 - Keep the station #3 grid charging line at least 20 px below the Home block, including when a longer Home name adds a second heading line.
