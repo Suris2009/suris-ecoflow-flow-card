@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.0.5 — Stable
+
+Promote 2.0.5-beta.2 to stable, preserving its behavior and dashboard configuration.
+
+### Video demo
+
+https://github.com/user-attachments/assets/e5172fc9-3b20-4533-9004-020b4e33d294
+
+- Restore the grid-to-home flow when the main station is unavailable and grid power is above the flow threshold. Positive main output retains priority.
+- Hide all inactive flow tracks. Active power flows retain their moving dashes; the grid availability sensor controls only the outage warning.
+- Keep the neutral Home outline visible when power data is insufficient.
+- Validate the flow model, responsive layouts, source switching, animation, editor and reduced motion.
+
 ## 2.0.5-beta.2 — Pre-release
 
 - Hide inactive flow tracks, including routes to idle and unavailable stations. Only active energy flows remain visible.
