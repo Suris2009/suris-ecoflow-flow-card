@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.0.4 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.0.5-beta.1 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.0.4';
+  const VERSION = '2.0.5-beta.1';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -24,15 +24,15 @@
   Object.assign(TEXT.uk, {
     gridOff: 'Мережі немає',
     gridHint: 'Датчик необов’язковий. Якщо мережі немає, усередині її блоку блимає червоний напис «Мережі немає». Без датчика попередження приховане. Цей датчик не керує потоками.',
-    sourceHint: 'За виходом головної EcoFlow: потужність виходу на дім вище порогу — дім від EcoFlow, нижче або рівна порогу — від мережі. Датчик мережі керує лише червоним написом та не впливає на потоки. Недоступна потужність не визначає джерело.',
-    setup: 'Вибери датчик виходу головної EcoFlow на дім або її загального виходу',
+    sourceHint: 'За виходом головної EcoFlow: потужність виходу на дім вище порогу — дім від EcoFlow, нижче або рівна порогу — від мережі. Датчик мережі керує лише червоним написом та не впливає на потоки. Якщо вихід EcoFlow недоступний, додатна потужність мережі визначає живлення від мережі.',
+    sourceUnknown: 'Недостатньо даних потужності для визначення джерела дому',
     mainHint: 'Для лінії мережа → головна EcoFlow потрібна окрема потужність AC-входу. Для визначення джерела дому за виходом вибери вихід на дім; загальний вихід підходить, лише якщо станція живить тільки дім.'
   });
   Object.assign(TEXT.en, {
     gridOff: 'No grid',
     gridHint: 'The sensor is optional. When grid power is absent, a red No grid message pulses inside its block. Without a sensor the warning stays hidden. This sensor never controls flows.',
-    sourceHint: 'Main EcoFlow output: home feed power above the threshold selects EcoFlow; at or below the threshold selects grid. The grid sensor only controls the red warning and never affects flows. An unavailable output leaves the source unknown.',
-    setup: 'Select the main EcoFlow home feed or total output power sensor',
+    sourceHint: 'Main EcoFlow output: home feed power above the threshold selects EcoFlow; at or below the threshold selects grid. The grid sensor only controls the red warning and never affects flows. If EcoFlow output is unavailable, positive grid power selects the grid.',
+    sourceUnknown: 'Not enough power data to determine the home source',
     mainHint: 'Grid → main EcoFlow requires a separate AC input sensor. For output-based home source detection, select the home feed output; total output is suitable only when the station supplies the home alone.'
   });
   const t = (config) => TEXT[config?.language] || TEXT.uk;
@@ -114,7 +114,7 @@
       if (inputs.length && inputs.every(value => value != null)) main.input = inputs.reduce((sum, value) => sum + value, 0);
     }
     const positive = (value) => value != null && value > c.appearance.threshold;
-    const feedPower = p(c.main.home_feed_power || c.main.output_power);
+    const feedPower = p(c.main.home_feed_power || c.main.output_power), gridPower = p(c.grid.power);
     const gridState = c.grid.available_entity && states[c.grid.available_entity]?.state;
     const availableState = String(c.grid.available_state || 'on');
     const absentState = availableState === 'on' ? 'off' : availableState === 'off' ? 'on' : null;
@@ -122,7 +122,8 @@
     const gridAvailability = !c.grid.available_entity ? 'not_configured'
       : usableGrid && String(gridState) === availableState ? 'available'
         : usableGrid && (absentState ? String(gridState) === absentState : true) ? 'absent' : 'unknown';
-    const source = feedPower != null && feedPower >= 0 ? positive(feedPower) ? 'main' : 'grid' : 'unknown';
+    const source = positive(feedPower) ? 'main'
+      : (feedPower != null && feedPower >= 0) || positive(gridPower) ? 'grid' : 'unknown';
     const gridCharging = [
       p(c.auxiliary_1.grid_charge_power || c.auxiliary_1.input_power),
       p(c.auxiliary_2.grid_charge_power || c.auxiliary_2.input_power),
@@ -133,7 +134,6 @@
     if (!c.home.power && source === 'main') {
       homePower = feedPower; powerOrigin = 'main_output';
     } else if (!c.home.power && source === 'grid') {
-      const gridPower = p(c.grid.power);
       if (gridPower != null && gridPower >= 0) {
         homePower = Math.max(0, gridPower - gridCharging.reduce((sum, value) => sum + Math.max(0, value ?? 0), 0));
         powerOrigin = 'grid_balance';
@@ -173,7 +173,7 @@
     *{box-sizing:border-box}ha-card{display:block;overflow:hidden;background:var(--ha-card-background,var(--card-background-color,#1c1c1c));color:var(--primary-text-color,#e8e8e8);padding:16px;border-radius:var(--ha-card-border-radius,16px)}
     .wrap{container-type:inline-size}h2{font-size:22px;font-weight:600;margin:0 0 8px}.diagram{position:relative;height:clamp(540px,65cqw,720px)}
     .lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-    .flow path{fill:none;stroke:var(--divider-color,#60656d);stroke-width:1.5;stroke-linejoin:miter;stroke-linecap:butt;opacity:.40}.flow.active .flow-track{stroke:var(--color);opacity:.28}.flow .flow-dashes{stroke:var(--color);stroke-width:3;stroke-linecap:round;stroke-dasharray:7 21;opacity:.95;visibility:hidden}.flow.active .flow-dashes{visibility:visible}
+    .flow path{fill:none;stroke:color-mix(in srgb,var(--primary-text-color,#9aa0a6) 55%,transparent);stroke-width:1.5;stroke-linejoin:miter;stroke-linecap:butt;opacity:.40}.flow.active .flow-track{stroke:var(--color);opacity:.28}.flow .flow-dashes{stroke:var(--color);stroke-width:3;stroke-linecap:round;stroke-dasharray:7 21;opacity:.95;visibility:hidden}.flow.active .flow-dashes{visibility:visible}
     .node{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0;background:transparent;background:color-mix(in srgb,var(--ha-card-background,var(--card-background-color,#1c1c1c)) 8%,transparent);border:2px solid var(--node-color,var(--divider-color,#60656d));border-radius:12px;padding:12px 10px;z-index:1;min-height:140px;height:auto}
     .node.supplying{border-color:transparent}.node-border{position:absolute;overflow:visible;pointer-events:none;display:none;z-index:2}.node-border.active{display:block}.node-border path{fill:none;stroke:var(--node-color);stroke-width:2;stroke-linecap:round;stroke-dasharray:7 7}
     .node h3{font-size:clamp(12px,1.9cqw,20px);line-height:1.25;text-align:center;margin:0;font-weight:600;overflow-wrap:anywhere}.node .icon{display:flex;justify-content:center;height:clamp(30px,5cqw,56px);margin:4px 0}.icon svg{height:100%;width:64px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.icon .battery-fill{fill:var(--node-color,var(--flow-main));stroke:none}
@@ -321,8 +321,8 @@
         battery.querySelector('.battery-unknown').style.display = known ? 'none' : '';
       }
       const status = this.shadowRoot.querySelector('.status');
-      status.textContent = data.home.source === 'unknown' ? text.setup : '';
-      const homeColor = data.home.source === 'unknown' ? 'var(--divider-color,#60656d)' : `var(--flow-${data.home.source})`;
+      status.textContent = data.home.source === 'unknown' ? text.sourceUnknown : '';
+      const homeColor = data.home.source === 'unknown' ? 'color-mix(in srgb,var(--primary-text-color,#9aa0a6) 55%,transparent)' : `var(--flow-${data.home.source})`;
       this.style.setProperty('--flow-home', homeColor); this._nodes.home.style.setProperty('--node-color', homeColor); this._borders.home.style.setProperty('--node-color', homeColor);
       this._renderConsumers(); this._drawPaths(); this._syncFlows();
     }

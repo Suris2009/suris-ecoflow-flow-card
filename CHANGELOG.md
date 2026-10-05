@@ -1,6 +1,15 @@
 # Changelog
 
-## 2.0.4 — Stable
+## 2.0.5-beta.1 — Pre-release
+
+- Restore the grid-to-home flow when the main station is unavailable and grid power is above the flow threshold. Positive main output keeps priority; the grid availability sensor still controls only its warning.
+- Verify the reported 258 W grid, 221 V Home and offline main-station scenario, including visible moving dashes, charging subtraction and mobile widths.
+- Keep the neutral Home outline and inactive tracks visible in themes with a white divider color; report insufficient power data instead of incorrectly prompting sensor selection.
+- Publish as a beta for real Home Assistant testing. Withdraw 2.0.4 from stable releases.
+
+## 2.0.4 — Withdrawn
+
+Withdrawn from stable releases because the grid-to-home flow could disappear when the main station was unavailable. Use 2.0.5-beta.1 to test the correction.
 
 - Remove grid availability from all flow decisions, including existing configurations and saved legacy source modes. The sensor only controls the red outage warning inside the city grid block.
 - Determine Home supply from the main station home feed or total output; determine station charging and transfer flows from their own power readings.

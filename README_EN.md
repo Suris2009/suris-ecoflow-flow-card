@@ -1,10 +1,14 @@
-# Suris EcoFlow Flow Card 2.0.4
+# Suris EcoFlow Flow Card 2.0.5-beta.1
 
-[Українська інструкція](README.md) · [Download 2.0.4](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.4) · [Previous 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
+[Українська інструкція](README.md) · [Download 2.0.5-beta.1](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.5-beta.1) · [Previous 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
 
-**Stable release 2.0.4.** Upgrading from version 1 or a version 2 beta preserves the card configuration.
+**Beta 2.0.5-beta.1 for testing flows with unavailable stations.** Upgrading from version 1 or a version 2 beta preserves the card configuration.
 
 A Home Assistant dashboard card with a visual entity editor. City grid is on the left, home on the right, and the main EcoFlow sits between the two auxiliary stations at the bottom. Up to six active home consumers appear above them, without scrolling. The card automatically shrinks when one or both consumer rows are unused. Power readings stay inside the blocks; lines show only moving flow.
+
+In HACS open the card → ⋮ → Redownload, enable beta versions and choose **2.0.5-beta.1**. Reload the frontend after installation. Release 2.0.4 has been withdrawn from stable releases because it hid the grid-to-home flow when the main EcoFlow was unavailable.
+
+![Grid supplies Home while the main EcoFlow is unavailable](preview-offline-grid.png)
 
 This is a **dashboard card**, not a device integration. Install your EcoFlow and meter integrations first so their entities are available in Home Assistant. The card displays readings; it does not switch relays, outputs or appliances. It runs locally without external libraries, CDN or a build step.
 
@@ -28,7 +32,7 @@ As devices switch on or off, the card resizes automatically. A single row moves 
 
 1. Open **HACS → ⋮ → Custom repositories**.
 2. Add `https://github.com/Suris2009/suris-ecoflow-flow-card`, category **Dashboard** (Lovelace / Plugin in older versions).
-3. Download **2.0.4**. If the card is already installed, open its HACS entry and install the available update.
+3. Download **2.0.5-beta.1**. If the card is already installed, open its HACS entry and install the available update.
 4. Reload the Home Assistant frontend. If HACS did not add the resource, add `/hacsfiles/suris-ecoflow-flow-card/suris-ecoflow-flow-card.js` as a **JavaScript module** in dashboard resources.
 5. Open **Edit dashboard → Add card → Suris EcoFlow Flow Card**. Choose your entities in the visual editor. YAML is optional.
 
@@ -36,9 +40,9 @@ This repository is added as a custom HACS repository; inclusion in the default c
 
 ## Manual installation
 
-1. Download `suris-ecoflow-flow-card.js` from the 2.0.4 release. Put it in the `www` folder beside your Home Assistant `configuration.yaml`, commonly `/config/www`. If you just created `www` for the first time, restart Home Assistant.
+1. Download `suris-ecoflow-flow-card.js` from the 2.0.5-beta.1 release. Put it in the `www` folder beside your Home Assistant `configuration.yaml`, commonly `/config/www`. If you just created `www` for the first time, restart Home Assistant.
 2. Open **Settings → Dashboards → ⋮ → Resources → Add resource**. Enable Advanced mode in your user profile if Resources is hidden.
-3. URL: `/local/suris-ecoflow-flow-card.js?v=2.0.4`; type: **JavaScript module**.
+3. URL: `/local/suris-ecoflow-flow-card.js?v=2.0.5-beta.1`; type: **JavaScript module**.
 4. Reload the frontend, then add and configure the card through the visual editor. Clear the frontend cache if the old version remains visible.
 
 ## Configure the stations and home
@@ -52,7 +56,7 @@ This repository is added as a custom HACS repository; inclusion in the default c
 
 To show the house voltage, select **Home voltage (optional)** in the **Home** section of the visual editor. The **Voltage** row appears below **Input**, in V. Without a selected sensor the row stays hidden; an unavailable reading shows `—`. Voltage is read from that sensor, not inferred from the grid or battery. In YAML, set `home.voltage: sensor.home_voltage`.
 
-The home source is automatically selected from main EcoFlow output, independently of the grid status sensor. Output power above the flow threshold selects main EcoFlow; a valid non-negative reading at or below the threshold selects grid. Select the dedicated **Output power to home** in Main EcoFlow when other loads use the station; otherwise its total output is used. An unavailable, invalid or negative output leaves the home source unknown and stops both home supply lines. This is an inference from output power, not a measurement of the transfer switch.
+The home source is automatically selected from main EcoFlow output, independently of the grid status sensor. Output power above the flow threshold selects main EcoFlow; a valid non-negative reading at or below the threshold selects grid. Select the dedicated **Output power to home** in Main EcoFlow when other loads use the station; otherwise its total output is used. When station output is unavailable, invalid or negative, grid power above the threshold selects grid. With no usable power data from either source, the home source remains unknown. This is an inference from output power, not a measurement of the transfer switch.
 
 Existing configurations automatically use main EcoFlow output after updating; no manual mode change is needed. Legacy `home.source_mode`, `home.source_entity`, `home.grid_state` and `home.main_state` fields are ignored. The source-mode selector has been removed.
 
@@ -120,7 +124,7 @@ All power rows stay on one line. Values below 1000 W use W; values from 1000 W u
 
 ## Upgrade from version 1 or a beta, or roll back
 
-Update the same resource to **2.0.4** and reload the frontend. The card type remains `custom:suris-ecoflow-flow-card`. Existing station entities, names, colors and flow settings are retained. When upgrading from version 1, add consumers in the editor; none are added automatically. Existing consumer settings from version 2 betas are retained. Without active consumers, the card shrinks automatically. Do not add a duplicate resource or recreate the card.
+Update the same resource to **2.0.5-beta.1** and reload the frontend. The card type remains `custom:suris-ecoflow-flow-card`. Existing station entities, names, colors and flow settings are retained. When upgrading from version 1, add consumers in the editor; none are added automatically. Existing consumer settings from version 2 betas are retained. Without active consumers, the card shrinks automatically. Do not add a duplicate resource or recreate the card.
 
 To roll back, save a copy of the card YAML, install **0.1.12** through HACS or replace the same JS file with the version 1 asset, and reload the frontend. Version 1 does not display consumers; station settings remain compatible.
 
