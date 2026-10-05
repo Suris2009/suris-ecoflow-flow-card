@@ -46,8 +46,8 @@ set('sensor.grid',1000);set('sensor.a_in',100);set('sensor.m_ac',300);
 set('sensor.b_in',200);set('sensor.grid',100);assert.equal(model(config,states).home.power,0);assert(!flow().grid_home);
 set('binary_sensor.grid','off');set('sensor.m_out',320);assert.equal(model(config,states).home.power,320);assert(flow().main_home);
 config.main.home_feed_power='sensor.feed';set('sensor.feed',275);assert.equal(model(config,states).home.power,275);
-set('sensor.feed','unavailable');assert.equal(model(config,states).home.power,null);assert(!flow().main_home);
-set('binary_sensor.grid','unexpected');assert.equal(model(config,states).home.power,null);assert(!flow().main_home);assert(!flow().grid_home);
+set('sensor.feed','unavailable');assert.equal(model(config,states).home.power,0);assert(!flow().main_home);
+set('binary_sensor.grid','unexpected');assert.equal(model(config,states).home.power,0);assert(!flow().main_home);assert(!flow().grid_home);
 config.home.power='sensor.home';set('sensor.home',123);assert.equal(model(config,states).home.power,123);assert.equal(model(config,states).home.power_origin,'sensor');
 set('sensor.home','unavailable');assert.equal(model(config,states).home.power,null);
 delete config.home.power;delete config.main.home_feed_power;
@@ -66,11 +66,15 @@ assert(auto().flows.main_home);assert(!auto().flows.grid_home);assert(auto().flo
 autoSet('sensor.output',0);assert.equal(auto().home.source,'grid');assert.equal(auto().home.power,700);assert(auto().flows.grid_home);assert(!auto().flows.main_home);
 autoSet('sensor.output',3);assert.equal(auto().home.source,'grid');autoSet('sensor.output',3.01);assert.equal(auto().home.source,'main');
 autoSet('sensor.output',.32,'kW');assert.equal(auto().home.power,320);
-for(const value of ['unavailable','unknown','',-1]){autoSet('sensor.output',value);assert.equal(auto().home.source,'unknown');assert(!auto().flows.main_home);assert(!auto().flows.grid_home)}
-autoSet('sensor.output',320,'kWh');assert.equal(auto().home.source,'unknown');
+for(const value of ['unavailable','unknown','',-1]){autoSet('sensor.output',value);assert.equal(auto().home.source,'grid');assert(!auto().flows.main_home);assert(auto().flows.grid_home)}
+autoSet('sensor.output',320,'kWh');assert.equal(auto().home.source,'grid');
 automatic.main.home_feed_power='sensor.feed';autoSet('sensor.output',1000);autoSet('sensor.feed',0);assert.equal(auto().home.source,'grid');
 autoSet('sensor.feed',275);assert.equal(auto().home.source,'main');assert.equal(auto().home.power,275);
-autoSet('sensor.feed','unavailable');assert.equal(auto().home.source,'unknown');assert(!auto().flows.main_home);
+autoSet('sensor.feed','unavailable');assert.equal(auto().home.source,'grid');assert(!auto().flows.main_home);assert(auto().flows.grid_home);
+for(const value of [0,3,'unavailable','unknown','']){autoSet('sensor.grid',value);assert.equal(auto().home.source,'unknown');assert(!auto().flows.grid_home);assert(!auto().flows.main_home)}
+autoSet('sensor.grid',258);autoSet('sensor.ac','unavailable');autoSet('sensor.charge',0);assert.equal(auto().home.power,258);assert(auto().flows.grid_home);
+autoSet('sensor.charge',50);assert.equal(auto().home.power,208);
+autoSet('sensor.grid',1000);autoSet('sensor.ac',200);autoSet('sensor.charge',100);
 automatic.grid.available_entity='binary_sensor.grid';autoSet('sensor.feed',275);
 for(const value of ['on','off','unavailable','unexpected']){autoSet('binary_sensor.grid',value);assert.equal(auto().home.source,'main');assert(auto().flows.main_home);assert(!auto().flows.grid_home)}
 autoSet('binary_sensor.grid','off');assert.equal(auto().grid.availability,'absent');assert(auto().flows.grid_main);assert(auto().flows.grid_auxiliary_1);

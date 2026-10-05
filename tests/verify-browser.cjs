@@ -290,7 +290,7 @@ const root = path.resolve(__dirname, '..');
   assert.deepEqual(await page.evaluate(()=>active()),gridFlowsBeforeIndicator);
  }
  await page.evaluate(()=>{states['sensor.main_out'].state='unavailable';refresh()});
- assert(!(await page.evaluate(()=>active())).includes('main_home'));assert(!(await page.evaluate(()=>active())).includes('grid_home'));
+ assert(!(await page.evaluate(()=>active())).includes('main_home'));assert((await page.evaluate(()=>active())).includes('grid_home'));
  await page.evaluate(()=>{states['sensor.main_out'].state='320';card.setConfig({...config,grid:{...config.grid,available_entity:''},home:{...config.home,source_mode:'grid'}});refresh()});
  assert((await page.evaluate(()=>active())).includes('main_home'));assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.grid-outage').hidden),true);
  await page.evaluate(()=>{card.setConfig({...config,language:'en',home:{...config.home,source_mode:'grid'}});states['binary_sensor.grid_available'].state='off';refresh()});
