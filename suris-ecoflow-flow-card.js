@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.0.5-beta.1 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.0.5-beta.2 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.0.5-beta.1';
+  const VERSION = '2.0.5-beta.2';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -173,7 +173,7 @@
     *{box-sizing:border-box}ha-card{display:block;overflow:hidden;background:var(--ha-card-background,var(--card-background-color,#1c1c1c));color:var(--primary-text-color,#e8e8e8);padding:16px;border-radius:var(--ha-card-border-radius,16px)}
     .wrap{container-type:inline-size}h2{font-size:22px;font-weight:600;margin:0 0 8px}.diagram{position:relative;height:clamp(540px,65cqw,720px)}
     .lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-    .flow path{fill:none;stroke:color-mix(in srgb,var(--primary-text-color,#9aa0a6) 55%,transparent);stroke-width:1.5;stroke-linejoin:miter;stroke-linecap:butt;opacity:.40}.flow.active .flow-track{stroke:var(--color);opacity:.28}.flow .flow-dashes{stroke:var(--color);stroke-width:3;stroke-linecap:round;stroke-dasharray:7 21;opacity:.95;visibility:hidden}.flow.active .flow-dashes{visibility:visible}
+    .flow path{fill:none;stroke:color-mix(in srgb,var(--primary-text-color,#9aa0a6) 55%,transparent);stroke-width:1.5;stroke-linejoin:miter;stroke-linecap:butt;opacity:.40}.flow .flow-track{visibility:hidden}.flow.active .flow-track{stroke:var(--color);opacity:.28;visibility:visible}.flow .flow-dashes{stroke:var(--color);stroke-width:3;stroke-linecap:round;stroke-dasharray:7 21;opacity:.95;visibility:hidden}.flow.active .flow-dashes{visibility:visible}
     .node{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0;background:transparent;background:color-mix(in srgb,var(--ha-card-background,var(--card-background-color,#1c1c1c)) 8%,transparent);border:2px solid var(--node-color,var(--divider-color,#60656d));border-radius:12px;padding:12px 10px;z-index:1;min-height:140px;height:auto}
     .node.supplying{border-color:transparent}.node-border{position:absolute;overflow:visible;pointer-events:none;display:none;z-index:2}.node-border.active{display:block}.node-border path{fill:none;stroke:var(--node-color);stroke-width:2;stroke-linecap:round;stroke-dasharray:7 7}
     .node h3{font-size:clamp(12px,1.9cqw,20px);line-height:1.25;text-align:center;margin:0;font-weight:600;overflow-wrap:anywhere}.node .icon{display:flex;justify-content:center;height:clamp(30px,5cqw,56px);margin:4px 0}.icon svg{height:100%;width:64px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.icon .battery-fill{fill:var(--node-color,var(--flow-main));stroke:none}

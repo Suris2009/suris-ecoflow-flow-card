@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.5-beta.2 — Pre-release
+
+- Hide inactive flow tracks, including routes to idle and unavailable stations. Only active energy flows remain visible.
+- Retain the restored grid-to-home flow when the main station is unavailable, its moving dashes and the independent grid outage warning.
+- Verify visibility while switching between grid supply, station charging and main-station supply, on mobile widths and with reduced motion.
+
 ## 2.0.5-beta.1 — Pre-release
 
 - Restore the grid-to-home flow when the main station is unavailable and grid power is above the flow threshold. Positive main output keeps priority; the grid availability sensor still controls only its warning.
