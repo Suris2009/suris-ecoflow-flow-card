@@ -266,6 +266,7 @@ const root = path.resolve(__dirname, '..');
   await page.evaluate(state=>{states['binary_sensor.grid_available'].state=state;refresh()},state);
   assert((await page.evaluate(()=>active())).includes('main_home'));assert(!(await page.evaluate(()=>active())).includes('grid_home'));
   assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.grid-outage').hidden),state!=='off');
+  assert.equal(await page.evaluate(()=>getComputedStyle(card._values['grid.output'].parentElement).display),state==='off'?'none':'flex','Hide the grid output row only during a confirmed outage');
   assert.deepEqual(await page.evaluate(()=>active()),flowsBeforeIndicator);
  }
  await page.evaluate(()=>{states['binary_sensor.grid_available'].state='off';refresh()});
@@ -308,7 +309,7 @@ const root = path.resolve(__dirname, '..');
  await page.evaluate(()=>{document.body.style.margin='8px';for(const [name,value]of Object.entries({'--ha-card-background':'linear-gradient(135deg, #ece7f2, #b9d9ed)','--primary-text-color':'#172239','--secondary-text-color':'#4d5666','--divider-color':'#888d9b'}))card.style.setProperty(name,value)});
  await page.waitForTimeout(100);
  assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.home .source')),null);
- await page.evaluate(()=>{window.layoutStates=JSON.parse(JSON.stringify(states))});
+ await page.evaluate(()=>{window.layoutStates=JSON.parse(JSON.stringify(states));states['binary_sensor.grid_available'].state='on';refresh()});
  for(const language of ['uk','en']){
   await page.evaluate(language=>{card.setConfig({...config,language});refresh()},language);
   for(const [watts,expected] of [[999,'999 W'],[1000,'1 kW'],[2468,language==='uk'?'2,47 kW':'2.47 kW'],[12345,language==='uk'?'12,35 kW':'12.35 kW'],[99999,'100 kW']]){

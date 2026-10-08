@@ -1,4 +1,8 @@
-# Suris EcoFlow Flow Card 2.0.5
+# Suris EcoFlow Flow Card 2.0.6-beta.1
+
+**Beta 2.0.6-beta.1:** while No grid pulses, the city grid Output row and its retained wattage are hidden. The row returns when the warning clears. Calculations and flow detection are retained.
+
+In HACS open this card → ⋮ → Redownload, enable beta versions and select **2.0.6-beta.1**, then reload the frontend. [Download the beta](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.6-beta.1). Stable 2.0.5 remains available.
 
 [Українська інструкція](README.md) · [Download 2.0.5](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.5) · [Previous 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
 
@@ -64,7 +68,7 @@ The home source is automatically selected from main EcoFlow output, independentl
 
 Existing configurations automatically use main EcoFlow output after updating; no manual mode change is needed. Legacy `home.source_mode`, `home.source_entity`, `home.grid_state` and `home.main_state` fields are ignored. The source-mode selector has been removed.
 
-The optional **Grid availability** sensor only controls the indicator inside the city grid block. When it reports an outage, a red **No grid** label pulses in place of the tower icon. The name and power reading remain visible. It disappears when grid power returns, the sensor is cleared or its state is unknown. With reduced motion the label stays steady. No state of this sensor affects any flow. Station charging and transfers use their own power readings.
+The optional **Grid availability** sensor controls the indicator and power row inside the city grid block. When it reports an outage, a red **No grid** label pulses in place of the tower icon and the entire output power row is hidden, including any retained sensor reading. The name remains visible. The reading returns when the warning clears: grid power returns, the sensor is cleared or its state is unknown. With reduced motion the label stays steady. No state of this sensor affects any flow. Station charging and transfers use their own power readings.
 
 Without a home sensor, the card calculates **home grid input = total grid power − auxiliary 1 grid charging − auxiliary 2 grid charging − main AC input**, bounded at zero. Auxiliary charging uses its dedicated charging sensor when selected, otherwise total input. Missing or unavailable charging readings count as zero in this calculation, so an offline station that is actually charging can overestimate home input. When the stations are off, home receives the entire grid reading. Example: grid 1000 W minus station charging of 100, 200 and 300 W gives home 400 W. The meters may update at different times, so this is a calculated reading.
 

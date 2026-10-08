@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.0.5 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.0.6-beta.1 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.0.5';
+  const VERSION = '2.0.6-beta.1';
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
@@ -23,15 +23,15 @@
   Object.assign(TEXT.en, { voltage: 'Voltage' });
   Object.assign(TEXT.uk, {
     gridOff: 'Мережі немає',
-    gridHint: 'Датчик необов’язковий. Якщо мережі немає, усередині її блоку блимає червоний напис «Мережі немає». Без датчика попередження приховане. Цей датчик не керує потоками.',
-    sourceHint: 'За виходом головної EcoFlow: потужність виходу на дім вище порогу — дім від EcoFlow, нижче або рівна порогу — від мережі. Датчик мережі керує лише червоним написом та не впливає на потоки. Якщо вихід EcoFlow недоступний, додатна потужність мережі визначає живлення від мережі.',
+    gridHint: 'Датчик необов’язковий. Якщо мережі немає, усередині її блоку блимає червоний напис «Мережі немає», а рядок вихідної потужності прихований. Коли мережа повертається, показник знову видно. Без датчика попередження приховане. Цей датчик не керує потоками.',
+    sourceHint: 'За виходом головної EcoFlow: потужність виходу на дім вище порогу — дім від EcoFlow, нижче або рівна порогу — від мережі. Датчик мережі керує червоним написом і видимістю потужності мережі та не впливає на потоки. Якщо вихід EcoFlow недоступний, додатна потужність мережі визначає живлення від мережі.',
     sourceUnknown: 'Недостатньо даних потужності для визначення джерела дому',
     mainHint: 'Для лінії мережа → головна EcoFlow потрібна окрема потужність AC-входу. Для визначення джерела дому за виходом вибери вихід на дім; загальний вихід підходить, лише якщо станція живить тільки дім.'
   });
   Object.assign(TEXT.en, {
     gridOff: 'No grid',
-    gridHint: 'The sensor is optional. When grid power is absent, a red No grid message pulses inside its block. Without a sensor the warning stays hidden. This sensor never controls flows.',
-    sourceHint: 'Main EcoFlow output: home feed power above the threshold selects EcoFlow; at or below the threshold selects grid. The grid sensor only controls the red warning and never affects flows. If EcoFlow output is unavailable, positive grid power selects the grid.',
+    gridHint: 'The sensor is optional. During an outage, a red No grid message pulses inside its block and the output power row is hidden. The reading returns when grid power is restored. Without a sensor the warning stays hidden. This sensor never controls flows.',
+    sourceHint: 'Main EcoFlow output: home feed power above the threshold selects EcoFlow; at or below the threshold selects grid. The grid sensor controls the red warning and grid power visibility, and never affects flows. If EcoFlow output is unavailable, positive grid power selects the grid.',
     sourceUnknown: 'Not enough power data to determine the home source',
     mainHint: 'Grid → main EcoFlow requires a separate AC input sensor. For output-based home source detection, select the home feed output; total output is suitable only when the station supplies the home alone.'
   });
@@ -293,6 +293,7 @@
       const gridAbsent = data.grid.availability === 'absent';
       this._nodes.grid.classList.toggle('grid-absent', gridAbsent);
       this._nodes.grid.querySelector('.grid-outage').hidden = !gridAbsent;
+      this._values['grid.output'].parentElement.hidden = gridAbsent;
       const formatter = new Intl.NumberFormat(c.language === 'en' ? 'en' : 'uk', { maximumFractionDigits: 0 });
       for (const [key, button] of Object.entries(this._values)) {
         const [node, field] = key.split('.'); let value = data[node][field];
