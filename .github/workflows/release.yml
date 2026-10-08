@@ -39,8 +39,8 @@ jobs:
         run: |
           VERSION="$(node -p 'require("./package.json").version')"
           sha256sum suris-ecoflow-flow-card.js > SHA256SUMS.txt
-          RELEASE_FLAGS=()
-          if [[ "$VERSION" == *-beta.* ]]; then RELEASE_FLAGS+=(--prerelease --latest=false); fi
+          RELEASE_FLAGS=(--latest)
+          if [[ "$VERSION" == *-beta.* ]]; then RELEASE_FLAGS=(--prerelease --latest=false); fi
           gh release create "v${VERSION}" suris-ecoflow-flow-card.js SHA256SUMS.txt \
             --target "$GITHUB_SHA" \
             --title "Suris EcoFlow Flow Card ${VERSION}" \

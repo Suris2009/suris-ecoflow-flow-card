@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.0.6 — Stable
+
+Promote 2.0.6-beta.1 to stable, preserving its behavior and dashboard configuration.
+
+- Hide the city grid Output row and retained wattage while the red Мережі немає / No grid warning is displayed.
+- Restore the row automatically when the warning clears. Unknown, unavailable and unconfigured grid status retain the previous display behavior.
+- Retain power calculations, flow detection, moving dashes and existing card settings. The beta passed the model and browser regression suites; the stable release changes version metadata and documentation only.
+
+### Video demo
+
+https://github.com/user-attachments/assets/e5172fc9-3b20-4533-9004-020b4e33d294
+
 ## 2.0.6-beta.1 — Pre-release
 
 - Hide the city grid output power row while the red Мережі немає / No grid warning is displayed, so a retained sensor reading does not appear as live supply during an outage.
