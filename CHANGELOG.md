@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.8 — Stable
+
+Dots and arrows now follow the shared Home feeder into a consumer branch instead of animating that branch independently.
+
+- Move each consumer particle continuously from Home, along the existing common line, through its junction and into the consumer block.
+- In single-dot mode, use one dot per shared row. It visits that row’s consumers in turn; short branches no longer run separate repeating dots.
+- Use the row’s total power for continuous movement through junctions and limit particle density to one feeder.
+- Retain all five styles, the dot-size slider, existing track geometry, source detection, source outlines and dashboard settings.
+- Verify positions and arrow direction before, at and after consumer junctions with one to six visible consumers, at 320–1150 px, plus the complete regression suite.
+
 ## 2.0.7 — Stable
 
 Choose flow animations directly in the visual card editor.

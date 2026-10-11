@@ -28,14 +28,16 @@ const root = path.resolve(__dirname, '..');
         for(const flow of result) {
           assert.equal(flow.track,flow.active?'visible':'hidden',`${style}/${width}: ${flow.name} track`);
           assert(flow.animations.every(state=>state===(flow.active?'running':'paused')),`${style}/${width}: ${flow.name} playback`);
-          if(style==='single_dot') assert.equal(flow.particles.length,1,`Exactly one dot on ${flow.name}`);
+          if(style==='single_dot') assert.equal(flow.particles.length,flow.name.startsWith('home_consumer_')?0:1,`One continuous dot on ${flow.name}`);
+          if(['dots','arrows','single_dot'].includes(style)&&flow.name.startsWith('home_consumer_')) assert.equal(flow.animations.length,0,'A branch must receive the row particle instead of running its own loop');
           if(style==='arrows'||style==='single_dot') assert(flow.particles.every(p=>p.visible===(flow.active?'visible':'hidden')&&p.display!=='none'));
         }
-        if(style==='single_dot'||style==='arrows') {
+        if(['dots','single_dot','arrows'].includes(style)) {
           const samples=await page.evaluate(()=>{
             const base=card._diagram.getBoundingClientRect(); const out=[];
             for(const [name,flow]of Object.entries(card._flows)) {
-              const path=flow.querySelector('.flow-track'),length=path.getTotalLength(),particle=flow.querySelector('.flow-particle'),animation=flow._animations[0];
+              const particle=flow.querySelector('.flow-particle');if(!particle)continue;
+              const path=flow.querySelector('.motion-route')||flow.querySelector('.flow-track'),length=path.getTotalLength(),animation=flow._animations[0];
               animation.pause();
               for(const progress of [.05,.25,.50,.75,.95]) {
                 animation.currentTime=progress*1000;
@@ -77,6 +79,40 @@ const root = path.resolve(__dirname, '..');
         assert(await page.evaluate(()=>saved===card._flows.grid_home._animation),`${style}: resizing must retain animation`);
         const diameter=await page.evaluate(style=>style==='single_dot'?2*Number(card._flows.grid_home.querySelector('circle').getAttribute('r')):parseFloat(getComputedStyle(card._flows.grid_home.querySelector('.flow-dashes')).strokeWidth),style);
         assert.equal(diameter,size);
+        assert(await page.evaluate(size=>[...card.shadowRoot.querySelectorAll('circle.flow-particle')].every(p=>Number(p.getAttribute('r'))===size/2),size),'Row dots must follow the shared size slider');
+      }
+    }
+    for(const style of ['dots','arrows','single_dot']) {
+      for(const count of [1,2,3,4,6]) {
+        await page.evaluate(({style,count})=>{
+          config.consumers.forEach((c,i)=>states[c.power].state=String(i<count?100+i*50:0));
+          choose(style);refresh();
+        },{style,count});
+        const junctions=await page.evaluate(()=>{
+          const base=card._diagram.getBoundingClientRect(),out=[];
+          for(const [name,flow]of Object.entries(card._flows)) {
+            if(!name.startsWith('home_row_'))continue;
+            const animation=flow._animations[0],particle=flow.querySelector('.flow-particle');animation.pause();
+            const route=flow.querySelector('.motion-route'),length=route.getTotalLength();let before=0;
+            const probe=document.createElementNS('http://www.w3.org/2000/svg','path');probe.style.display='none';flow.append(probe);
+            for(const journey of flow._journeys) {
+              probe.setAttribute('d',journey);const journeyLength=probe.getTotalLength();
+              // Branches are 10 px high: sample immediately before the turn,
+              // on the turn and immediately after it, using the same particle.
+              for(const delta of [-.1,0,.1,5]) {
+                const distance=before+journeyLength-10+delta;
+                animation.currentTime=1000*distance/length;
+                const expected=route.getPointAtLength(distance),actual=new DOMPoint(0,0).matrixTransform(particle.getScreenCTM());
+                out.push({name,error:Math.hypot(actual.x-base.left-expected.x,actual.y-base.top-expected.y)});
+              }
+              before+=journeyLength;
+            }
+            probe.remove();
+          }
+          card._syncFlows();return out;
+        });
+        assert(junctions.length>0);
+        for(const point of junctions)assert(point.error<.3,`${style}/${count}: consumer junction continuity failed on ${point.name}: ${point.error}`);
       }
     }
     await page.evaluate(()=>{
@@ -102,6 +138,6 @@ const root = path.resolve(__dirname, '..');
       }
     }
     assert.deepEqual(errors,[]);
-    console.log('PASS: five animation styles, one dot per route, exact path and arrow direction at 320–1150 px, dot size without restart, power speed, source switching, reduced motion, disconnect and visual editor persistence.');
+    console.log('PASS: five animation styles, one dot per feeder and complete consumer journeys, continuous junctions with one to six consumers, exact path and arrow direction at 320–1150 px, dot size without restart, power speed, source switching, reduced motion, disconnect and visual editor persistence.');
   } finally {await browser.close()}
 })().catch(error=>{console.error(error);process.exit(1)});

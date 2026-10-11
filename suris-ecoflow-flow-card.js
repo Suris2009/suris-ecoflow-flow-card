@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.0.7 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.0.8 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.0.7';
+  const VERSION = '2.0.8';
   const ANIMATIONS = ['dashes', 'dots', 'arrows', 'pulse', 'single_dot'];
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
@@ -438,27 +438,38 @@
     }
     _configureAnimation(group, dashes, route) {
       const { animation: style, dot_size: size } = this._config.appearance;
-      // Native browser animations: no frame timers or per-frame JavaScript.
-      const key = JSON.stringify([style, style === 'arrows' || style === 'single_dot' ? route : '']);
+      const consumerParticles = ['dots', 'arrows', 'single_dot'].includes(style);
+      const branchOnly = consumerParticles && group.dataset.flow.startsWith('home_consumer_');
+      const journeys = consumerParticles ? group._journeys : null;
+      const particles = !branchOnly && (journeys || style === 'arrows' || style === 'single_dot');
+      // Each consumer journey includes the shared feeder and its final branch.
+      // A multi-subpath motion route returns to Home only after reaching a load.
+      const motionRoute = journeys ? journeys.join(' ') : route;
+      const key = JSON.stringify([style, branchOnly, particles ? motionRoute : '']);
       dashes.style.strokeWidth = style === 'dots' ? String(size) : '3';
-      if (key === group._animationKey) {
-        if (style === 'single_dot') group.querySelector('circle.flow-particle')?.setAttribute('r', String(size / 2));
-        return;
-      }
+      for (const circle of group.querySelectorAll('circle.flow-particle')) circle.setAttribute('r', String(size / 2));
+      if (key === group._animationKey) return;
       for (const animation of group._animations || []) animation.cancel();
-      for (const particle of group.querySelectorAll('.flow-particle')) particle.remove();
-      group._animationKey = key; group._animations = [];
-      dashes.style.display = style === 'arrows' || style === 'single_dot' ? 'none' : '';
-      if (style === 'arrows' || style === 'single_dot') {
-        const length = Math.max(1, dashes.getTotalLength());
-        const count = style === 'single_dot' ? 1 : Math.max(1, Math.ceil(length / 60));
+      for (const element of group.querySelectorAll('.flow-particle,.motion-route')) element.remove();
+      group._animationKey = key; group._animations = []; group._animation = undefined;
+      dashes.style.display = particles || branchOnly ? 'none' : '';
+      if (branchOnly) return; // Its particles arrive on the row's continuous journeys.
+      if (particles) {
+        const motion = document.createElementNS(NS, 'path'); motion.classList.add('motion-route');
+        motion.style.display = 'none'; group.append(motion);
+        let longest = 0;
+        for (const journey of journeys || [route]) { motion.setAttribute('d', journey); longest = Math.max(longest, motion.getTotalLength()); }
+        motion.setAttribute('d', motionRoute);
+        const length = Math.max(1, motion.getTotalLength());
+        // Limit density to one feeder, even though several journeys share it.
+        const count = style === 'single_dot' ? 1 : Math.max(1, Math.ceil(longest / (style === 'dots' ? 28 : 60)));
         group._period = length;
         for (let i = 0; i < count; i++) {
-          const particle = document.createElementNS(NS, style === 'single_dot' ? 'circle' : 'path');
+          const particle = document.createElementNS(NS, style === 'arrows' ? 'path' : 'circle');
           particle.classList.add('flow-particle');
-          if (style === 'single_dot') particle.setAttribute('r', String(size / 2));
-          else particle.setAttribute('d', 'M -5 -4 L 1 0 L -5 4 L -2 4 L 4 0 L -2 -4 Z');
-          particle.style.offsetPath = `path("${route}")`; group.append(particle);
+          if (style === 'arrows') particle.setAttribute('d', 'M -5 -4 L 1 0 L -5 4 L -2 4 L 4 0 L -2 -4 Z');
+          else particle.setAttribute('r', String(size / 2));
+          particle.style.offsetPath = `path("${motionRoute}")`; group.append(particle);
           const animation = particle.animate([{ offsetDistance: '0%' }, { offsetDistance: '100%' }], { duration: 1000, iterations: Infinity });
           animation.pause(); animation.currentTime = 1000 * (i + .5) / count;
           group._animations.push(animation);
@@ -491,6 +502,7 @@
         auxiliary_2_main: `M ${b.x} ${b.y + b.h / 2} H ${m.right}`,
         main_home: `M ${m.right} ${homeLane} H ${h.x + h.w / 2} V ${h.bottom}`
       };
+      const journeys = {};
       for (const [row, lower] of [['lower', true], ['upper', false]]) {
         const members = [...this._consumerNodes].filter(([, node]) => (Number(node.dataset.slot) < 3) === lower);
         if (!members.length) continue;
@@ -498,9 +510,10 @@
         const port = lower ? h.x + h.w * .70 : base.width - 4;
         const leftmost = Math.min(...bounds.map(c => c.x + c.w / 2));
         routes[`home_row_${row}`] = `M ${port} ${h.y} V ${lane} H ${leftmost}`;
+        journeys[`home_row_${row}`] = [...bounds].sort((a, b) => b.x - a.x).map(c => `M ${port} ${h.y} V ${lane} H ${c.x + c.w / 2} V ${c.bottom}`);
         members.forEach(([id], index) => { const c = bounds[index]; routes[`home_consumer_${id}`] = `M ${c.x + c.w / 2} ${lane} V ${c.bottom}`; });
       }
-      const geometry = JSON.stringify([routes, this._config.appearance.animation]); if (geometry === this._geometry && this._svg.childElementCount) return;
+      const geometry = JSON.stringify([routes, journeys, this._config.appearance.animation]); if (geometry === this._geometry && this._svg.childElementCount) return;
       const oldFlows = this._flows;
       for (const [name, flow] of Object.entries(oldFlows)) if (!(name in routes)) for (const animation of flow._animations || []) animation.cancel();
       this._geometry = geometry; this._svg.setAttribute('viewBox', `0 0 ${base.width} ${base.height}`); this._svg.replaceChildren(); this._flows = {};
@@ -520,7 +533,7 @@
         group.style.setProperty('--color', name.startsWith('home_') ? 'var(--flow-home)' : `var(--flow-${color})`);
         const path = group.querySelector('.flow-track') || document.createElementNS(NS, 'path'); path.classList.add('flow-track'); path.setAttribute('d', route); group.append(path);
         const dashes = group.querySelector('.flow-dashes') || document.createElementNS(NS, 'path'); dashes.classList.add('flow-dashes'); dashes.setAttribute('d', route); group.append(dashes);
-        layer.append(group);
+        layer.append(group); group._journeys = journeys[name] || null;
         this._configureAnimation(group, dashes, route);
         group.classList.toggle('active', !!this._data?.flows[name]); this._flows[name] = group;
       }
