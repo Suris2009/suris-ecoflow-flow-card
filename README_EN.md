@@ -1,8 +1,8 @@
-# Suris EcoFlow Flow Card 2.0.6
+# Suris EcoFlow Flow Card 2.0.7
 
-[Українська інструкція](README.md) · [Download 2.0.6](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.6) · [Previous 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
+[Українська інструкція](README.md) · [Download 2.0.7](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.7) · [Previous 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
 
-**Stable release 2.0.6: while No grid pulses, the city grid Output row and its retained wattage are hidden; the row returns when the warning clears.** Inactive lines remain hidden, and the grid-to-home flow works when the main station is unavailable. Upgrading from version 1 or a version 2 beta preserves the card configuration.
+**Stable release 2.0.7: five flow animation styles and a 2–10 px dot-size slider in the visual editor.** Inactive lines remain hidden, and the grid-to-home flow works when the main station is unavailable. Upgrading from version 1 or a version 2 beta preserves the card configuration.
 
 A Home Assistant dashboard card with a visual entity editor. City grid is on the left, home on the right, and the main EcoFlow sits between the two auxiliary stations at the bottom. Up to six active home consumers appear above them, without scrolling. The card automatically shrinks when one or both consumer rows are unused. Power readings stay inside the blocks; lines show only moving flow.
 
@@ -10,7 +10,7 @@ A Home Assistant dashboard card with a visual entity editor. City grid is on the
 
 https://github.com/user-attachments/assets/e5172fc9-3b20-4533-9004-020b4e33d294
 
-In HACS open the card and install the stable **2.0.6** update. To move from a beta, you can select **2.0.6** through ⋮ → Redownload. Reload the frontend after installation. Release 2.0.4 has been withdrawn from stable releases because it hid the grid-to-home flow when the main EcoFlow was unavailable.
+In HACS open the card and install the stable **2.0.7** update. To move from a beta, you can select **2.0.7** through ⋮ → Redownload. Reload the frontend after installation. Release 2.0.4 has been withdrawn from stable releases because it hid the grid-to-home flow when the main EcoFlow was unavailable.
 
 ![Grid supplies Home while the main EcoFlow is unavailable](preview-offline-grid.png)
 
@@ -36,7 +36,7 @@ As devices switch on or off, the card resizes automatically. A single row moves 
 
 1. Open **HACS → ⋮ → Custom repositories**.
 2. Add `https://github.com/Suris2009/suris-ecoflow-flow-card`, category **Dashboard** (Lovelace / Plugin in older versions).
-3. Download **2.0.6**. If the card is already installed, open its HACS entry and install the available update.
+3. Download **2.0.7**. If the card is already installed, open its HACS entry and install the available update.
 4. Reload the Home Assistant frontend. If HACS did not add the resource, add `/hacsfiles/suris-ecoflow-flow-card/suris-ecoflow-flow-card.js` as a **JavaScript module** in dashboard resources.
 5. Open **Edit dashboard → Add card → Suris EcoFlow Flow Card**. Choose your entities in the visual editor. YAML is optional.
 
@@ -44,9 +44,9 @@ This repository is added as a custom HACS repository; inclusion in the default c
 
 ## Manual installation
 
-1. Download `suris-ecoflow-flow-card.js` from the 2.0.6 release. Put it in the `www` folder beside your Home Assistant `configuration.yaml`, commonly `/config/www`. If you just created `www` for the first time, restart Home Assistant.
+1. Download `suris-ecoflow-flow-card.js` from the 2.0.7 release. Put it in the `www` folder beside your Home Assistant `configuration.yaml`, commonly `/config/www`. If you just created `www` for the first time, restart Home Assistant.
 2. Open **Settings → Dashboards → ⋮ → Resources → Add resource**. Enable Advanced mode in your user profile if Resources is hidden.
-3. URL: `/local/suris-ecoflow-flow-card.js?v=2.0.6`; type: **JavaScript module**.
+3. URL: `/local/suris-ecoflow-flow-card.js?v=2.0.7`; type: **JavaScript module**.
 4. Reload the frontend, then add and configure the card through the visual editor. Clear the frontend cache if the old version remains visible.
 
 ## Configure the stations and home
@@ -122,13 +122,25 @@ Open a color under **Flow appearance** to choose a preset or mix **Hue / Saturat
 
 Set separate source colors for grid, each auxiliary station and main station in **Flow appearance**. Each color applies to its station border, battery fill and outgoing lines. Home uses its active source's color, or a neutral border when the source is unknown. Individual consumers have their own border colors; their flow lines use the home color. Empty color fields restore defaults. Incomplete color text stays editable while the last valid preview remains displayed.
 
+Open **Flow appearance → Flow animation** in the card editor:
+
+| Style | Display |
+| --- | --- |
+| Current animation (dashes) | Existing short moving dashes; the default after upgrading |
+| Moving dots | Multiple round dots along each active line |
+| Moving arrows | Arrows follow the route and turn toward the load |
+| Pulsing light strips | Moving strips with pulsing brightness |
+| One moving dot | Exactly one dot on each active route |
+
+**Dot size** is a shared **2–10 px** slider for both dot styles; the default is 5 px. Changing size retains the current animation. The selected style applies to every route, including consumers. Browser-native animations require no per-frame JavaScript timers, pause when the card disconnects and respect system reduced motion.
+
 All lines have right-angle routes; no diagonals. Supplying grid and station blocks have clockwise moving dashed outlines, while inactive outlines are solid. The home outline always remains solid and stationary. More watts makes movement faster, with a bounded speed. Increasing Base movement time slows all lines. Live power changes adjust animation speed without restarting it. System reduced-motion settings make active flows static.
 
 All power rows stay on one line. Values below 1000 W use W; values from 1000 W use kW with up to two decimal places. Supported input units include W, kW, mW, MW, Вт and кВт; a reading without a unit is treated as W. Wh / kWh are not power. Missing readings show `—`; real zero shows `0 W`. Station battery icons fill from valid 0–100% readings. The blocks have nearly transparent backgrounds and follow the Home Assistant theme.
 
 ## Upgrade from version 1 or a beta, or roll back
 
-Update the same resource to **2.0.6** and reload the frontend. The card type remains `custom:suris-ecoflow-flow-card`. Existing station entities, names, colors and flow settings are retained. When upgrading from version 1, add consumers in the editor; none are added automatically. Existing consumer settings from version 2 betas are retained. Without active consumers, the card shrinks automatically. Do not add a duplicate resource or recreate the card.
+Update the same resource to **2.0.7** and reload the frontend. The card type remains `custom:suris-ecoflow-flow-card`. Existing station entities, names, colors and flow settings are retained. When upgrading from version 1, add consumers in the editor; none are added automatically. Existing consumer settings from version 2 betas are retained. Without active consumers, the card shrinks automatically. Do not add a duplicate resource or recreate the card.
 
 To roll back, save a copy of the card YAML, install **0.1.12** through HACS or replace the same JS file with the version 1 asset, and reload the frontend. Version 1 does not display consumers; station settings remain compatible.
 

@@ -151,3 +151,10 @@ for(const device of devices)device.power=0;devices[2].power=50;devices[4].power=
 const compact=Array.from(selectConsumers(devices,sparse.map(device=>device?.id)));
 assert(compact[0]&&compact[1]&&compact.slice(2).every(device=>device===null));
 console.log('PASS: lower-first contiguous slots after inactive consumers disappear');
+
+assert.equal(merge({}).appearance.animation, 'dashes');
+assert.equal(merge({}).appearance.dot_size, 5);
+for (const animation of ['dashes', 'dots', 'arrows', 'pulse', 'single_dot']) assert.equal(merge({appearance:{animation}}).appearance.animation, animation);
+assert.throws(()=>merge({appearance:{animation:'unknown_style'}}));
+for (const dot_size of [1, 11, 'bad', Infinity]) assert.throws(()=>merge({appearance:{dot_size}}));
+console.log('PASS: legacy animation defaults, five styles and bounded dot size.');

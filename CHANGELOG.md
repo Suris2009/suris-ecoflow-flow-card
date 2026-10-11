@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.0.7 — Stable
+
+Choose flow animations directly in the visual card editor.
+
+- Five styles: current moving dashes, moving dots, moving arrows, pulsing light strips and one moving dot per active route.
+- Shared dot-size slider from 2 to 10 px for both dot styles, with a 5 px default. Resize dots without restarting movement or rebuilding routes.
+- Apply the selected style to station, home and consumer lines. Retain wattage-dependent speed, source-to-load direction and invisible inactive tracks.
+- Keep the existing dashes as the default for saved configurations. Source outlines and power calculations retain their behavior.
+- Use native browser animations without frame timers. Pause all particles when disconnected and show static active lines with reduced motion.
+- Verify all five styles, exact route following and arrow orientation at 320–1150 px, editor persistence, live power and size changes, source switching and existing regression scenarios.
+
+### Video demo
+
+https://github.com/user-attachments/assets/e5172fc9-3b20-4533-9004-020b4e33d294
+
 ## 2.0.6 — Stable
 
 Promote 2.0.6-beta.1 to stable, preserving its behavior and dashboard configuration.
