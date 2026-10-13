@@ -31,8 +31,10 @@ const server = http.createServer((req, res) => {
       const nodes = Object.fromEntries([...card.shadowRoot.querySelectorAll('.node')].map(node => { const r = node.getBoundingClientRect(); return [node.dataset.key, { left: r.left - d.left, top: r.top - d.top, right: r.right - d.left, bottom: r.bottom - d.top }]; }));
       const paths = Object.values(card._flows).map(flow => { const p = flow.querySelector('.flow-track'), length = p.getTotalLength(); return { name: flow.dataset.flow, length, color: getComputedStyle(p).stroke, trackVisible: getComputedStyle(p).visibility, active: flow.classList.contains('active'), samples: Array.from({ length: 121 }, (_, i) => { const q = p.getPointAtLength(length * i / 120); return { x: q.x, y: q.y }; }) }; });
       const fontSizes = [...card.shadowRoot.querySelectorAll('.node h3,.row,.consumer .value')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height).map(e => parseFloat(getComputedStyle(e).fontSize));
-      const clipped = [...card.shadowRoot.querySelectorAll('.node h3,.value,.label,.grid-outage')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height && !e.hidden).map(e => ({ text: e.textContent, clipped: e.scrollWidth > e.clientWidth + 1 }));
-      return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped };
+      const clipped = [...card.shadowRoot.querySelectorAll('.node h3,.value,.label,.grid-outage')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height && !e.hidden).map(e => ({ text: e.textContent, clipped: e.scrollWidth > e.clientWidth + 1, width:e.clientWidth, scrollWidth:e.scrollWidth, font:getComputedStyle(e).fontSize, wrap:getComputedStyle(e).overflowWrap, whitespace:getComputedStyle(e).whiteSpace }));
+      const identities = ['grid', 'home'].map(key => { const node = card._nodes[key]; return { name: getComputedStyle(node.querySelector('h3')).display, icon: getComputedStyle(node.querySelector('.icon')).display, svg: getComputedStyle(node.querySelector('.icon svg')).display }; });
+      const powerFonts = ['grid.output', 'home.power'].map(key => getComputedStyle(card._values[key]).fontSize);
+      return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped, identities, powerFonts };
     });
     const onBorder = (p, r) => p.x >= r.left - .3 && p.x <= r.right + .3 && p.y >= r.top - .3 && p.y <= r.bottom + .3 && Math.min(Math.abs(p.x - r.left), Math.abs(p.x - r.right), Math.abs(p.y - r.top), Math.abs(p.y - r.bottom)) < .3;
     const intersects = (a, b, c, d) => {
@@ -44,6 +46,13 @@ const server = http.createServer((req, res) => {
       assert.equal(g.paths.length, 7 + count, `${label}: one direct route per consumer`);
       assert(Math.min(...g.fontSizes) >= 11, `${label}: unreadable text`);
       assert(!g.clipped.some(e => e.clipped), `${label}: clipped text ${JSON.stringify(g.clipped.filter(e => e.clipped))}`);
+      assert.equal(g.powerFonts[0], g.powerFonts[1], `${label}: grid output and home input must use the same font size`);
+      assert(g.identities.every(n => n.name === 'none' && n.icon === 'flex'), `${label}: grid/home must show icons instead of names`);
+      const consumers = Object.entries(g.nodes).filter(([key]) => key.startsWith('consumer:')).map(([, r]) => ({ width: r.right - r.left, height: r.bottom - r.top }));
+      for (const c of consumers) {
+        assert(Math.abs(c.width - c.height) < .3, `${label}: consumer must be square`);
+        assert(Math.abs(c.width - consumers[0].width) < .3 && Math.abs(c.height - consumers[0].height) < .3, `${label}: unequal consumer squares`);
+      }
       const entries = Object.entries(g.nodes);
       for (let i = 0; i < entries.length; i++) {
         const [key, r] = entries[i];
@@ -55,7 +64,7 @@ const server = http.createServer((req, res) => {
         const [source, target] = connections[route.name] || ['home', `consumer:${route.name.slice(14)}`];
         assert(onBorder(route.samples[0], g.nodes[source]) && onBorder(route.samples.at(-1), g.nodes[target]), `${label}: detached ${route.name}`);
         assert.equal(route.trackVisible, route.active ? 'visible' : 'hidden', `${label}: inactive line visible`);
-        if (source === 'home') assert(route.length >= 28, `${label}: consumer line too short`);
+        if (source === 'home') assert(route.length >= 38 && route.samples.at(-1).x - route.samples[0].x >= 38, `${label}: consumer line too short`);
         for (const p of route.samples) {
           assert(p.x >= -.3 && p.y >= -.3 && p.x <= g.width + .3 && p.y <= g.height + .3, `${label}: clipped ${route.name}`);
           for (const [key, r] of entries) assert(!(p.x > r.left + .35 && p.x < r.right - .35 && p.y > r.top + .35 && p.y < r.bottom - .35), `${label}: ${route.name} runs inside ${key}`);
@@ -107,6 +116,6 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => card.remove());
     assert(await page.evaluate(() => Object.values(card._flows).every(f => f._animations.every(a => a.playState === 'paused'))), 'Detached card animations still running');
     assert.deepEqual(errors, []);
-    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, square grid outage, hidden inactive lines, complete noncrossing routes, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
+    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, grid/home icons and matching power fonts, equal consumer squares and longer routes, square grid outage, hidden inactive lines, complete noncrossing routes, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
   } finally { await browser.close(); }
 })().then(() => server.close(), error => { console.error(error); server.close(); process.exitCode = 1; });

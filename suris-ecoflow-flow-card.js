@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.1.0-beta.1 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.1.0-beta.2 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.1.0-beta.1';
+  const VERSION = '2.1.0-beta.2';
   const ANIMATIONS = ['dashes', 'dots', 'arrows', 'pulse', 'single_dot'];
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
@@ -199,11 +199,12 @@
     .sideflow .node{right:auto;bottom:auto;min-height:0;height:auto;padding:5px 6px;gap:2px;background:var(--ha-card-background,var(--card-background-color,#1c1c1c));border-radius:10px}
     .sideflow .node h3{font-size:clamp(11.5px,3.625cqw,14.5px);line-height:1.1;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow-wrap:anywhere}
     .sideflow .node .icon{display:none}.sideflow .row{font-size:clamp(11px,3.25cqw,13px);line-height:1.2;gap:2px}.sideflow .row[hidden]{display:none}
+    .sideflow .grid h3,.sideflow .home h3{display:none}.sideflow .grid .icon,.sideflow .home .icon{display:flex;height:clamp(28px,8cqw,38px);margin:0}.sideflow .grid .icon{color:var(--flow-grid)}.sideflow .home .icon{color:var(--flow-home)}
     .sideflow .row.side-stack{flex-direction:column;align-items:center;gap:0}.sideflow .side-stack .value{margin-left:0;text-align:center}
     .sideflow .home .label,.sideflow .grid .label{display:none}.sideflow .home .row,.sideflow .grid .row{justify-content:center}.sideflow .home .value,.sideflow .grid .value{margin-left:0;text-align:center}
-    .sideflow .home .power .value{font-size:clamp(15px,4.4cqw,18px)}.sideflow .home .voltage .value{font-size:clamp(11px,3.5cqw,14px)}
+    .sideflow .home .power .value,.sideflow .grid .output .value{font-size:clamp(15px,4.4cqw,18px)}.sideflow .home .voltage .value{font-size:clamp(11px,3.5cqw,14px)}
     .sideflow .grid.grid-absent .icon{display:flex;height:auto;margin:3px 0 0}.sideflow .grid.grid-absent .icon svg{display:none}.sideflow .grid-outage{position:static;font-size:clamp(11px,3.25cqw,13px);white-space:normal;overflow-wrap:anywhere}
-    .sideflow .node.consumer{min-height:45px;padding:3px 4px;gap:3px}.sideflow .consumer h3{font-size:clamp(11px,2.9cqw,13px);line-height:1.05}.sideflow .consumer .value{font-size:clamp(11.5px,3.5cqw,14px);line-height:1.1}
+    .sideflow .node.consumer{min-height:45px;padding:3px 2px;gap:3px}.sideflow .consumer h3{font-size:clamp(11px,2.9cqw,13px);line-height:1.05}.sideflow .consumer .value{font-size:clamp(11.5px,3.5cqw,14px);line-height:1.1}
     @media(prefers-reduced-motion:reduce){.flow .flow-dashes,.flow .flow-particle{display:none}.flow.active .flow-track{stroke-width:3;opacity:.92}.grid-outage{animation:none}}
   `;
   class SurisEcoFlowFlowCard extends HTMLElement {
@@ -435,7 +436,8 @@
       this._nodes.home.style.minHeight = `${90 * sy}px`;
       place(this._nodes.auxiliary_1, Math.max(12, 8 * sx), 0, 100 * sx);
       place(this._nodes.auxiliary_2, 124 * sx, 0, 100 * sx);
-      for (const node of this._consumerNodes.values()) place(node, 302 * sx, 0, 90 * sx);
+      const consumerSize = Math.max(60, Math.min(64, width * .16)), consumerX = width - 3 * sx - consumerSize;
+      for (const node of this._consumerNodes.values()) place(node, consumerX, 0, consumerSize, consumerSize);
       this._fitRows();
       const mainY = Math.max(144 * sy, 12 * sy + gridSize + 34 * sy);
       this._nodes.main.style.top = `${mainY}px`;
@@ -443,8 +445,7 @@
       this._nodes.home.style.top = `${homeY}px`;
       const auxY = Math.max(302 * sy, mainY + this._nodes.main.offsetHeight + 32 * sy, homeY + this._nodes.home.offsetHeight + 36 * sy);
       for (const key of ['auxiliary_1', 'auxiliary_2']) this._nodes[key].style.top = `${auxY}px`;
-      const consumerHeight = Math.max(45, ...[...this._consumerNodes.values()].map(node => node.offsetHeight));
-      const step = Math.max(64 * sy, consumerHeight + 10 * sy);
+      const step = consumerSize + 4 * sy;
       for (const node of this._consumerNodes.values()) node.style.top = `${12 * sy + Number(node.dataset.slot) * step}px`;
       const nodeBottom = Math.max(...[...Object.values(this._nodes), ...this._consumerNodes.values()].map(node => node.offsetTop + node.offsetHeight));
       const auxBottom = Math.max(...['auxiliary_1', 'auxiliary_2'].map(key => this._nodes[key].offsetTop + this._nodes[key].offsetHeight));

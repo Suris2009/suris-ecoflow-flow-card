@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0-beta.2 — Side flow refinement / Уточнення бокового потоку
+
+- Replace the visible City grid and Home headings in Side flow with their existing grid and house icons. Keep the square grid outage message.
+- Use the same power font size for grid output and Home input.
+- Give every visible consumer an identical square, align the column farther to the right and lengthen the separate Home-to-consumer routes while keeping the mobile layout compact.
+- Preserve Classic, view switching, sensor calculations, hidden inactive lines and all five animations.
+
+У «Боковому потоці» замість назв міської мережі та дому показано іконки. Розмір цифр їхньої потужності однаковий. Усі споживачі — однакові квадрати, а окремі лінії від дому довші. Логіка картки збережена.
+
 ## 2.1.0-beta.1 — Side flow / Боковий потік
 
 - Add a compact Side flow layout: sources on the left, Home in the middle, and up to six active consumers on the right. Each consumer has a full independent colored route from Home, without shared feeders or crossed lines.
