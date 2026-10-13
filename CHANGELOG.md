@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.0-beta.5 — Icon alignment and fewer dots / Центрування іконок і менше точок
+
+- Center the actual Home Assistant icon drawing between each consumer’s name and power. Remove the inline baseline offset from the nested icon component; center the fallback artwork as well.
+- Reduce moving-dot density by 30%: use 40 px spacing instead of 28 px on independent routes, and 70% of the previous rounded particle count on shared consumer journeys (at least one particle).
+- Keep flow movement speed, the single-dot mode, arrows, dashes and pulse behavior. Preserve consumer block sizes, name fonts, one-line names and the power model.
+
+Іконки споживачів вирівняно між назвою та потужністю. Рухомих точок на 30% менше; швидкість потоку та режим однієї точки збережено. Шрифт назв і розміри блоків не змінені.
+
 ## 2.1.0-beta.4 — Consumer icons / Іконки споживачів
 
 - Show each consumer’s configured icon between its name and power in Side flow, using the existing icon picker and fallback artwork.

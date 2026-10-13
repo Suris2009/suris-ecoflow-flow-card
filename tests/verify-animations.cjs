@@ -32,6 +32,18 @@ const root = path.resolve(__dirname, '..');
           if(['dots','arrows','single_dot'].includes(style)&&flow.name.startsWith('home_consumer_')) assert.equal(flow.animations.length,0,'A branch must receive the row particle instead of running its own loop');
           if(style==='arrows'||style==='single_dot') assert(flow.particles.every(p=>p.visible===(flow.active?'visible':'hidden')&&p.display!=='none'));
         }
+        if(style==='dots') {
+          const density=await page.evaluate(()=>Object.entries(card._flows).map(([name,f])=>{
+            if(f._journeys) {
+              const probe=document.createElementNS('http://www.w3.org/2000/svg','path');probe.style.display='none';f.append(probe);
+              let longest=0;for(const d of f._journeys){probe.setAttribute('d',d);longest=Math.max(longest,probe.getTotalLength())}probe.remove();
+              return{name,particles:f.querySelectorAll('.flow-particle').length,expected:Math.max(1,Math.round(Math.ceil(longest/28)*.7))};
+            }
+            if(name.startsWith('home_consumer_'))return{name,particles:f.querySelectorAll('.flow-particle').length,expected:0};
+            return{name,spacing:getComputedStyle(f.querySelector('.flow-dashes')).strokeDasharray.split(',').map(parseFloat).reduce((a,b)=>a+b,0),period:f._period,offset:f._animation.effect.getKeyframes().at(-1).strokeDashoffset};
+          }));
+          for(const flow of density)if('expected' in flow)assert.equal(flow.particles,flow.expected,`${width}: row dot count must be 70% of its former count`);else{assert.equal(flow.spacing,40);assert.equal(flow.period,40);assert.equal(flow.offset,'-40px');assert.equal(28/flow.spacing,.7)}
+        }
         if(['dots','single_dot','arrows'].includes(style)) {
           const samples=await page.evaluate(()=>{
             const base=card._diagram.getBoundingClientRect(); const out=[];
@@ -138,6 +150,7 @@ const root = path.resolve(__dirname, '..');
       }
     }
     assert.deepEqual(errors,[]);
-    console.log('PASS: five animation styles, one dot per feeder and complete consumer journeys, continuous junctions with one to six consumers, exact path and arrow direction at 320–1150 px, dot size without restart, power speed, source switching, reduced motion, disconnect and visual editor persistence.');
+    console.log('PASS: five animation styles, 30% lower moving-dot density with rounded row counts, one dot per feeder and complete consumer journeys, continuous junctions with one to six consumers, exact path and arrow direction at 320–1150 px, dot size without restart, power speed, source switching, reduced motion, disconnect and visual editor persistence.');
   } finally {await browser.close()}
 })().catch(error=>{console.error(error);process.exit(1)});
+

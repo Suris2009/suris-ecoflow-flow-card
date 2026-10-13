@@ -36,8 +36,8 @@ const server = http.createServer((req, res) => {
       const powerFonts = ['grid.output', 'home.power'].map(key => getComputedStyle(card._values[key]).fontSize);
       const captions = [...card._consumerNodes.values()].map(node => { const h = node.querySelector('h3'), style = getComputedStyle(h); return { text: h.textContent, full: h.title, aria: h.getAttribute('aria-label'), whitespace: style.whiteSpace, height: h.getBoundingClientRect().height, lineHeight: parseFloat(style.lineHeight), fontSize: parseFloat(style.fontSize) }; });
       const consumerIcons = [...card._consumerNodes.entries()].map(([id, node]) => {
-        const artwork = node.querySelector('.icon'), haIcon = artwork.querySelector('ha-icon'), fallback = artwork.querySelector('.fallback'), r = node.getBoundingClientRect(), icon = artwork.getBoundingClientRect(), title = node.querySelector('h3').getBoundingClientRect(), value = node.querySelector('.value').getBoundingClientRect();
-        return { id, display: getComputedStyle(artwork).display, height: icon.height, assigned: haIcon.getAttribute('icon'), expected: card._config.consumers.find(c => c.id === id).icon, fallback: getComputedStyle(fallback).display, defined: !!customElements.get('ha-icon'), iconTop: icon.top, iconBottom: icon.bottom, titleTop: title.top, titleBottom: title.bottom, valueTop: value.top, valueBottom: value.bottom, nodeTop: r.top, nodeBottom: r.bottom };
+        const artwork = node.querySelector('.icon'), haIcon = artwork.querySelector('ha-icon'), fallback = artwork.querySelector('.fallback'), r = node.getBoundingClientRect(), icon = artwork.getBoundingClientRect(), title = node.querySelector('h3').getBoundingClientRect(), value = node.querySelector('.value').getBoundingClientRect(), image = (haIcon.shadowRoot?.querySelector('ha-svg-icon')?.shadowRoot?.querySelector('svg') || fallback.querySelector('svg')).getBoundingClientRect();
+        return { id, display: getComputedStyle(artwork).display, height: icon.height, assigned: haIcon.getAttribute('icon'), expected: card._config.consumers.find(c => c.id === id).icon, fallback: getComputedStyle(fallback).display, defined: !!customElements.get('ha-icon'), iconTop: icon.top, iconBottom: icon.bottom, titleTop: title.top, titleBottom: title.bottom, valueTop: value.top, valueBottom: value.bottom, nodeTop: r.top, nodeBottom: r.bottom, imageCenter: (image.top + image.bottom) / 2, imageMiddleX: (image.left + image.right) / 2, containerMiddleX: (icon.left + icon.right) / 2 };
       });
       return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped, identities, powerFonts, captions, consumerIcons };
     });
@@ -72,6 +72,8 @@ const server = http.createServer((req, res) => {
         assert(Math.abs(icon.height - 18) < .1, `${label}: wrong consumer icon height`);
         assert.equal(icon.assigned, icon.expected, `${label}: configured icon changed`);
         assert(icon.titleTop >= icon.nodeTop + 1.9 && icon.titleBottom <= icon.iconTop + .3 && icon.iconBottom <= icon.valueTop + .3 && icon.valueBottom <= icon.nodeBottom - 1.9, `${label}: icon/text overlap or overflow for ${icon.id}`);
+        assert(Math.abs(icon.imageCenter - (icon.titleBottom + icon.valueTop) / 2) < .3, `${label}: icon drawing is not centered between title and power`);
+        assert(Math.abs(icon.imageMiddleX - icon.containerMiddleX) < .3, `${label}: icon drawing is not centered horizontally`);
         assert.equal(icon.fallback === 'none', icon.defined, `${label}: wrong fallback visibility`);
       }
       const entries = Object.entries(g.nodes);
@@ -123,14 +125,24 @@ const server = http.createServer((req, res) => {
     await page.locator('.layout-switch').click(); await page.setViewportSize({ width: 390, height: 900 }); await verify('truncation after view switch', 6);
     await page.evaluate(() => { config.consumers[0].name = 'Бойлер'; card.setConfig(config); refresh(); });
     await page.evaluate(() => {
+      // Match Home Assistant's nested ha-icon / ha-svg-icon layout. The inline
+      // inner host otherwise aligns to a text baseline inside ha-icon.
+      customElements.define('ha-svg-icon', class extends HTMLElement {
+        connectedCallback() { if (!this.shadowRoot) this.attachShadow({ mode: 'open' }).innerHTML = '<style>:host{display:var(--ha-icon-display,inline-flex);align-items:center;justify-content:center;position:relative;vertical-align:middle;fill:var(--icon-primary-color,currentColor);width:var(--mdc-icon-size,24px);height:var(--mdc-icon-size,24px)}svg{width:100%;height:100%;pointer-events:none;display:block}</style><svg viewBox="0 0 24 24"><path d="M7 3h2v6h6V3h2v6h2v6a7 7 0 0 1-6 6v3h-2v-3a7 7 0 0 1-6-6V9h2z"/></svg>'; }
+      });
       customElements.define('ha-icon', class extends HTMLElement {
-        connectedCallback() { if (!this.shadowRoot) this.attachShadow({ mode: 'open' }).innerHTML = '<svg viewBox="0 0 24 24" style="display:block;width:100%;height:100%;fill:currentColor"><path d="M7 3h2v6h6V3h2v6h2v6a7 7 0 0 1-6 6v3h-2v-3a7 7 0 0 1-6-6V9h2z"/></svg>'; }
+        connectedCallback() { if (!this.shadowRoot) this.attachShadow({ mode: 'open' }).innerHTML = '<style>:host{fill:currentColor}</style><ha-svg-icon></ha-svg-icon>'; }
       });
     });
-    await verify('Home Assistant icons loaded', 6);
+    for (const width of [320, 390, 768, 1150]) { await page.setViewportSize({ width, height: 900 }); await verify('Home Assistant icons centered at ' + width, 6); }
+    await page.setViewportSize({ width: 390, height: 900 }); await verify('Home Assistant icons restored', 6);
     for (const style of ['dashes', 'dots', 'arrows', 'pulse', 'single_dot']) {
       await page.evaluate(style => { card.setConfig({ ...config, appearance: { layout: 'sideflow', animation: style } }); refresh(); }, style);
       await verify(style, 6, false);
+      if (style === 'dots') {
+        const tracks = await page.evaluate(() => Object.values(card._flows).map(f => ({ period: f._period, spacing: getComputedStyle(f.querySelector('.flow-dashes')).strokeDasharray.split(',').map(parseFloat).reduce((a,b) => a+b,0), offset: f._animation.effect.getKeyframes().at(-1).strokeDashoffset })));
+        for (const track of tracks) { assert.equal(track.period, 40); assert.equal(track.spacing, 40); assert.equal(track.offset, '-40px'); assert.equal(28 / track.spacing, .7, 'Dot density should decrease by 30%'); }
+      }
       const flows = await page.evaluate(() => Object.values(card._flows).filter(f => f.dataset.flow.startsWith('home_consumer_')).map(f => ({ count: f._animations.length, state: f._animation?.playState, particles: f.querySelectorAll('.flow-particle').length, direct: f._direct, start: f.querySelector('.flow-dashes').getAttribute('d'), motion: f.querySelector('.motion-route')?.getAttribute('d') })));
       for (const f of flows) { assert(f.direct && f.count > 0 && f.state === 'running', `${style}: direct consumer is not animated`); if (style === 'single_dot') assert.equal(f.particles, 1); if (f.motion) assert.equal(f.motion, f.start, `${style}: animation does not span the full connection`); }
     }
@@ -155,6 +167,6 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => card.remove());
     assert(await page.evaluate(() => Object.values(card._flows).every(f => f._animations.every(a => a.playState === 'paused'))), 'Detached card animations still running');
     assert.deepEqual(errors, []);
-    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, configured consumer icons and fallback within preserved heights, unchanged title fonts, grid/home icons and matching power fonts, equal wider consumer rectangles with preserved heights, single-line titles with two-dot truncation, smaller power fonts, square grid outage, hidden inactive lines, complete noncrossing routes, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
+    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, centered native Home Assistant consumer icons and fallback within preserved heights, 30% lower moving-dot density, unchanged title fonts, grid/home icons and matching power fonts, equal wider consumer rectangles with preserved heights, single-line titles with two-dot truncation, smaller power fonts, square grid outage, hidden inactive lines, complete noncrossing routes, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
   } finally { await browser.close(); }
 })().then(() => server.close(), error => { console.error(error); server.close(); process.exitCode = 1; });
