@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.0-beta.4 — Consumer icons / Іконки споживачів
+
+- Show each consumer’s configured icon between its name and power in Side flow, using the existing icon picker and fallback artwork.
+- Keep the wider rectangles, their heights and the existing name font size. Names remain on one line with two dots when truncated.
+- Fit the icon, title and value inside every block at mobile and desktop widths, without overlaps. Keep power logic, independent routes, hidden inactive lines and Classic unchanged.
+
+У блоках споживачів показано налаштовані іконки між назвою та потужністю. Розмір шрифту назв і висоту блоків збережено; назви без перенесень, із двома крапками наприкінці, якщо не вміщуються.
+
 ## 2.1.0-beta.3 — Wider consumer rectangles / Ширші блоки споживачів
 
 - Widen the Side flow consumer blocks into identical rectangles while preserving their heights and vertical positions.

@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.1.0-beta.3 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.1.0-beta.4 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.1.0-beta.3';
+  const VERSION = '2.1.0-beta.4';
   const ANIMATIONS = ['dashes', 'dots', 'arrows', 'pulse', 'single_dot'];
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
@@ -205,6 +205,7 @@
     .sideflow .home .power .value,.sideflow .grid .output .value{font-size:clamp(13px,3.8cqw,15px)}.sideflow .home .voltage .value{font-size:clamp(11px,3.25cqw,13px)}
     .sideflow .grid.grid-absent .icon{display:flex;height:auto;margin:3px 0 0}.sideflow .grid.grid-absent .icon svg{display:none}.sideflow .grid-outage{position:static;font-size:clamp(11px,3.25cqw,13px);white-space:normal;overflow-wrap:anywhere}
     .sideflow .node.consumer{min-height:45px;padding:3px 2px;gap:3px}.sideflow .consumer h3{display:block;font-size:clamp(11px,2.9cqw,13px);line-height:1.05;white-space:nowrap;overflow-wrap:normal;text-overflow:clip;-webkit-line-clamp:unset}.sideflow .consumer .value{font-size:clamp(11.5px,3.5cqw,14px);line-height:1.1}
+    .sideflow .consumer .icon{display:flex;align-items:center;flex:0 0 18px;height:18px;margin:0}.sideflow .consumer ha-icon{--mdc-icon-size:18px;width:18px;height:18px}.sideflow .consumer .fallback{height:18px}.sideflow .consumer .fallback svg{width:18px}
     @media(prefers-reduced-motion:reduce){.flow .flow-dashes,.flow .flow-particle{display:none}.flow.active .flow-track{stroke-width:3;opacity:.92}.grid-outage{animation:none}}
   `;
   class SurisEcoFlowFlowCard extends HTMLElement {

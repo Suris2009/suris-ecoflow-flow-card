@@ -6,11 +6,11 @@
 
 A Home Assistant dashboard card with a visual entity editor. City grid is on the left, home on the right, and the main EcoFlow sits between the two auxiliary stations at the bottom. Up to six active home consumers appear above them, without scrolling. The card automatically shrinks when one or both consumer rows are unused. Power readings stay inside the blocks; lines show only moving flow.
 
-## Beta 2.1.0-beta.3 — Side flow
+## Beta 2.1.0-beta.4 — Side flow
 
-[Download the beta](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.0-beta.3). The stable release remains **2.0.8**.
+[Download the beta](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.0-beta.4). The stable release remains **2.0.8**.
 
-A compact alternative with sources on the left, Home in the middle, and up to six active consumers on the right. Each consumer has a complete, separate line from Home in its own color. Inactive lines are hidden. City grid and Home use icons instead of headings, with matching power font sizes. Consumers are identical wider rectangles with their previous heights. Names stay on one line and end with **two dots (`..`)** if they do not fit; the full name remains in the tooltip. Home and city-grid numbers are slightly smaller. City grid is square, with room for the **No grid** message. Station readings and home source detection retain their existing behavior.
+A compact alternative with sources on the left, Home in the middle, and up to six active consumers on the right. Each consumer has a complete, separate line from Home in its own color. Inactive lines are hidden. City grid and Home use icons instead of headings, with matching power font sizes. Consumers are identical wider rectangles with their previous heights. Each configured device icon appears between its name and power. Name font sizes are retained. Names stay on one line and end with **two dots (`..`)** if they do not fit; the full name remains in the tooltip. Home and city-grid numbers are slightly smaller. City grid is square, with room for the **No grid** message. Station readings and home source detection retain their existing behavior.
 
 Use **View** in the card header to switch between Classic and Side flow. The selection is remembered for this card in the current browser. In the editor, **Flow appearance → Block layout** sets the initial view, and **Show view switch** controls the button. Existing cards initially keep Classic until switched.
 

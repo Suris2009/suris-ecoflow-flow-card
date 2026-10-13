@@ -20,7 +20,7 @@ const server = http.createServer((req, res) => {
       window.states = { 'sensor.grid': s(2100), 'binary_sensor.grid': s('on'), 'sensor.a_in': s(0), 'sensor.b_in': s(0), 'sensor.m_in': s(0), 'sensor.a_out': s(0), 'sensor.b_out': s(0), 'sensor.m_out': s(0), 'sensor.m_ac': s(0), 'sensor.m_pv1': s(0), 'sensor.m_pv2': s(0), 'sensor.a_soc': s(68, '%'), 'sensor.b_soc': s(81, '%'), 'sensor.m_soc': s(74, '%'), 'sensor.voltage': s(230, 'V') };
       const devices = [['boiler', 'Бойлер', 1000, '#cb526e'], ['kettle', 'Чайник', 600, '#ffac12'], ['washer', 'Пральна', 250, '#9870ef'], ['fridge', 'Холодильник', 120, '#29b0b9'], ['light', 'Освітлення', 80, '#4eb95c'], ['outlets', 'Розетки', 50, '#6b87df']];
       devices.forEach(([id, , value]) => states[`sensor.${id}`] = s(value));
-      window.config = { type: 'custom:suris-ecoflow-flow-card', title: 'Енергопотоки', grid: { power: 'sensor.grid', available_entity: 'binary_sensor.grid', available_state: 'on' }, auxiliary_1: { soc: 'sensor.a_soc', input_power: 'sensor.a_in', output_power: 'sensor.a_out' }, auxiliary_2: { soc: 'sensor.b_soc', input_power: 'sensor.b_in', output_power: 'sensor.b_out' }, main: { soc: 'sensor.m_soc', input_power: 'sensor.m_in', output_power: 'sensor.m_out', ac_input_power: 'sensor.m_ac', solar_input_power: 'sensor.m_pv1', solar_input_power_2: 'sensor.m_pv2' }, home: { voltage: 'sensor.voltage' }, consumers: devices.map(([id, name, , color]) => ({ id, name, power: `sensor.${id}`, color })), appearance: { layout: 'sideflow' } };
+      window.config = { type: 'custom:suris-ecoflow-flow-card', title: 'Енергопотоки', grid: { power: 'sensor.grid', available_entity: 'binary_sensor.grid', available_state: 'on' }, auxiliary_1: { soc: 'sensor.a_soc', input_power: 'sensor.a_in', output_power: 'sensor.a_out' }, auxiliary_2: { soc: 'sensor.b_soc', input_power: 'sensor.b_in', output_power: 'sensor.b_out' }, main: { soc: 'sensor.m_soc', input_power: 'sensor.m_in', output_power: 'sensor.m_out', ac_input_power: 'sensor.m_ac', solar_input_power: 'sensor.m_pv1', solar_input_power_2: 'sensor.m_pv2' }, home: { voltage: 'sensor.voltage' }, consumers: devices.map(([id, name, , color], i) => ({ id, name, power: `sensor.${id}`, color, icon: ['mdi:water-boiler', 'mdi:kettle-steam', 'mdi:washing-machine', 'mdi:fridge', 'mdi:lightbulb', 'mdi:power-plug'][i] })), appearance: { layout: 'sideflow' } };
       window.card = document.createElement('suris-ecoflow-flow-card'); card.setConfig(config); card.hass = { states }; document.querySelector('#host').append(card);
       window.refresh = () => card.hass = { states: { ...states } };
       window.setCount = count => { for (let i = 0; i < config.consumers.length; i++) states[config.consumers[i].power].state = String(i < count ? devices[i][2] : 0); refresh(); };
@@ -34,8 +34,12 @@ const server = http.createServer((req, res) => {
       const clipped = [...card.shadowRoot.querySelectorAll('.node h3,.value,.label,.grid-outage')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height && !e.hidden).map(e => ({ text: e.textContent, clipped: e.scrollWidth > e.clientWidth + 1, width:e.clientWidth, scrollWidth:e.scrollWidth, font:getComputedStyle(e).fontSize, wrap:getComputedStyle(e).overflowWrap, whitespace:getComputedStyle(e).whiteSpace }));
       const identities = ['grid', 'home'].map(key => { const node = card._nodes[key]; return { name: getComputedStyle(node.querySelector('h3')).display, icon: getComputedStyle(node.querySelector('.icon')).display, svg: getComputedStyle(node.querySelector('.icon svg')).display }; });
       const powerFonts = ['grid.output', 'home.power'].map(key => getComputedStyle(card._values[key]).fontSize);
-      const captions = [...card._consumerNodes.values()].map(node => { const h = node.querySelector('h3'), style = getComputedStyle(h); return { text: h.textContent, full: h.title, aria: h.getAttribute('aria-label'), whitespace: style.whiteSpace, height: h.getBoundingClientRect().height, lineHeight: parseFloat(style.lineHeight) }; });
-      return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped, identities, powerFonts, captions };
+      const captions = [...card._consumerNodes.values()].map(node => { const h = node.querySelector('h3'), style = getComputedStyle(h); return { text: h.textContent, full: h.title, aria: h.getAttribute('aria-label'), whitespace: style.whiteSpace, height: h.getBoundingClientRect().height, lineHeight: parseFloat(style.lineHeight), fontSize: parseFloat(style.fontSize) }; });
+      const consumerIcons = [...card._consumerNodes.entries()].map(([id, node]) => {
+        const artwork = node.querySelector('.icon'), haIcon = artwork.querySelector('ha-icon'), fallback = artwork.querySelector('.fallback'), r = node.getBoundingClientRect(), icon = artwork.getBoundingClientRect(), title = node.querySelector('h3').getBoundingClientRect(), value = node.querySelector('.value').getBoundingClientRect();
+        return { id, display: getComputedStyle(artwork).display, height: icon.height, assigned: haIcon.getAttribute('icon'), expected: card._config.consumers.find(c => c.id === id).icon, fallback: getComputedStyle(fallback).display, defined: !!customElements.get('ha-icon'), iconTop: icon.top, iconBottom: icon.bottom, titleTop: title.top, titleBottom: title.bottom, valueTop: value.top, valueBottom: value.bottom, nodeTop: r.top, nodeBottom: r.bottom };
+      });
+      return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped, identities, powerFonts, captions, consumerIcons };
     });
     const onBorder = (p, r) => p.x >= r.left - .3 && p.x <= r.right + .3 && p.y >= r.top - .3 && p.y <= r.bottom + .3 && Math.min(Math.abs(p.x - r.left), Math.abs(p.x - r.right), Math.abs(p.y - r.top), Math.abs(p.y - r.bottom)) < .3;
     const intersects = (a, b, c, d) => {
@@ -57,10 +61,18 @@ const server = http.createServer((req, res) => {
       }
       assert(g.powerFonts.every(font => parseFloat(font) <= 15), `${label}: grid/home power font is too large`);
       for (const h of g.captions) {
+        assert(Math.abs(h.fontSize - Math.max(11, Math.min(13, g.width * .029))) < .01, `${label}: consumer name font size changed`);
         assert.equal(h.whitespace, 'nowrap', `${label}: consumer title wraps`);
         assert(h.height <= h.lineHeight + .3, `${label}: title spans multiple lines`);
         assert.equal(h.aria, h.full, `${label}: full consumer title is not accessible`);
         if (h.text !== h.full) { assert(h.text.endsWith('..') && !h.text.endsWith('...'), `${label}: title must end with exactly two dots`); assert(h.full.startsWith(h.text.slice(0, -2)), `${label}: shortened title is not a prefix`); }
+      }
+      for (const icon of g.consumerIcons) {
+        assert.equal(icon.display, 'flex', `${label}: consumer icon is hidden`);
+        assert(Math.abs(icon.height - 18) < .1, `${label}: wrong consumer icon height`);
+        assert.equal(icon.assigned, icon.expected, `${label}: configured icon changed`);
+        assert(icon.titleTop >= icon.nodeTop + 1.9 && icon.titleBottom <= icon.iconTop + .3 && icon.iconBottom <= icon.valueTop + .3 && icon.valueBottom <= icon.nodeBottom - 1.9, `${label}: icon/text overlap or overflow for ${icon.id}`);
+        assert.equal(icon.fallback === 'none', icon.defined, `${label}: wrong fallback visibility`);
       }
       const entries = Object.entries(g.nodes);
       for (let i = 0; i < entries.length; i++) {
@@ -110,6 +122,12 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.evaluate(() => card._consumerNodes.get('boiler').querySelector('h3').textContent), longName, 'Classic title was not restored');
     await page.locator('.layout-switch').click(); await page.setViewportSize({ width: 390, height: 900 }); await verify('truncation after view switch', 6);
     await page.evaluate(() => { config.consumers[0].name = 'Бойлер'; card.setConfig(config); refresh(); });
+    await page.evaluate(() => {
+      customElements.define('ha-icon', class extends HTMLElement {
+        connectedCallback() { if (!this.shadowRoot) this.attachShadow({ mode: 'open' }).innerHTML = '<svg viewBox="0 0 24 24" style="display:block;width:100%;height:100%;fill:currentColor"><path d="M7 3h2v6h6V3h2v6h2v6a7 7 0 0 1-6 6v3h-2v-3a7 7 0 0 1-6-6V9h2z"/></svg>'; }
+      });
+    });
+    await verify('Home Assistant icons loaded', 6);
     for (const style of ['dashes', 'dots', 'arrows', 'pulse', 'single_dot']) {
       await page.evaluate(style => { card.setConfig({ ...config, appearance: { layout: 'sideflow', animation: style } }); refresh(); }, style);
       await verify(style, 6, false);
@@ -137,6 +155,6 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => card.remove());
     assert(await page.evaluate(() => Object.values(card._flows).every(f => f._animations.every(a => a.playState === 'paused'))), 'Detached card animations still running');
     assert.deepEqual(errors, []);
-    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, grid/home icons and matching power fonts, equal wider consumer rectangles with preserved heights, single-line titles with two-dot truncation, smaller power fonts, square grid outage, hidden inactive lines, complete noncrossing routes, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
+    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, configured consumer icons and fallback within preserved heights, unchanged title fonts, grid/home icons and matching power fonts, equal wider consumer rectangles with preserved heights, single-line titles with two-dot truncation, smaller power fonts, square grid outage, hidden inactive lines, complete noncrossing routes, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
   } finally { await browser.close(); }
 })().then(() => server.close(), error => { console.error(error); server.close(); process.exitCode = 1; });
