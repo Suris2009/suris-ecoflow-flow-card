@@ -34,7 +34,8 @@ const server = http.createServer((req, res) => {
       const clipped = [...card.shadowRoot.querySelectorAll('.node h3,.value,.label,.grid-outage')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height && !e.hidden).map(e => ({ text: e.textContent, clipped: e.scrollWidth > e.clientWidth + 1, width:e.clientWidth, scrollWidth:e.scrollWidth, font:getComputedStyle(e).fontSize, wrap:getComputedStyle(e).overflowWrap, whitespace:getComputedStyle(e).whiteSpace }));
       const identities = ['grid', 'home'].map(key => { const node = card._nodes[key]; return { name: getComputedStyle(node.querySelector('h3')).display, icon: getComputedStyle(node.querySelector('.icon')).display, svg: getComputedStyle(node.querySelector('.icon svg')).display }; });
       const powerFonts = ['grid.output', 'home.power'].map(key => getComputedStyle(card._values[key]).fontSize);
-      return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped, identities, powerFonts };
+      const captions = [...card._consumerNodes.values()].map(node => { const h = node.querySelector('h3'), style = getComputedStyle(h); return { text: h.textContent, full: h.title, aria: h.getAttribute('aria-label'), whitespace: style.whiteSpace, height: h.getBoundingClientRect().height, lineHeight: parseFloat(style.lineHeight) }; });
+      return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped, identities, powerFonts, captions };
     });
     const onBorder = (p, r) => p.x >= r.left - .3 && p.x <= r.right + .3 && p.y >= r.top - .3 && p.y <= r.bottom + .3 && Math.min(Math.abs(p.x - r.left), Math.abs(p.x - r.right), Math.abs(p.y - r.top), Math.abs(p.y - r.bottom)) < .3;
     const intersects = (a, b, c, d) => {
@@ -50,8 +51,16 @@ const server = http.createServer((req, res) => {
       assert(g.identities.every(n => n.name === 'none' && n.icon === 'flex'), `${label}: grid/home must show icons instead of names`);
       const consumers = Object.entries(g.nodes).filter(([key]) => key.startsWith('consumer:')).map(([, r]) => ({ width: r.right - r.left, height: r.bottom - r.top }));
       for (const c of consumers) {
-        assert(Math.abs(c.width - c.height) < .3, `${label}: consumer must be square`);
-        assert(Math.abs(c.width - consumers[0].width) < .3 && Math.abs(c.height - consumers[0].height) < .3, `${label}: unequal consumer squares`);
+        assert(c.width > c.height + 10, `${label}: consumer must be a wider rectangle`);
+        assert(Math.abs(c.height - Math.max(60, Math.min(64, g.width * .16))) < .3, `${label}: consumer height changed`);
+        assert(Math.abs(c.width - consumers[0].width) < .3 && Math.abs(c.height - consumers[0].height) < .3, `${label}: unequal consumer rectangles`);
+      }
+      assert(g.powerFonts.every(font => parseFloat(font) <= 15), `${label}: grid/home power font is too large`);
+      for (const h of g.captions) {
+        assert.equal(h.whitespace, 'nowrap', `${label}: consumer title wraps`);
+        assert(h.height <= h.lineHeight + .3, `${label}: title spans multiple lines`);
+        assert.equal(h.aria, h.full, `${label}: full consumer title is not accessible`);
+        if (h.text !== h.full) { assert(h.text.endsWith('..') && !h.text.endsWith('...'), `${label}: title must end with exactly two dots`); assert(h.full.startsWith(h.text.slice(0, -2)), `${label}: shortened title is not a prefix`); }
       }
       const entries = Object.entries(g.nodes);
       for (let i = 0; i < entries.length; i++) {
@@ -64,7 +73,7 @@ const server = http.createServer((req, res) => {
         const [source, target] = connections[route.name] || ['home', `consumer:${route.name.slice(14)}`];
         assert(onBorder(route.samples[0], g.nodes[source]) && onBorder(route.samples.at(-1), g.nodes[target]), `${label}: detached ${route.name}`);
         assert.equal(route.trackVisible, route.active ? 'visible' : 'hidden', `${label}: inactive line visible`);
-        if (source === 'home') assert(route.length >= 38 && route.samples.at(-1).x - route.samples[0].x >= 38, `${label}: consumer line too short`);
+        if (source === 'home') assert(route.length >= 28 && route.samples.at(-1).x - route.samples[0].x >= 27.9, `${label}: consumer line too short`);
         for (const p of route.samples) {
           assert(p.x >= -.3 && p.y >= -.3 && p.x <= g.width + .3 && p.y <= g.height + .3, `${label}: clipped ${route.name}`);
           for (const [key, r] of entries) assert(!(p.x > r.left + .35 && p.x < r.right - .35 && p.y > r.top + .35 && p.y < r.bottom - .35), `${label}: ${route.name} runs inside ${key}`);
@@ -89,6 +98,18 @@ const server = http.createServer((req, res) => {
     assert(await page.evaluate(() => card._nodes.grid.querySelector('.grid-outage').hidden && !card._values['grid.output'].parentElement.hidden), 'Grid output did not return');
     await settled();
     if (process.env.SURIS_SIDEFLOW_SCREENSHOT) await page.locator('suris-ecoflow-flow-card').screenshot({ path: process.env.SURIS_SIDEFLOW_SCREENSHOT });
+    const longName = 'Холодильник на кухні з додатковою морозильною камерою';
+    await page.evaluate(name => { config.consumers[0].name = name; card.setConfig(config); refresh(); }, longName);
+    await verify('long consumer title', 6);
+    assert(await page.evaluate(name => { const h = card._consumerNodes.get('boiler').querySelector('h3'); return h.textContent !== name && h.textContent.endsWith('..') && h.title === name; }, longName), 'Long title was not truncated with two dots');
+    await page.setViewportSize({ width: 320, height: 900 }); await verify('long title on narrow screen', 6);
+    const narrowTitle = await page.evaluate(() => card._consumerNodes.get('boiler').querySelector('h3').textContent);
+    await page.setViewportSize({ width: 390, height: 900 }); await verify('long title resized', 6);
+    assert((await page.evaluate(() => card._consumerNodes.get('boiler').querySelector('h3').textContent)).length > narrowTitle.length, 'Title did not expand when space increased');
+    await page.locator('.layout-switch').click(); await settled();
+    assert.equal(await page.evaluate(() => card._consumerNodes.get('boiler').querySelector('h3').textContent), longName, 'Classic title was not restored');
+    await page.locator('.layout-switch').click(); await page.setViewportSize({ width: 390, height: 900 }); await verify('truncation after view switch', 6);
+    await page.evaluate(() => { config.consumers[0].name = 'Бойлер'; card.setConfig(config); refresh(); });
     for (const style of ['dashes', 'dots', 'arrows', 'pulse', 'single_dot']) {
       await page.evaluate(style => { card.setConfig({ ...config, appearance: { layout: 'sideflow', animation: style } }); refresh(); }, style);
       await verify(style, 6, false);
@@ -116,6 +137,6 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => card.remove());
     assert(await page.evaluate(() => Object.values(card._flows).every(f => f._animations.every(a => a.playState === 'paused'))), 'Detached card animations still running');
     assert.deepEqual(errors, []);
-    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, grid/home icons and matching power fonts, equal consumer squares and longer routes, square grid outage, hidden inactive lines, complete noncrossing routes, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
+    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, grid/home icons and matching power fonts, equal wider consumer rectangles with preserved heights, single-line titles with two-dot truncation, smaller power fonts, square grid outage, hidden inactive lines, complete noncrossing routes, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
   } finally { await browser.close(); }
 })().then(() => server.close(), error => { console.error(error); server.close(); process.exitCode = 1; });

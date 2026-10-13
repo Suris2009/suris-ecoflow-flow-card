@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.0-beta.3 — Wider consumer rectangles / Ширші блоки споживачів
+
+- Widen the Side flow consumer blocks into identical rectangles while preserving their heights and vertical positions.
+- Keep consumer names on one line. Names that do not fit end with exactly two dots (`..`); full names remain available in tooltips and accessible labels. Refit on resize and restore full text in Classic.
+- Slightly reduce Home input and city-grid output font sizes, keeping them equal. Also reduce the Home voltage font slightly.
+- Keep grid/Home icons, the outage message, independent routes, hidden inactive lines, view switching and the existing power logic.
+
+Блоки споживачів ширші, з попередньою висотою. Назви без перенесень; якщо назва не вміщується, наприкінці дві крапки. Цифри потужності дому та міської мережі трохи менші й однакового розміру. Логіка картки збережена.
+
 ## 2.1.0-beta.2 — Side flow refinement / Уточнення бокового потоку
 
 - Replace the visible City grid and Home headings in Side flow with their existing grid and house icons. Keep the square grid outage message.
