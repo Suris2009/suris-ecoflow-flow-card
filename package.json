@@ -1,13 +1,16 @@
 {
   "name": "suris-ecoflow-flow-card",
-  "version": "2.1.0-beta.5",
+  "version": "2.1.0",
   "private": true,
   "license": "MIT",
   "description": "Home Assistant flow card with a visual editor for three EcoFlow stations",
   "scripts": {
-    "test": "node tests/verify-model.cjs && node tests/verify-browser.cjs && node tests/verify-consumers.cjs && node tests/verify-offline-grid.cjs && node tests/verify-animations.cjs && node tests/verify-sideflow.cjs"
+    "test": "node tests/verify-model.cjs && node tests/verify-browser.cjs && node tests/verify-consumers.cjs && node tests/verify-offline-grid.cjs && node tests/verify-animations.cjs && node tests/verify-sideflow.cjs",
+    "previews": "node scripts/render-previews.cjs"
   },
   "devDependencies": {
-    "playwright": "^1.58.0"
+    "playwright": "^1.58.0",
+    "@mdi/js": "^7.4.47",
+    "@fontsource-variable/roboto": "^5.3.0"
   }
 }

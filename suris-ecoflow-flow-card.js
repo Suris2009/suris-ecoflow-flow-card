@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.1.0-beta.5 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.1.0 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.1.0-beta.5';
+  const VERSION = '2.1.0';
   const ANIMATIONS = ['dashes', 'dots', 'arrows', 'pulse', 'single_dot'];
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;

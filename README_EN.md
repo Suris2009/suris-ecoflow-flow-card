@@ -1,18 +1,57 @@
-# Suris EcoFlow Flow Card 2.0.8
+# Suris EcoFlow Flow Card 2.1.0
 
-[Українська інструкція](README.md) · [Download 2.0.8](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.0.8) · [Previous 0.1.12](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v0.1.12)
+[Українська](README.md) · [Stable release 2.1.0](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.0) · [Download JS](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/download/v2.1.0/suris-ecoflow-flow-card.js)
 
-**Stable release 2.0.8: dots and arrows travel continuously from Home along the shared feeder and turn into their consumer branch.** Inactive lines remain hidden, and the grid-to-home flow works when the main station is unavailable. Upgrading from version 1 or a version 2 beta preserves the card configuration.
+A Home Assistant energy flow card that brings the city grid, three EcoFlow stations, Home and individual consumers into one diagram.
 
-A Home Assistant dashboard card with a visual entity editor. City grid is on the left, home on the right, and the main EcoFlow sits between the two auxiliary stations at the bottom. Up to six active home consumers appear above them, without scrolling. The card automatically shrinks when one or both consumer rows are unused. Power readings stay inside the blocks; lines show only moving flow.
+**Flows follow changes in consumption.** Each line responds to its own power readings: higher consumption makes movement faster; lower consumption slows it down. Direction shows energy moving from its source to its consumer. Readings, active connections and animation speed update with Home Assistant sensors. Equal power produces equal visual speed regardless of route length.
 
-## Beta 2.1.0-beta.5 — Side flow
+- **Two views in one card.** Switch between Classic and compact Side flow with the View button. The selection is remembered for this card in the current browser.
+- **Up to six consumers at once.** Configure up to 20 devices. If more than six are active, the highest-power devices appear. Retained devices keep their positions, and inactive consumers are hidden.
+- **Complete routes to each device.** In Side flow, every consumer has a separate, complete line from Home in its own color. In Classic, dots and arrows follow the shared feeder and turn into the appropriate consumer branch.
+- **Custom colors.** Set separate colors for the city grid, each station and each device. Choose presets, use a palette, mix hue, saturation and lightness, or restore defaults. Home’s border automatically takes the color of its power source.
+- **Five animations.** Moving dashes, dots, arrows, pulsing light strips and one moving dot. Dot size is adjustable from 2 to 10 px.
+- **Adjustable speed and activity threshold.** Set the overall movement speed in the editor; each line also responds to its own power. Live readings adjust speed without restarting the animation. Inactive connections stay hidden.
+- **All key readings.** Battery charge, input and output for three stations; a dedicated AC input and two XT60(1)/XT60(2) inputs for the main EcoFlow. Home shows power and optional voltage. Values automatically use W or kW.
+- **Automatic Home source detection.** Power readings determine the source. A separate Home power sensor is optional: the card can use main EcoFlow output or calculate Home demand from grid power minus station charging.
+- **Grid outage warning.** An optional availability sensor triggers a pulsing No grid message inside the grid block. Supplying sources have clockwise moving dashed borders; Home retains a solid border.
+- **Names, icons and details.** Side flow keeps consumer names on one line, ending long names with two dots; the full name remains in the tooltip. Icons are centered between name and power. Clicking a reading with a configured entity opens its details.
+- **Mobile layouts and themes.** Light and dark themes, a compact Side flow view, and automatic Classic height reduction when a consumer row is unused. System reduced-motion preferences are respected.
 
-[Download the beta](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.0-beta.5). The stable release remains **2.0.8**.
+Configure the card in the visual editor without mandatory YAML. The interface supports Ukrainian and English. The card runs locally using existing Home Assistant entities, without runtime dependencies or a CDN. Install and update through HACS or a single JS file. Existing card settings are retained when upgrading.
 
-A compact alternative with sources on the left, Home in the middle, and up to six active consumers on the right. Each consumer has a complete, separate line from Home in its own color. Inactive lines are hidden. City grid and Home use icons instead of headings, with matching power font sizes. Consumers are identical wider rectangles with their previous heights. Each configured device icon is centered between its name and power. Moving-dot density is reduced by 30%, retaining flow speed and the single-dot mode. Name font sizes are retained. Names stay on one line and end with **two dots (`..`)** if they do not fit; the full name remains in the tooltip. Home and city-grid numbers are slightly smaller. City grid is square, with room for the **No grid** message. Station readings and home source detection retain their existing behavior.
+## Screenshots
 
-Use **View** in the card header to switch between Classic and Side flow. The selection is remembered for this card in the current browser. In the editor, **Flow appearance → Block layout** sets the initial view, and **Show view switch** controls the button. Existing cards initially keep Classic until switched.
+Screenshots of the actual card with demonstration readings. Station names, entities and colors are configurable.
+
+| Side flow: grid supply and station charging | Classic with the same readings |
+| --- | --- |
+| <img src="preview-sideflow-grid-en.png" width="390" alt="Side flow: grid supply and station charging"> | <img src="preview-classic-grid-en.png" width="390" alt="Classic with the same readings"> |
+
+| EcoFlow supply and two XT60 inputs | Grid outage warning in a light theme |
+| --- | --- |
+| <img src="preview-sideflow-main-en.png" width="390" alt="EcoFlow supply and two XT60 inputs"> | <img src="preview-sideflow-outage-en.png" width="390" alt="Grid outage warning in a light theme"> |
+
+## Installation and upgrades
+
+Add `https://github.com/Suris2009/suris-ecoflow-flow-card` as a HACS custom Dashboard repository, install **2.1.0**, and reload the Home Assistant frontend. Add **Suris EcoFlow Flow Card** to your dashboard and select entities in the visual editor.
+
+HACS resource: `/hacsfiles/suris-ecoflow-flow-card/suris-ecoflow-flow-card.js`, type **JavaScript module**. An existing resource continues to use the same file.
+
+For manual installation, download the release JS file, put it in `www` under your Home Assistant configuration directory, and add `/local/suris-ecoflow-flow-card.js?v=2.1.0` as a **JavaScript module** resource. Restart Home Assistant if you have just created `www` for the first time.
+
+Upgrading from stable 2.0.8 or a 2.1 beta retains entities, consumers, colors and animation settings. Existing configurations initially use Classic; a Side flow selection already saved in the browser is also retained. No duplicate card or resource is needed.
+
+The card uses existing Home Assistant entities. Your EcoFlow, meter and smart plug integrations provide the readings.
+
+## Switching views
+
+Click **View** in the card header. In **Flow appearance → Block layout**, choose the starting layout; **Show view switch** controls button visibility.
+
+| View | Consumers and routes |
+| --- | --- |
+| Classic | Two rows of three devices, shared row feeders in Home’s color, and consumer branches. Height shrinks when a row is unused. |
+| Side flow | Six devices on the right, each with its own complete colored route from Home. Equal rectangles with a single-line name, icon and power. |
 
 ```yaml
 appearance:
@@ -20,160 +59,68 @@ appearance:
   show_layout_switch: true
 ```
 
-## Video demo
+`layout` accepts `classic` or `sideflow`. Button selections are stored locally for this card and browser without changing sensor configuration.
 
-https://github.com/user-attachments/assets/e5172fc9-3b20-4533-9004-020b4e33d294
+## Individual consumers
 
-In HACS open the card and install the stable **2.0.8** update. To move from a beta, you can select **2.0.8** through ⋮ → Redownload. Reload the frontend after installation. Release 2.0.4 has been withdrawn from stable releases because it hid the grid-to-home flow when the main EcoFlow was unavailable.
+In the visual editor, use **Add consumer**, enter a name, and choose a power sensor, icon and color. Configure up to **20 devices**; up to **six active consumers** with the highest power appear at once.
 
-![Grid supplies Home while the main EcoFlow is unavailable](preview-offline-grid.png)
+Active means power **above** the configured threshold, 3 W by default. Zero, negative, unknown and unavailable readings are not displayed. Existing devices take priority on equal power; retained devices keep their slots, and empty slots fill automatically.
 
-This is a **dashboard card**, not a device integration. Install your EcoFlow and meter integrations first so their entities are available in Home Assistant. The card displays readings; it does not switch relays, outputs or appliances. It runs locally without external libraries, CDN or a build step.
+Use **power sensors in W / kW**, not accumulated energy in Wh / kWh. The consumer list shows part of Home’s demand and does not replace Home input with the sum of the six visible devices.
 
-![Mobile example with six consumers](preview-mobile.png)
+In Side flow, long names end with two dots (`..`); tooltips retain full names. Classic keeps its existing ellipsis behavior. Clicking consumer power opens its entity details.
 
-## Automatic height
+## Station, grid and Home entities
 
-Height follows **visible active consumers**, not the number of configured entities:
-
-| Visible active devices | Rows | Height compared with the full layout |
-| --- | --- | --- |
-| 4–6 | 2 | Full height |
-| 1–3 | 1 | 93 px shorter |
-| 0 | 0 | 186 px shorter |
-
-As devices switch on or off, the card resizes automatically. A single row moves up, followed by the grid, home and stations. Block sizes are retained and all flows remain orthogonal. A dashboard section with a forced fixed height can retain empty space outside the card.
-
-[One-row example](preview-one-row.png) · [No active devices](preview-no-consumers.png)
-
-## Install with HACS
-
-1. Open **HACS → ⋮ → Custom repositories**.
-2. Add `https://github.com/Suris2009/suris-ecoflow-flow-card`, category **Dashboard** (Lovelace / Plugin in older versions).
-3. Download **2.0.8**. If the card is already installed, open its HACS entry and install the available update.
-4. Reload the Home Assistant frontend. If HACS did not add the resource, add `/hacsfiles/suris-ecoflow-flow-card/suris-ecoflow-flow-card.js` as a **JavaScript module** in dashboard resources.
-5. Open **Edit dashboard → Add card → Suris EcoFlow Flow Card**. Choose your entities in the visual editor. YAML is optional.
-
-This repository is added as a custom HACS repository; inclusion in the default catalog is not assumed. Keep only one resource for this card. When moving from a manual installation, remove its old `/local/` resource after adding the HACS resource; keep your configured dashboard card.
-
-## Manual installation
-
-1. Download `suris-ecoflow-flow-card.js` from the 2.0.8 release. Put it in the `www` folder beside your Home Assistant `configuration.yaml`, commonly `/config/www`. If you just created `www` for the first time, restart Home Assistant.
-2. Open **Settings → Dashboards → ⋮ → Resources → Add resource**. Enable Advanced mode in your user profile if Resources is hidden.
-3. URL: `/local/suris-ecoflow-flow-card.js?v=2.0.8`; type: **JavaScript module**.
-4. Reload the frontend, then add and configure the card through the visual editor. Clear the frontend cache if the old version remains visible.
-
-## Configure the stations and home
-
-| Block | Entities to select |
+| Block | Configuration |
 | --- | --- |
-| City grid | Total power, optional availability entity and its available state (`on` by default) |
-| Each auxiliary EcoFlow | Charge %, total input, total output; optionally separate grid charging and transfer-to-main power |
-| Main EcoFlow | Charge %, total input, total output, separate AC grid input, independent XT60(1) and XT60(2) DC inputs; optionally a dedicated home output |
-| Home | Optional input power sensor; leave empty for automatic calculation. Optional voltage sensor |
+| City grid | Power; optional grid availability sensor and its available state. |
+| Each auxiliary station | Charge (%), total input and output; optional dedicated grid charging and transfer-to-main power. |
+| Main EcoFlow | Charge (%), total input and output, separate AC input, two XT60(1)/XT60(2) DC inputs; optional dedicated Home feed output. |
+| Home | Optional power and voltage sensors; voltage appears below power in V. |
 
-To show the house voltage, select **Home voltage (optional)** in the **Home** section of the visual editor. The **Voltage** row appears below **Input**, in V. Without a selected sensor the row stays hidden; an unavailable reading shows `—`. Voltage is read from that sensor, not inferred from the grid or battery. In YAML, set `home.voltage: sensor.home_voltage`.
+Home’s source follows the main station’s Home feed output. A dedicated Home feed sensor takes priority over total output. Power above the threshold selects EcoFlow; an available nonnegative reading at or below the threshold selects grid. If EcoFlow output is unavailable, grid power above the threshold can identify grid supply.
 
-The home source is automatically selected from main EcoFlow output, independently of the grid status sensor. Output power above the flow threshold selects main EcoFlow; a valid non-negative reading at or below the threshold selects grid. Select the dedicated **Output power to home** in Main EcoFlow when other loads use the station; otherwise its total output is used. When station output is unavailable, invalid or negative, grid power above the threshold selects grid. With no usable power data from either source, the home source remains unknown. This is an inference from output power, not a measurement of the transfer switch.
+Without a separate Home power sensor:
 
-Existing configurations automatically use main EcoFlow output after updating; no manual mode change is needed. Legacy `home.source_mode`, `home.source_entity`, `home.grid_state` and `home.main_state` fields are ignored. The source-mode selector has been removed.
+- On EcoFlow, the selected main Home feed output is used.
+- On grid, Home demand is grid power minus charging for the two auxiliaries and the main AC input. Missing or unavailable charging readings count as zero in this calculation.
 
-The optional **Grid availability** sensor controls the indicator and power row inside the city grid block. When it reports an outage, a red **No grid** label pulses in place of the tower icon and the entire output power row is hidden, including any retained sensor reading. The name remains visible. The reading returns when the warning clears: grid power returns, the sensor is cleared or its state is unknown. With reduced motion the label stays steady. No state of this sensor affects any flow. Station charging and transfers use their own power readings.
+Select a dedicated **Grid charging power** entity if an auxiliary’s total input includes other sources, and **Transfer power to main EcoFlow** if its total output includes other loads. The grid-to-main route uses only the main station’s separate AC input.
 
-Without a home sensor, the card calculates **home grid input = total grid power − auxiliary 1 grid charging − auxiliary 2 grid charging − main AC input**, bounded at zero. Auxiliary charging uses its dedicated charging sensor when selected, otherwise total input. Missing or unavailable charging readings count as zero in this calculation, so an offline station that is actually charging can overestimate home input. When the stations are off, home receives the entire grid reading. Example: grid 1000 W minus station charging of 100, 200 and 300 W gives home 400 W. The meters may update at different times, so this is a calculated reading.
+Without a configured main total input sensor, total input can be calculated from the selected AC and XT60 inputs when all selected readings are available.
 
-When supplied by the main station, home uses the selected dedicated home output or otherwise the main total output. A selected home input sensor overrides either calculation; if that sensor becomes unavailable, the card shows `—`. Clear the field to restore automatic calculation.
+The availability sensor only controls the **No grid** warning and grid output visibility; it never chooses Home’s source. Set the available state to `on` or `off` according to your sensor.
 
-Main station rows:
+Supported units: W, kW, mW, MW, Вт and кВт; a reading without a unit is treated as W. Missing values appear as `—`, while a real zero appears as `0 W`. Battery charge uses valid 0–100% readings; Classic battery icons fill to match charge.
 
-| Row | Meaning |
+## Animation, speed and colors
+
+In **Flow appearance**:
+
+| Setting | Values |
 | --- | --- |
-| Charge | Battery state of charge in %; also controls battery icon fill |
-| Input | Total input sensor, or sum of selected AC and XT60 sensors when all selected readings are available |
-| Grid | Separate AC input power; total input never substitutes for AC input |
-| XT60(1) | First DC input port |
-| XT60(2) | Second DC input port |
-| Output | Total station output |
+| Animation | Dashes, moving dots, moving arrows, pulsing light strips, or one moving dot. |
+| Dot size | 2–10 px for both dot styles; 5 px by default. |
+| Base movement time | 0.5–20 seconds; larger values slow all flows, 3 seconds by default. |
+| Active flow threshold | Power must be strictly above the threshold; 3 W by default. |
+| Colors | Separate grid, EcoFlow #2, EcoFlow #3 and main colors; each device color is in its own section. |
 
-XT60 ports are independent of the auxiliary stations. Their readings do not decide auxiliary transfer flow. Each auxiliary transfer uses its dedicated transfer entity or otherwise total output. If other loads use that station, select a separate DC transfer sensor. The older first solar input field maps to XT60(1); replace an old combined solar sensor with the actual first-port sensor where needed.
+Speed follows the respective route’s power: displayed Home input, station charging or transfer output. A Classic row feeder uses the sum of that row’s displayed devices; dots and arrows follow complete journeys to each consumer. In single-dot mode, the row’s dot visits consumers in turn.
 
-## Add up to 20 individual consumers
+Moving dots are 30% less dense than in 2.0.8: independent routes use 40 px spacing instead of 28 px, while shared journey particle counts are rounded to 70% of their previous count, with at least one particle. Movement speed is retained.
 
-1. Open the card editor and **Individual consumers**.
-2. Click **Add consumer**, give it a name, select its **power** sensor and choose an icon with the Home Assistant icon picker.
-3. Open **Consumer border color** and choose a preset swatch or mix hue, saturation and brightness with the sliders. Tap the large color field for your device’s native color picker. The preview and HEX update immediately. You can also type a color: `red`, `green`, `orange`, `#ff8800`, `rgb(255, 136, 0)` or `hsl(32, 100%, 50%)`. Do not add quotes in the visual field. **This color applies to the device's border. Shared row lines and their branches use the home color, following its active source.**
-4. Save the card. Repeat for up to 20 devices. Remove deletes only the entry from this card, not the Home Assistant entity.
+Colors support presets, the native palette, HSL mixing and restoring defaults. Enter CSS color names, HEX, RGB/RGBA or HSL/HSLA without quotes in editor text fields. Transparency can be entered as text.
 
-Use power sensors in **W / kW**, for example from smart plugs, rather than accumulated energy sensors in **kWh**. The six highest-power active devices appear in two rows of three. Activity means power strictly above the flow threshold, **3 W by default**. Zero, negative, unknown and unavailable readings are hidden. Change the threshold in Flow appearance if needed.
+Source colors apply to their borders and outgoing flows. Home uses its active source color; Side flow consumer routes use device colors. Supplying borders move clockwise; Home’s thicker border remains solid and stationary.
 
-A stronger device replaces the weakest visible one. Other visible tiles keep their slots; ties favor devices already displayed. No paging or scrolling is needed. Long names are shortened inside tiles, with full names in tooltips. Click a power reading for the entity's more-info dialog.
-
-Consumer readings **do not subtract from home input or replace it**. They explain part of the household total; hidden and unconfigured loads can also draw power. The lower row fills first from left to right, followed by the upper row. When devices become inactive, lower-row gaps are filled from above. Each row has one shared home feeder with short vertical branches. Feeder speed follows the total power of visible devices in that row; each branch follows its device power. Both feeders and all branches use the home color. The home outline always remains solid and stationary.
-
-Optional YAML fragment to append to an existing card configuration, keeping the grid and station sections:
-
-```yaml
-consumers:
-  - id: boiler
-    name: Boiler
-    power: sensor.boiler_power
-    icon: mdi:water-boiler
-    color: orange
-  - id: fridge
-    name: Fridge
-    power: sensor.fridge_power
-    icon: mdi:fridge
-    color: "#20b8c8"
-```
-
-Replace the example entities. `id` is a stable card identifier, not a Home Assistant entity. The editor creates it automatically. In YAML, use unique Latin letters, digits, `_` and `-`; quote HEX colors.
-
-## Colors, readings and animations
-
-Open a color under **Flow appearance** to choose a preset or mix **Hue / Saturation / Brightness** with sliders. The large color field opens the phone or computer’s native picker. The preview and HEX update immediately; **Default color** restores the original. Every consumer has the same visual controls. Alpha transparency remains available through typed HEX or `rgba()`; visual mixing selects an opaque color.
-
-![Visual color picker and mixer](preview-colors.png)
-
-Set separate source colors for grid, each auxiliary station and main station in **Flow appearance**. Each color applies to its station border, battery fill and outgoing lines. Home uses its active source's color, or a neutral border when the source is unknown. Individual consumers have their own border colors; their flow lines use the home color. Empty color fields restore defaults. Incomplete color text stays editable while the last valid preview remains displayed.
-
-Open **Flow appearance → Flow animation** in the card editor:
-
-| Style | Display |
-| --- | --- |
-| Current animation (dashes) | Existing short moving dashes; the default after upgrading |
-| Moving dots | Multiple round dots along each active line |
-| Moving arrows | Arrows follow the route and turn toward the load |
-| Pulsing light strips | Moving strips with pulsing brightness |
-| One moving dot | One dot per independent line; one per shared row, visiting its consumers in turn |
-
-Dots and arrows follow the complete **Home → shared feeder → branch → consumer** journey. Branches do not animate separate particles. Each row uses one speed derived from its total consumer power, with no speed jump at a junction. In single-dot mode, one dot visits the row’s consumers in turn and begins each new journey at Home.
-
-**Dot size** is a shared **2–10 px** slider for both dot styles; the default is 5 px. Changing size retains the current animation. The selected style applies to every route, including consumers. Browser-native animations require no per-frame JavaScript timers, pause when the card disconnects and respect system reduced motion.
-
-All lines have right-angle routes; no diagonals. Supplying grid and station blocks have clockwise moving dashed outlines, while inactive outlines are solid. The home outline always remains solid and stationary. More watts makes movement faster, with a bounded speed. Increasing Base movement time slows all lines. Live power changes adjust animation speed without restarting it. System reduced-motion settings make active flows static.
-
-All power rows stay on one line. Values below 1000 W use W; values from 1000 W use kW with up to two decimal places. Supported input units include W, kW, mW, MW, Вт and кВт; a reading without a unit is treated as W. Wh / kWh are not power. Missing readings show `—`; real zero shows `0 W`. Station battery icons fill from valid 0–100% readings. The blocks have nearly transparent backgrounds and follow the Home Assistant theme.
-
-## Upgrade from version 1 or a beta, or roll back
-
-Update the same resource to **2.0.8** and reload the frontend. The card type remains `custom:suris-ecoflow-flow-card`. Existing station entities, names, colors and flow settings are retained. When upgrading from version 1, add consumers in the editor; none are added automatically. Existing consumer settings from version 2 betas are retained. Without active consumers, the card shrinks automatically. Do not add a duplicate resource or recreate the card.
-
-To roll back, save a copy of the card YAML, install **0.1.12** through HACS or replace the same JS file with the version 1 asset, and reload the frontend. Version 1 does not display consumers; station settings remain compatible.
-
-## If something is missing
-
-| Symptom | Check |
-| --- | --- |
-| Consumer not visible | Power sensor selected, available reading above the threshold, and within the six strongest |
-| Wrong consumer color | Enter a valid CSS color without quotes in the visual editor; use quotes for HEX in YAML |
-| No grid or home supply line | Check the main home output sensor and corresponding power readings; the grid availability sensor only controls the warning |
-| Home differs from meter | Home excludes station charging; unavailable charging sensors count as zero; meter updates may differ in time |
-| Main Input shows `—` | Select total input, or make every selected individual input sensor available |
-| Old layout after upgrade | One resource only, correct downloaded version, frontend reloaded / cache cleared |
+Browser-native animations need no per-frame JavaScript timers. Inactive routes and disconnected cards pause their animations. System reduced-motion settings make active flows static.
 
 ## Demo and development
 
-Open `demo.html` beside the JS file for fictional readings, seven configured consumers, strongest-six replacement, a single row and automatic shrinking when consumers are inactive. See [desktop preview](preview-desktop.png). This demo does not connect to your devices.
+`demo.html` uses fictional readings and lets you change sources, charging, consumer activity and animations. Open it beside the JS file in a browser.
 
-Run `npm install`, `npm test` and `node scripts/validate-release.cjs`. Browser tests use Playwright; `SURIS_CHROMIUM_PATH` can point to an installed Chromium. Tests cover power/source logic, consumer ranking, limits, editor draft typing, visual color mixing and reset, automatic zero/one/two-row height changes, animation continuity, reduced motion and layout/route geometry at 320–1150 px. [Release instructions](RELEASING.md).
+Node.js is not needed to use the card. For development: `npm install`, `npx playwright install chromium`, `npm test`. `SURIS_CHROMIUM_PATH` can select an installed Chromium. `npm run previews` generates the screenshots from the actual card using Roboto and standard Material Design Icons; those dependencies are used only to generate previews.
 
+Tests cover power sources, units, missing readings, strongest-six selection, editor controls, colors, all five animations, geometry at 320–1150 px, icon centering, name truncation, view switching and reduced motion. [Changelog](CHANGELOG.md) · [Release instructions](RELEASING.md).
