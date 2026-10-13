@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.0.8 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.1.0-beta.1 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.0.8';
+  const VERSION = '2.1.0-beta.1';
   const ANIMATIONS = ['dashes', 'dots', 'arrows', 'pulse', 'single_dot'];
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
@@ -12,7 +12,7 @@
     auxiliary_1: { name: 'EcoFlow №2' }, auxiliary_2: { name: 'EcoFlow №3' },
     main: { name: 'Головна EcoFlow' },
     home: { name: 'Дім' }, consumers: [],
-    appearance: { grid_color: '#4b9fff', solar_color: '#ffcc42', main_color: '#27d9d5', threshold: 3, duration: 3, animation: 'dashes', dot_size: 5 }
+    appearance: { layout: 'classic', show_layout_switch: true, grid_color: '#4b9fff', solar_color: '#ffcc42', main_color: '#27d9d5', threshold: 3, duration: 3, animation: 'dashes', dot_size: 5 }
   };
   const TEXT = {
     uk: { grid: 'Міська мережа', main: 'Головна EcoFlow', home: 'Дім', title: 'Енергопотоки', input: 'Вхід', output: 'Вихід', soc: 'Заряд', ac: 'Мережа', source: 'Джерело', unknown: 'Невідомо', unavailable: 'Недоступно', select: 'Вибери сутності в редакторі картки', settings: 'Налаштування', homePowerLabel: 'Вхід дому (необов’язково)', homeDerived: 'Без окремого датчика: від мережі — загальна потужність мінус заряджання трьох станцій; від EcoFlow — вихід головної станції. Відсутні або недоступні входи станцій у розрахунку вважаються нулем. Вхід дому від мережі розрахунковий.', sourceHint: 'Мережа є — дім від міської мережі. Мережі немає — дім від головної EcoFlow. Вибери датчик наявності мережі в блоці міської мережі.', flowHint: 'Обрана анімація рухається від джерела до споживача. Розмір точок (2–10 px) діє для обох варіантів із точками. Більша потужність кожної лінії — більша швидкість. Більший базовий час — повільніший рух. Потік активний, коли потужність перевищує поріг. Відсутні або недоступні показники відображаються як —.', mainHint: 'Для лінії мережа → головна EcoFlow потрібна окрема потужність AC-входу. Загальний вхід не використовується як AC-вхід.', auxHint: 'Потужність передачі на головну станцію: вибери DC-вихід, якщо загальний вихід включає інші навантаження. Якщо поле порожнє, використовується загальний вихід.', editorError: 'Редактор Home Assistant ще завантажується. Закрий та відкрий редактор картки ще раз.', more: 'Докладніше', watts: 'W', mismatch: 'Стан міської мережі не розпізнано', setup: 'Вибери датчик наявності міської мережі' },
@@ -22,6 +22,8 @@
   Object.assign(TEXT.en, { consumers: 'Individual consumers', consumer: 'Consumer', addConsumer: 'Add consumer', removeConsumer: 'Remove', consumerPower: 'Power sensor (W / kW)', consumerIcon: 'Icon', consumerColor: 'Consumer border color', consumerHint: 'Add up to 20 devices. The six active devices with the highest power appear at the top. Activity uses the flow threshold. Select power sensors, not kWh energy sensors. Each device color applies to its border. Shared row lines use the home color. The lower row fills first. Height shrinks automatically when one or both rows are unused.' });
   Object.assign(TEXT.uk, { voltage: 'Напруга' });
   Object.assign(TEXT.en, { voltage: 'Voltage' });
+  Object.assign(TEXT.uk, { view: 'Вигляд', classic: 'Класичний', sideflow: 'Боковий потік', switchView: 'Перемкнути вигляд' });
+  Object.assign(TEXT.en, { view: 'View', classic: 'Classic', sideflow: 'Side flow', switchView: 'Switch view' });
   Object.assign(TEXT.uk, {
     gridOff: 'Мережі немає',
     gridHint: 'Датчик необов’язковий. Якщо мережі немає, усередині її блоку блимає червоний напис «Мережі немає», а рядок вихідної потужності прихований. Коли мережа повертається, показник знову видно. Без датчика попередження приховане. Цей датчик не керує потоками.',
@@ -68,6 +70,9 @@
     const number = (key) => a[key] == null || a[key] === '' ? DEFAULTS.appearance[key] : Number(a[key]);
     a.threshold = number('threshold'); a.duration = number('duration'); a.dot_size = number('dot_size');
     a.animation ||= 'dashes';
+    a.layout ||= 'classic'; a.show_layout_switch ??= true;
+    if (!['classic', 'sideflow'].includes(a.layout)) throw new Error('Unknown card layout');
+    if (typeof a.show_layout_switch !== 'boolean') throw new Error('show_layout_switch must be a boolean');
     if (!ANIMATIONS.includes(a.animation)) throw new Error('Unknown flow animation');
     if (!Number.isFinite(a.dot_size) || a.dot_size < 2 || a.dot_size > 10) throw new Error('Dot size must be between 2 and 10 px');
     if (!Number.isFinite(a.threshold) || a.threshold < 0) throw new Error('Flow threshold must be a non-negative number');
@@ -175,7 +180,7 @@
   const CSS = `
     :host{display:block;--flow-grid:#4b9fff;--flow-auxiliary_1:#ffcc42;--flow-auxiliary_2:#ffcc42;--flow-main:#27d9d5}
     *{box-sizing:border-box}ha-card{display:block;overflow:hidden;background:var(--ha-card-background,var(--card-background-color,#1c1c1c));color:var(--primary-text-color,#e8e8e8);padding:16px;border-radius:var(--ha-card-border-radius,16px)}
-    .wrap{container-type:inline-size}h2{font-size:22px;font-weight:600;margin:0 0 8px}.diagram{position:relative;height:clamp(540px,65cqw,720px)}
+    .wrap{container-type:inline-size}h2{font-size:22px;font-weight:600;margin:0}.card-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.card-header h2{min-width:0;overflow-wrap:anywhere}.layout-switch{flex:none;font:inherit;font-size:12px;color:inherit;background:transparent;border:1px solid var(--divider-color,#60656d);border-radius:8px;padding:5px 8px;cursor:pointer}.layout-switch[hidden]{display:none}.layout-switch:focus-visible{outline:2px solid var(--flow-main);outline-offset:2px}.diagram{position:relative;height:clamp(540px,65cqw,720px)}
     .lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
     .flow path{fill:none;stroke:color-mix(in srgb,var(--primary-text-color,#9aa0a6) 55%,transparent);stroke-width:1.5;stroke-linejoin:miter;stroke-linecap:butt;opacity:.40}.flow .flow-track{visibility:hidden}.flow.active .flow-track{stroke:var(--color);opacity:.28;visibility:visible}.flow .flow-dashes{stroke:var(--color);stroke-width:3;stroke-linecap:round;stroke-dasharray:7 21;opacity:.95;visibility:hidden}.flow.active .flow-dashes{visibility:visible}
     .node{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0;background:transparent;background:color-mix(in srgb,var(--ha-card-background,var(--card-background-color,#1c1c1c)) 8%,transparent);border:2px solid var(--node-color,var(--divider-color,#60656d));border-radius:12px;padding:12px 10px;z-index:1;min-height:140px;height:auto}
@@ -191,6 +196,14 @@
     @keyframes grid-outage-pulse{0%,100%{opacity:1}50%{opacity:.25}}
     @container(max-width:520px){.node.home{padding-inline:4px}}
     .node.consumer{height:72px;min-height:72px;padding:4px;gap:3px;border-radius:9px}.consumer h3{font-size:clamp(11px,1.5cqw,13px);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}.consumer .icon{height:22px;margin:0;color:var(--node-color)}.consumer ha-icon{--mdc-icon-size:22px;width:22px;height:22px}.consumer ha-icon:not(:defined){display:none}.consumer ha-icon:defined+.fallback{display:none}.consumer .fallback{height:22px}.consumer .fallback svg{width:22px}.consumer .value{width:100%;text-align:center;font-size:12px;line-height:16px}.consumer:focus-within{outline:1px solid var(--node-color);outline-offset:2px}
+    .sideflow .node{right:auto;bottom:auto;min-height:0;height:auto;padding:5px 6px;gap:2px;background:var(--ha-card-background,var(--card-background-color,#1c1c1c));border-radius:10px}
+    .sideflow .node h3{font-size:clamp(11.5px,3.625cqw,14.5px);line-height:1.1;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow-wrap:anywhere}
+    .sideflow .node .icon{display:none}.sideflow .row{font-size:clamp(11px,3.25cqw,13px);line-height:1.2;gap:2px}.sideflow .row[hidden]{display:none}
+    .sideflow .row.side-stack{flex-direction:column;align-items:center;gap:0}.sideflow .side-stack .value{margin-left:0;text-align:center}
+    .sideflow .home .label,.sideflow .grid .label{display:none}.sideflow .home .row,.sideflow .grid .row{justify-content:center}.sideflow .home .value,.sideflow .grid .value{margin-left:0;text-align:center}
+    .sideflow .home .power .value{font-size:clamp(15px,4.4cqw,18px)}.sideflow .home .voltage .value{font-size:clamp(11px,3.5cqw,14px)}
+    .sideflow .grid.grid-absent .icon{display:flex;height:auto;margin:3px 0 0}.sideflow .grid.grid-absent .icon svg{display:none}.sideflow .grid-outage{position:static;font-size:clamp(11px,3.25cqw,13px);white-space:normal;overflow-wrap:anywhere}
+    .sideflow .node.consumer{min-height:45px;padding:3px 4px;gap:3px}.sideflow .consumer h3{font-size:clamp(11px,2.9cqw,13px);line-height:1.05}.sideflow .consumer .value{font-size:clamp(11.5px,3.5cqw,14px);line-height:1.1}
     @media(prefers-reduced-motion:reduce){.flow .flow-dashes,.flow .flow-particle{display:none}.flow.active .flow-track{stroke-width:3;opacity:.92}.grid-outage{animation:none}}
   `;
   class SurisEcoFlowFlowCard extends HTMLElement {
@@ -210,6 +223,12 @@
       if (JSON.stringify(next) === JSON.stringify(this._config)) return;
       const rebuild = !this._nodes || next.language !== this._config?.language;
       this._config = next; this._signature = '';
+      this._layout = next.appearance.layout;
+      this._layoutStorageKey = `${TAG}:layout:${JSON.stringify([next.title, ...['grid', 'auxiliary_1', 'auxiliary_2', 'main', 'home'].map(key => Object.entries(next[key]).filter(([field]) => field !== 'name')), next.consumers.map(({ id, power }) => [id, power])])}`;
+      try {
+        const saved = JSON.parse(localStorage.getItem(this._layoutStorageKey));
+        if (saved?.base === next.appearance.layout && ['classic', 'sideflow'].includes(saved.layout)) this._layout = saved.layout;
+      } catch (_) { /* The view still works when browser storage is disabled. */ }
       if (rebuild) this._build(); else this._applyConfig();
       this._update(); this._drawPaths();
     }
@@ -233,6 +252,27 @@
     }
     getCardSize() { return Math.ceil((this.getBoundingClientRect().height || 580) / 50); }
     getGridOptions() { return { columns: 12, min_columns: 12 }; }
+    _applyLayout() {
+      const text = t(this._config), sideflow = this._layout === 'sideflow';
+      this.shadowRoot.querySelector('.wrap').classList.toggle('sideflow', sideflow);
+      const button = this.shadowRoot.querySelector('.layout-switch');
+      button.hidden = !this._config.appearance.show_layout_switch;
+      button.textContent = text.view;
+      button.title = `${text[this._layout]} → ${text[sideflow ? 'classic' : 'sideflow']}`;
+      button.setAttribute('aria-label', `${text.switchView}: ${text[sideflow ? 'classic' : 'sideflow']}`);
+      button.setAttribute('aria-pressed', String(sideflow));
+      if (this._appliedLayout === this._layout) return;
+      this._appliedLayout = this._layout; this._geometry = '';
+      for (const node of [...Object.values(this._nodes), ...this._consumerNodes.values()]) {
+        for (const property of ['left', 'top', 'right', 'bottom', 'width', 'height', 'min-height']) node.style.removeProperty(property);
+        for (const row of node.querySelectorAll('.row')) { row.classList.remove('side-stack'); row.style.removeProperty('font-size'); }
+      }
+    }
+    _toggleLayout() {
+      this._layout = this._layout === 'sideflow' ? 'classic' : 'sideflow';
+      try { localStorage.setItem(this._layoutStorageKey, JSON.stringify({ base: this._config.appearance.layout, layout: this._layout })); } catch (_) { /* Optional preference. */ }
+      this._applyLayout(); this._drawPaths();
+    }
     _row(node, field, label) {
       const row = document.createElement('div'); row.className = `row ${field}`;
       const caption = document.createElement('span'); caption.className = 'label'; caption.textContent = label;
@@ -246,10 +286,12 @@
       const c = this._config, text = t(c); this._resize.disconnect();
       for (const flow of Object.values(this._flows || {})) for (const animation of flow._animations || []) animation.cancel();
       for (const border of Object.values(this._borders || {})) border._animation?.cancel();
-      this.shadowRoot.innerHTML = `<style>${CSS}</style><ha-card><div class="wrap"><h2></h2><div class="diagram"><svg class="lines" aria-hidden="true"></svg></div><div class="status" role="status"></div></div></ha-card>`;
+      this.shadowRoot.innerHTML = `<style>${CSS}</style><ha-card><div class="wrap"><div class="card-header"><h2></h2><button type="button" class="layout-switch"></button></div><div class="diagram"><svg class="lines" aria-hidden="true"></svg></div><div class="status" role="status"></div></div></ha-card>`;
+      this.shadowRoot.querySelector('.layout-switch').addEventListener('click', () => this._toggleLayout());
       this.shadowRoot.querySelector('h2').textContent = c.title;
       this._diagram = this.shadowRoot.querySelector('.diagram'); this._svg = this.shadowRoot.querySelector('.lines');
       this._nodes = {}; this._values = {}; this._flows = {}; this._borders = {}; this._consumerNodes = new Map(); this._consumerOrder = [];
+      this._appliedLayout = null;
       for (const key of ['grid', 'auxiliary_1', 'auxiliary_2', 'main']) this.style.setProperty(`--flow-${key}`, c.appearance[`${key}_color`]);
       for (const key of ['grid', 'auxiliary_1', 'auxiliary_2', 'main', 'home']) {
         const node = document.createElement('section'); node.className = `node ${key}`; node.dataset.key = key;
@@ -280,6 +322,7 @@
         this._nodes[key] = node; this._diagram.append(node);
       }
       if (this.isConnected) { this._resize.observe(this._diagram); for (const node of Object.values(this._nodes)) this._resize.observe(node); }
+      this._applyLayout();
       this._drawPaths();
     }
     _applyConfig() {
@@ -288,6 +331,7 @@
       for (const key of ['grid', 'auxiliary_1', 'auxiliary_2', 'main']) this.style.setProperty(`--flow-${key}`, c.appearance[`${key}_color`]);
       for (const [key, node] of Object.entries(this._nodes)) node.querySelector('h3').textContent = c[key].name || text[key] || key;
       this._values['home.voltage'].parentElement.hidden = !c.home.voltage;
+      this._applyLayout();
       for (const flow of Object.values(this._flows)) {
         const dashes = flow.querySelector('.flow-dashes');
         this._configureAnimation(flow, dashes, dashes.getAttribute('d'));
@@ -363,6 +407,7 @@
       });
     }
     _layoutConsumers() {
+      if (this._layout === 'sideflow') return this._layoutSideFlow();
       const rows = Math.ceil(this._consumerNodes.size / 3), shift = (2 - rows) * 93;
       const fullHeight = Math.min(720, Math.max(540, this._diagram.clientWidth * .65));
       this._diagram.style.height = `${fullHeight - shift}px`; this._diagram.dataset.consumerRows = String(rows);
@@ -374,6 +419,63 @@
       this._diagram.style.height = `${Math.max(fullHeight - shift, requiredHeight)}px`;
       const width = Math.min(130, (this._diagram.clientWidth - 84) / 3), offset = (this._diagram.clientWidth - width * 3 - 64) / 2;
       for (const node of this._consumerNodes.values()) { const slot = Number(node.dataset.slot); Object.assign(node.style, { left: `${offset + (width + 32) * (slot % 3)}px`, top: `${12 + (slot < 3 && rows === 2 ? 1 : 0) * 93}px`, width: `${width}px` }); }
+    }
+    _layoutSideFlow() {
+      const width = this._diagram.clientWidth;
+      if (!width) return;
+      const sx = width / 400, sy = Math.max(.86, Math.min(1, sx));
+      const place = (node, x, y, w, height) => {
+        Object.assign(node.style, { left: `${x}px`, top: `${y}px`, width: `${w}px` });
+        if (height != null) node.style.height = `${height}px`;
+      };
+      const gridSize = Math.max(74, Math.min(110, 88 * sx));
+      place(this._nodes.grid, Math.max(14, 22 * sx), 12 * sy, gridSize, gridSize);
+      place(this._nodes.main, Math.max(12, 10 * sx), 0, 126 * sx);
+      place(this._nodes.home, 176 * sx, 0, 84 * sx);
+      this._nodes.home.style.minHeight = `${90 * sy}px`;
+      place(this._nodes.auxiliary_1, Math.max(12, 8 * sx), 0, 100 * sx);
+      place(this._nodes.auxiliary_2, 124 * sx, 0, 100 * sx);
+      for (const node of this._consumerNodes.values()) place(node, 302 * sx, 0, 90 * sx);
+      this._fitRows();
+      const mainY = Math.max(144 * sy, 12 * sy + gridSize + 34 * sy);
+      this._nodes.main.style.top = `${mainY}px`;
+      const homeY = Math.max(159 * sy, mainY + (this._nodes.main.offsetHeight - this._nodes.home.offsetHeight) / 2);
+      this._nodes.home.style.top = `${homeY}px`;
+      const auxY = Math.max(302 * sy, mainY + this._nodes.main.offsetHeight + 32 * sy, homeY + this._nodes.home.offsetHeight + 36 * sy);
+      for (const key of ['auxiliary_1', 'auxiliary_2']) this._nodes[key].style.top = `${auxY}px`;
+      const consumerHeight = Math.max(45, ...[...this._consumerNodes.values()].map(node => node.offsetHeight));
+      const step = Math.max(64 * sy, consumerHeight + 10 * sy);
+      for (const node of this._consumerNodes.values()) node.style.top = `${12 * sy + Number(node.dataset.slot) * step}px`;
+      const nodeBottom = Math.max(...[...Object.values(this._nodes), ...this._consumerNodes.values()].map(node => node.offsetTop + node.offsetHeight));
+      const auxBottom = Math.max(...['auxiliary_1', 'auxiliary_2'].map(key => this._nodes[key].offsetTop + this._nodes[key].offsetHeight));
+      this._diagram.style.height = `${Math.max(nodeBottom + 12, auxBottom + 18 * sy)}px`;
+      this._diagram.dataset.consumerRows = String(this._consumerNodes.size);
+      this._sideScale = sy;
+    }
+    _drawSidePaths() {
+      this._layoutSideFlow(); this._drawBorders();
+      const base = this._diagram.getBoundingClientRect();
+      if (!base.width || !base.height) return;
+      const rect = key => {
+        const node = key.startsWith('consumer:') ? this._consumerNodes.get(key.slice(9)) : this._nodes[key], r = node.getBoundingClientRect();
+        return { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height, right: r.right - base.left, bottom: r.bottom - base.top };
+      };
+      const g = rect('grid'), a = rect('auxiliary_1'), b = rect('auxiliary_2'), m = rect('main'), h = rect('home'), sy = this._sideScale;
+      const gap = h.x - g.right, auxLane = Math.max(a.bottom, b.bottom) + 12 * sy;
+      const routes = {
+        grid_main: `M ${g.x + g.w / 2} ${g.bottom} V ${m.y}`,
+        grid_home: `M ${g.right} ${g.y + g.h / 2} C ${g.right + gap * .45} ${g.y + g.h / 2} ${h.x - gap * .25} ${h.y + h.h * .25} ${h.x} ${h.y + h.h * .25}`,
+        main_home: `M ${m.right} ${m.y + m.h * .78} C ${m.right + (h.x - m.right) * .4} ${m.y + m.h * .78} ${h.x - (h.x - m.right) * .4} ${h.y + h.h * .72} ${h.x} ${h.y + h.h * .72}`,
+        auxiliary_1_main: `M ${a.x + a.w * .75} ${a.y} C ${a.x + a.w * .75} ${a.y - 20 * sy} ${m.x + m.w * .37} ${a.y - 20 * sy} ${m.x + m.w * .37} ${m.bottom}`,
+        auxiliary_2_main: `M ${b.x + b.w * .66} ${b.y} C ${b.x + b.w * .66} ${b.y - 20 * sy} ${m.x + m.w * .77} ${b.y - 20 * sy} ${m.x + m.w * .77} ${m.bottom}`,
+        grid_auxiliary_1: `M ${g.x} ${g.y + g.h * .65} H 6 V ${a.y - 12 * sy} H ${a.x + a.w * .25} V ${a.y}`,
+        grid_auxiliary_2: `M ${g.x} ${g.y + g.h * .35} H 2 V ${auxLane} H ${b.x + b.w * .25} V ${b.bottom}`
+      };
+      for (const [id, node] of this._consumerNodes) {
+        const c = rect(`consumer:${id}`), start = h.y + h.h * [.12, .28, .44, .56, .72, .88][Number(node.dataset.slot)], end = c.y + c.h / 2, span = c.x - h.right;
+        routes[`home_consumer_${id}`] = `M ${h.right} ${start} C ${h.right + span * .45} ${start} ${c.x - span * .45} ${end} ${c.x} ${end}`;
+      }
+      this._paintRoutes(base, rect, routes, {}, true);
     }
     _syncFlows() {
       if (!this._config) return;
@@ -420,6 +522,7 @@
         const row = button.parentElement;
         if (!row.clientWidth) continue;
         row.style.removeProperty('font-size');
+        row.classList.remove('side-stack');
         const label = row.querySelector('.label');
         const range = document.createRange();
         const width = (element) => { range.selectNodeContents(element); return range.getBoundingClientRect().width; };
@@ -427,6 +530,10 @@
         const available = row.clientWidth - gap - 1;
         const needed = () => width(label) + width(button);
         const naturalWidth = needed();
+        if (this._layout === 'sideflow') {
+          if (getComputedStyle(label).display !== 'none' && naturalWidth > available) row.classList.add('side-stack');
+          continue;
+        }
         if (naturalWidth <= available) continue;
         let size = Math.floor(parseFloat(getComputedStyle(row).fontSize) * available / naturalWidth * 10) / 10;
         row.style.fontSize = `${size}px`;
@@ -439,7 +546,7 @@
     _configureAnimation(group, dashes, route) {
       const { animation: style, dot_size: size } = this._config.appearance;
       const consumerParticles = ['dots', 'arrows', 'single_dot'].includes(style);
-      const branchOnly = consumerParticles && group.dataset.flow.startsWith('home_consumer_');
+      const branchOnly = consumerParticles && !group._direct && group.dataset.flow.startsWith('home_consumer_');
       const journeys = consumerParticles ? group._journeys : null;
       const particles = !branchOnly && (journeys || style === 'arrows' || style === 'single_dot');
       // Each consumer journey includes the shared feeder and its final branch.
@@ -487,6 +594,7 @@
     }
     _drawPaths() {
       if (!this._diagram || !this.isConnected) return;
+      if (this._layout === 'sideflow') return this._drawSidePaths();
       this._fitRows(); this._layoutConsumers(); this._drawBorders();
       const base = this._diagram.getBoundingClientRect(); if (!base.width || !base.height) return;
       const rect = (key) => { const r = (key.startsWith('consumer:') ? this._consumerNodes.get(key.slice(9)) : this._nodes[key]).getBoundingClientRect(); return { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height, right: r.right - base.left, bottom: r.bottom - base.top }; };
@@ -513,7 +621,10 @@
         journeys[`home_row_${row}`] = [...bounds].sort((a, b) => b.x - a.x).map(c => `M ${port} ${h.y} V ${lane} H ${c.x + c.w / 2} V ${c.bottom}`);
         members.forEach(([id], index) => { const c = bounds[index]; routes[`home_consumer_${id}`] = `M ${c.x + c.w / 2} ${lane} V ${c.bottom}`; });
       }
-      const geometry = JSON.stringify([routes, journeys, this._config.appearance.animation]); if (geometry === this._geometry && this._svg.childElementCount) return;
+      this._paintRoutes(base, rect, routes, journeys, false);
+    }
+    _paintRoutes(base, rect, routes, journeys, direct) {
+      const geometry = JSON.stringify([routes, journeys, this._config.appearance.animation, direct]); if (geometry === this._geometry && this._svg.childElementCount) return;
       const oldFlows = this._flows;
       for (const [name, flow] of Object.entries(oldFlows)) if (!(name in routes)) for (const animation of flow._animations || []) animation.cancel();
       this._geometry = geometry; this._svg.setAttribute('viewBox', `0 0 ${base.width} ${base.height}`); this._svg.replaceChildren(); this._flows = {};
@@ -530,10 +641,10 @@
       for (const [name, route] of Object.entries(routes)) {
         const group = oldFlows[name] || document.createElementNS(NS, 'g'); group.classList.add('flow'); group.dataset.flow = name;
         const color = name.startsWith('grid') ? 'grid' : name === 'main_home' ? 'main' : name.startsWith('auxiliary_1') ? 'auxiliary_1' : 'auxiliary_2';
-        group.style.setProperty('--color', name.startsWith('home_') ? 'var(--flow-home)' : `var(--flow-${color})`);
+        group.style.setProperty('--color', direct && name.startsWith('home_consumer_') ? `var(--consumer-${name.slice(14)})` : name.startsWith('home_') ? 'var(--flow-home)' : `var(--flow-${color})`);
         const path = group.querySelector('.flow-track') || document.createElementNS(NS, 'path'); path.classList.add('flow-track'); path.setAttribute('d', route); group.append(path);
         const dashes = group.querySelector('.flow-dashes') || document.createElementNS(NS, 'path'); dashes.classList.add('flow-dashes'); dashes.setAttribute('d', route); group.append(dashes);
-        layer.append(group); group._journeys = journeys[name] || null;
+        layer.append(group); group._journeys = journeys[name] || null; group._direct = direct;
         this._configureAnimation(group, dashes, route);
         group.classList.toggle('active', !!this._data?.flows[name]); this._flows[name] = group;
       }
@@ -554,8 +665,8 @@
     uk: { title: 'Заголовок', language: 'Мова', name: 'Назва', power: 'Потужність', input_power: 'Загальна вхідна потужність', output_power: 'Загальна вихідна потужність', soc: 'Заряд батареї (%)', ac_input_power: 'Потужність входу від міської мережі (AC)', solar_input_power: 'Потужність входу XT60(1) (DC)', solar_input_power_2: 'Потужність входу XT60(2) (DC)', grid_charge_power: 'Потужність заряджання від мережі (необов’язково)', transfer_power: 'Потужність передачі на головну EcoFlow (необов’язково)', home_feed_power: 'Потужність виходу на дім (необов’язково)', available_entity: 'Наявність міської мережі', available_state: 'Стан «мережа є»', source_entity: 'Сутність джерела живлення дому', grid_state: 'Стан «дім від міської мережі»', main_state: 'Стан «дім від головної EcoFlow»', grid_color: 'Колір мережі: рамка та потоки', auxiliary_1_color: 'Колір EcoFlow №2: рамка та потік', auxiliary_2_color: 'Колір EcoFlow №3: рамка та потік', solar_color: 'Колір передачі між станціями', main_color: 'Колір головної EcoFlow: рамка та потік', animation: 'Анімація потоків', dot_size: 'Розмір точок', threshold: 'Поріг активного потоку (Вт)', duration: 'Базовий час руху (с)' },
     en: { title: 'Title', language: 'Language', name: 'Name', power: 'Power', input_power: 'Total input power', output_power: 'Total output power', soc: 'Battery charge (%)', ac_input_power: 'City grid input power (AC)', solar_input_power: 'XT60(1) input power (DC)', solar_input_power_2: 'XT60(2) input power (DC)', grid_charge_power: 'Grid charging power (optional)', transfer_power: 'Transfer power to main EcoFlow (optional)', home_feed_power: 'Output power to home (optional)', available_entity: 'Grid availability', available_state: 'Grid available state', source_entity: 'Home power source entity', grid_state: 'State: home powered by grid', main_state: 'State: home powered by main EcoFlow', grid_color: 'Grid border and flow color', auxiliary_1_color: 'EcoFlow #2 border and flow color', auxiliary_2_color: 'EcoFlow #3 border and flow color', solar_color: 'Station transfer color', main_color: 'Main EcoFlow border and flow color', animation: 'Flow animation', dot_size: 'Dot size', threshold: 'Active flow threshold (W)', duration: 'Base movement time (s)' }
   };
-  Object.assign(FIELD_LABELS.uk, { voltage: 'Напруга дому (необов’язково)', available_entity: 'Наявність міської мережі (необов’язково)' });
-  Object.assign(FIELD_LABELS.en, { voltage: 'Home voltage (optional)', available_entity: 'Grid availability (optional)' });
+  Object.assign(FIELD_LABELS.uk, { layout: 'Розташування блоків', show_layout_switch: 'Кнопка перемикання вигляду', voltage: 'Напруга дому (необов’язково)', available_entity: 'Наявність міської мережі (необов’язково)' });
+  Object.assign(FIELD_LABELS.en, { layout: 'Block layout', show_layout_switch: 'Show view switch', voltage: 'Home voltage (optional)', available_entity: 'Grid availability (optional)' });
   const entityField = (name, power = true) => ({ name, selector: { entity: power ? { domain: 'sensor' } : {} } });
   const textField = (name) => ({ name, selector: { text: {} } });
   const rgbToHsl = hex => {
@@ -675,7 +786,7 @@
         ['auxiliary_2', c.auxiliary_2.name || DEFAULTS.auxiliary_2.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
         ['main', text.main, [...stationSchema, entityField('ac_input_power'), entityField('solar_input_power'), entityField('solar_input_power_2'), entityField('home_feed_power')], text.mainHint],
         ['home', text.home, [textField('name'), entityField('power'), { name: 'voltage', selector: { entity: { domain: 'sensor', device_class: 'voltage' } } }], `${text.sourceHint} ${text.homeDerived}`],
-        ['appearance', c.language === 'en' ? 'Flow appearance' : 'Вигляд потоків', [{ name: 'animation', selector: { select: { mode: 'dropdown', options: ANIMATIONS.map((value, i) => ({ value, label: (c.language === 'en' ? ['Current animation (dashes)', 'Moving dots', 'Moving arrows', 'Pulsing light strips', 'One moving dot'] : ['Поточна анімація (штрихи)', 'Рухомі точки', 'Рухомі стрілки', 'Пульсуючі світлові смуги', 'Одна рухома точка'])[i] })) } } }, { name: 'dot_size', selector: { number: { min: 2, max: 10, step: 1, mode: 'slider', unit_of_measurement: 'px' } } }, textField('grid_color'), textField('auxiliary_1_color'), textField('auxiliary_2_color'), textField('main_color'), { name: 'threshold', selector: { number: { min: 0, max: 1000, step: 1, mode: 'box', unit_of_measurement: text.watts } } }, { name: 'duration', selector: { number: { min: .5, max: 20, step: .5, mode: 'box', unit_of_measurement: 's' } } }], `${text.flowHint} ${c.language === 'en' ? 'Open a color below to choose a swatch or mix hue, saturation and brightness. Each source color applies to its border and outgoing flows. Home uses its active source color. Colors: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). An empty field restores the default color.' : 'Відкрий колір нижче, щоб обрати зразок або змішати відтінок, насиченість і яскравість. Колір джерела застосовується до його рамки та вихідних потоків. Рамка дому має колір активного джерела. Кольори: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). Порожнє поле повертає типовий колір.'}`]
+        ['appearance', c.language === 'en' ? 'Flow appearance' : 'Вигляд потоків', [{ name: 'layout', selector: { select: { mode: 'dropdown', options: ['classic', 'sideflow'].map(value => ({ value, label: text[value] })) } } }, { name: 'show_layout_switch', selector: { boolean: {} } }, { name: 'animation', selector: { select: { mode: 'dropdown', options: ANIMATIONS.map((value, i) => ({ value, label: (c.language === 'en' ? ['Current animation (dashes)', 'Moving dots', 'Moving arrows', 'Pulsing light strips', 'One moving dot'] : ['Поточна анімація (штрихи)', 'Рухомі точки', 'Рухомі стрілки', 'Пульсуючі світлові смуги', 'Одна рухома точка'])[i] })) } } }, { name: 'dot_size', selector: { number: { min: 2, max: 10, step: 1, mode: 'slider', unit_of_measurement: 'px' } } }, textField('grid_color'), textField('auxiliary_1_color'), textField('auxiliary_2_color'), textField('main_color'), { name: 'threshold', selector: { number: { min: 0, max: 1000, step: 1, mode: 'box', unit_of_measurement: text.watts } } }, { name: 'duration', selector: { number: { min: .5, max: 20, step: .5, mode: 'box', unit_of_measurement: 's' } } }], `${text.flowHint} ${c.language === 'en' ? 'Open a color below to choose a swatch or mix hue, saturation and brightness. Each source color applies to its border and outgoing flows. Home uses its active source color. Colors: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). An empty field restores the default color.' : 'Відкрий колір нижче, щоб обрати зразок або змішати відтінок, насиченість і яскравість. Колір джерела застосовується до його рамки та вихідних потоків. Рамка дому має колір активного джерела. Кольори: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). Порожнє поле повертає типовий колір.'}`]
       ];
       for (const consumer of c.consumers) sections.push([`consumer:${consumer.id}`, consumer.name || text.consumer, [textField('name'), entityField('power'), { name: 'icon', selector: { icon: {} } }, textField('color')], '']);
       for (const [section, label, schema, hint] of sections) {
@@ -726,3 +837,4 @@
   if (!window.customCards.some((card) => card.type === TAG)) window.customCards.push({ type: TAG, name: 'Suris EcoFlow Flow Card', description: 'Three EcoFlow stations and up to 20 home consumers. Visual editor.', preview: true });
   console.info(`%c SURIS ECOFLOW FLOW CARD %c ${VERSION}`, 'background:#27d9d5;color:#111;padding:4px', 'padding:4px');
 })();
+

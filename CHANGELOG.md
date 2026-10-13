@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.1.0-beta.1 — Side flow / Боковий потік
+
+- Add a compact Side flow layout: sources on the left, Home in the middle, and up to six active consumers on the right. Each consumer has a full independent colored route from Home, without shared feeders or crossed lines.
+- Make the Side flow city-grid node square so the outage message fits inside it. Inactive lines remain hidden in both views.
+- Keep Classic and Side flow in one card. Switch with the View / Вигляд button; the browser remembers the selection. The visual editor can set the starting layout and hide the switch.
+- Keep all configured entities, station readings, consumer selection, home source detection, thresholds, flow speeds and five animation styles.
+- Verify both layouts in Chromium, including 320–1150 px widths, zero to six consumers, outage restoration, animation routes, view switching, reduced motion and disconnected cards.
+
+Бета додає «Боковий потік» із шістьма окремими лініями, квадратом міської мережі та перемиканням на класичне розташування кнопкою «Вигляд». Неактивні лінії приховані; логіка картки та налаштування датчиків збережені.
+
 ## 2.0.8 — Stable
 
 Dots and arrows now follow the shared Home feeder into a consumer branch instead of animating that branch independently.
@@ -245,3 +255,4 @@ This is the first version 2 beta. Layout and settings will continue to evolve. S
 - HACS custom repository support.
 
 Validation: JavaScript syntax, model tests and Chromium scenarios with simulated Home Assistant states. Real Home Assistant entity selectors still require verification after installation.
+

@@ -6,6 +6,20 @@
 
 A Home Assistant dashboard card with a visual entity editor. City grid is on the left, home on the right, and the main EcoFlow sits between the two auxiliary stations at the bottom. Up to six active home consumers appear above them, without scrolling. The card automatically shrinks when one or both consumer rows are unused. Power readings stay inside the blocks; lines show only moving flow.
 
+## Beta 2.1.0-beta.1 — Side flow
+
+[Download the beta](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.0-beta.1). The stable release remains **2.0.8**.
+
+A compact alternative with sources on the left, Home in the middle, and up to six active consumers on the right. Each consumer has a complete, separate line from Home in its own color. Inactive lines are hidden. City grid is square, with room for the **No grid** message. Station readings and home source detection retain their existing behavior.
+
+Use **View** in the card header to switch between Classic and Side flow. The selection is remembered for this card in the current browser. In the editor, **Flow appearance → Block layout** sets the initial view, and **Show view switch** controls the button. Existing cards initially keep Classic until switched.
+
+```yaml
+appearance:
+  layout: sideflow
+  show_layout_switch: true
+```
+
 ## Video demo
 
 https://github.com/user-attachments/assets/e5172fc9-3b20-4533-9004-020b4e33d294
@@ -162,3 +176,4 @@ To roll back, save a copy of the card YAML, install **0.1.12** through HACS or r
 Open `demo.html` beside the JS file for fictional readings, seven configured consumers, strongest-six replacement, a single row and automatic shrinking when consumers are inactive. See [desktop preview](preview-desktop.png). This demo does not connect to your devices.
 
 Run `npm install`, `npm test` and `node scripts/validate-release.cjs`. Browser tests use Playwright; `SURIS_CHROMIUM_PATH` can point to an installed Chromium. Tests cover power/source logic, consumer ranking, limits, editor draft typing, visual color mixing and reset, automatic zero/one/two-row height changes, animation continuity, reduced motion and layout/route geometry at 320–1150 px. [Release instructions](RELEASING.md).
+
