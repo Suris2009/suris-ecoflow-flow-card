@@ -1,23 +1,31 @@
-# 2.1.2 — Station widths and grid flows / Ширина станцій і потоки мережі
-
-## English
-
-- Widen the main and both auxiliary stations in Side flow according to the reading text. Preserve the font sizes and fit values such as 1.48 kW beside their labels.
-- Leave at least 44 px between the grid and main station so the charging animation remains visible, including when grid names are enabled.
-- Start grid → Home exactly at the center of the grid’s right edge. Route it around the main station.
-- Keep consumer routes clear of the wider auxiliary stations. Retain six consumers, independent routes, colors, animation speeds and power calculations.
-
-| Main charging at 1.48 kW | kW readings on all three stations |
-| --- | --- |
-| <img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.2/preview-sideflow-charging-en.png" width="390" alt="Main charging at 1.48 kW without wrapping"> | <img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.2/preview-sideflow-stations-en.png" width="390" alt="Six consumers and kW readings on three stations"> |
+# 2.1.3 — Stable / Стабільний випуск
 
 ## Українська
 
-- Розширено головну й обидві додаткові станції в боковому вигляді з урахуванням розміру тексту показників. Шрифт збережено; значення на кшталт 1,48 kW вміщуються поруч із назвою показника.
-- Між мережею й головною станцією залишено щонайменше 44 px, щоб анімацію заряджання було видно, зокрема з увімкненими назвами.
-- Потік мережа → дім виходить точно з центру правого боку мережі та обходить головну станцію.
-- Лінії споживачів обходять ширші додаткові станції. Збережено шість споживачів, окремі маршрути, кольори, швидкість анімацій і розрахунки потужності.
+Стабільна версія на основі перевіреної **2.1.3-beta.3**. Неактивні сірі лінії прибрано; показано лише активні потоки.
 
-| Заряджання головної станції на 1,48 kW | Показники у kW на всіх трьох станціях |
-| --- | --- |
-| <img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.2/preview-sideflow-charging-uk.png" width="390" alt="Заряджання 1,48 kW без перенесення показників"> | <img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.2/preview-sideflow-stations-uk.png" width="390" alt="Шість споживачів і показники у kW на трьох станціях"> |
+Зміни від 2.1.1:
+
+- Прибрано рядок «Мережа» з головної станції. AC-датчик збережено для розрахунків і потоку заряджання.
+- Допоміжні станції розширено під **1,25 kW** в одному рядку, зі збереженням шрифту та положення нижнього ряду.
+- Вихід місто → дім розміщено по центру правої сторони міського блоку.
+- Міську мережу трохи піднято — на 8 px з урахуванням масштабу, щоб подовжити лінію до головної станції.
+
+Форма кривих, активні кольори, анімації, розрахунки та налаштування збережені. Після оновлення перезавантаж інтерфейс Home Assistant.
+
+<img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.3/preview-sideflow-feedback-uk.png" width="390" alt="Стабільна картка 2.1.3 з активними потоками">
+
+## English
+
+Stable release based on the tested **2.1.3-beta.3**. Inactive grey lines are removed; only active flows are shown.
+
+Changes from 2.1.1:
+
+- Remove the Grid row from the main station. Retain the AC entity for calculations and the charging flow.
+- Widen auxiliary stations for **1.25 kW** on one line, preserving fonts and the lower-row position.
+- Center the city-to-Home outlet on the city block's right edge.
+- Slightly raise the city grid by 8 px, scaled with the card, to lengthen the line to the main station.
+
+Flow curves, active colors, animations, calculations and settings are retained. Reload the Home Assistant frontend after updating.
+
+<img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.3/preview-sideflow-feedback-en.png" width="390" alt="Stable 2.1.3 card showing active flows">

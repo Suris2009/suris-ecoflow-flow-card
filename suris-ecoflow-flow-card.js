@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.1.2 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.1.3 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.1.2';
+  const VERSION = '2.1.3';
   const ANIMATIONS = ['dashes', 'dots', 'arrows', 'pulse', 'single_dot'];
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
@@ -200,7 +200,6 @@
     @container(max-width:520px){.node.home{padding-inline:3px}}
     .node.consumer{height:72px;min-height:72px;padding:4px;gap:3px;border-radius:9px}.consumer h3{font-size:clamp(11px,1.5cqw,13px);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}.consumer .icon{height:22px;margin:0;color:var(--node-color)}.consumer ha-icon{--mdc-icon-size:22px;width:22px;height:22px}.consumer ha-icon:not(:defined){display:none}.consumer ha-icon:defined+.fallback{display:none}.consumer .fallback{height:22px}.consumer .fallback svg{width:22px}.consumer .value{width:100%;text-align:center;font-size:12px;line-height:16px}.consumer:focus-within{outline:1px solid var(--node-color);outline-offset:2px}
     .sideflow .node{right:auto;bottom:auto;min-height:0;height:auto;padding:5px 6px;gap:2px;background:var(--ha-card-background,var(--card-background-color,#1c1c1c));border-radius:10px}
-    .sideflow .main,.sideflow .auxiliary_1,.sideflow .auxiliary_2{padding-inline:2px}
     .sideflow .auxiliary_1,.sideflow .auxiliary_2{padding-inline:1px}
     .sideflow .node h3{font-size:clamp(11.5px,3.625cqw,14.5px);line-height:1.1;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow-wrap:anywhere}
     .sideflow .node .icon{display:none}.sideflow .row{font-size:clamp(11px,3.25cqw,13px);line-height:1.2;gap:2px}.sideflow .row[hidden]{display:none}
@@ -329,7 +328,7 @@
         }
         else {
           this._row(node, 'soc', text.soc); this._row(node, 'input', text.input);
-          if (key === 'main') { this._row(node, 'ac', text.ac); this._row(node, 'solar_1', 'XT60(1)'); this._row(node, 'solar_2', 'XT60(2)'); }
+          if (key === 'main') { this._row(node, 'solar_1', 'XT60(1)'); this._row(node, 'solar_2', 'XT60(2)'); }
           this._row(node, 'output', text.output);
         }
         this._nodes[key] = node; this._diagram.append(node);
@@ -366,7 +365,6 @@
         let entity = c[node][field === 'soc' ? 'soc' : `${field}_power`];
         if (node === 'grid') entity = c.grid.power;
         if (node === 'home') entity = field === 'voltage' ? c.home.voltage : c.home.power;
-        if (node === 'main' && field === 'ac') entity = c.main.ac_input_power;
         if (node === 'main' && field === 'solar_1') entity = c.main.solar_input_power;
         if (node === 'main' && field === 'solar_2') entity = c.main.solar_input_power_2;
         if (field === 'soc') value = value != null && value >= 0 && value <= 100 ? `${formatter.format(value)}%` : '—';
@@ -465,35 +463,25 @@
         Object.assign(node.style, { left: `${x}px`, top: `${y}px`, width: `${w}px` });
         if (height != null) node.style.height = `${height}px`;
       };
-      const stationWidth = (key, minimum) => {
-        const node = this._nodes[key], style = getComputedStyle(node), range = document.createRange();
-        const measure = element => { range.selectNodeContents(element); return range.getBoundingClientRect().width; };
-        const inset = ['paddingLeft', 'paddingRight', 'borderLeftWidth', 'borderRightWidth'].reduce((sum, field) => sum + (parseFloat(style[field]) || 0), 0);
-        const needed = Math.max(0, ...[...node.querySelectorAll('.row')].map(row => measure(row.querySelector('.label')) + measure(row.querySelector('.value')) + (parseFloat(getComputedStyle(row).columnGap) || 0) + 3));
-        return Math.max(minimum, Math.ceil(needed + inset));
-      };
-      const stationLeft = Math.max(10, 10 * sx), homeLeft = 176 * sx;
       const gridSize = Math.max(74, Math.min(110, 88 * sx));
       const gridTitleSpace = this._config.grid.show_name ? Math.ceil(this._nodes.grid.querySelector('h3').getBoundingClientRect().height) + 6 : 0;
-      const mainWidth = Math.min(stationWidth('main', 144 * sx), homeLeft - stationLeft - 8);
-      place(this._nodes.grid, Math.max(14, stationLeft + (mainWidth - gridSize) / 2), 12 * sy + gridTitleSpace, gridSize, gridSize);
-      place(this._nodes.main, stationLeft, 0, mainWidth);
-      place(this._nodes.home, homeLeft, 0, 84 * sx);
+      place(this._nodes.grid, Math.max(14, 22 * sx), 4 * sy + gridTitleSpace, gridSize, gridSize);
+      place(this._nodes.main, Math.max(12, 10 * sx), 0, 126 * sx);
+      place(this._nodes.home, 176 * sx, 0, 84 * sx);
       this._nodes.home.style.minHeight = `${90 * sy}px`;
+      const auxWidth = Math.max(110, 120 * sx);
+      place(this._nodes.auxiliary_1, Math.max(12, 8 * sx), 0, auxWidth);
+      place(this._nodes.auxiliary_2, 124 * sx + auxWidth - 100 * sx, 0, auxWidth);
       const consumerHeight = Math.max(60, Math.min(64, width * .16)), rightInset = 3 * sx;
       const consumerWidth = Math.min(consumerHeight * 1.55, width - rightInset - 260 * sx - 28), consumerX = width - rightInset - consumerWidth;
-      const auxGap = Math.max(6, 8 * sx), auxMaximum = (consumerX - stationLeft - auxGap - 4) / 2;
-      const auxWidth = Math.min(Math.max(stationWidth('auxiliary_1', 124 * sx), stationWidth('auxiliary_2', 124 * sx)), auxMaximum);
-      place(this._nodes.auxiliary_1, stationLeft, 0, auxWidth);
-      place(this._nodes.auxiliary_2, stationLeft + auxWidth + auxGap, 0, auxWidth);
       for (const node of this._consumerNodes.values()) place(node, consumerX, 0, consumerWidth, consumerHeight);
       this._fitConsumerNames();
       this._fitRows();
-      const mainY = Math.max(144 * sy, 12 * sy + Math.max(22, gridTitleSpace) + gridSize + Math.max(44, 50 * sy));
+      const mainY = Math.max(144 * sy, 12 * sy + gridSize + 34 * sy);
       this._nodes.main.style.top = `${mainY}px`;
       const homeY = Math.max(159 * sy, mainY + (this._nodes.main.offsetHeight - this._nodes.home.offsetHeight) / 2);
       this._nodes.home.style.top = `${homeY}px`;
-      const auxY = Math.max(302 * sy, mainY + this._nodes.main.offsetHeight + 22 * sy, homeY + this._nodes.home.offsetHeight + 36 * sy);
+      const auxY = Math.max(302 * sy, mainY + this._nodes.main.offsetHeight + 32 * sy, homeY + this._nodes.home.offsetHeight + 36 * sy);
       for (const key of ['auxiliary_1', 'auxiliary_2']) this._nodes[key].style.top = `${auxY}px`;
       const step = consumerHeight + 4 * sy;
       for (const node of this._consumerNodes.values()) node.style.top = `${12 * sy + Number(node.dataset.slot) * step}px`;
@@ -502,6 +490,7 @@
       this._diagram.style.height = `${Math.max(nodeBottom + 12, auxBottom + 18 * sy)}px`;
       this._diagram.dataset.consumerRows = String(this._consumerNodes.size);
       this._sideScale = sy;
+      this._sideGridTitleSpace = gridTitleSpace;
     }
     _drawSidePaths() {
       this._layoutSideFlow(); this._drawBorders();
@@ -512,12 +501,11 @@
         return { x: r.left - base.left, y: r.top - base.top, w: r.width, h: r.height, right: r.right - base.left, bottom: r.bottom - base.top };
       };
       const g = rect('grid'), a = rect('auxiliary_1'), b = rect('auxiliary_2'), m = rect('main'), h = rect('home'), sy = this._sideScale;
-      const auxLane = Math.max(a.bottom, b.bottom) + 12 * sy;
-      const gridHomeY = g.y + g.h / 2, homePortY = h.y + h.h * .25;
-      const gridHomeLane = m.right + (h.x - m.right) / 2, elbow = Math.min(8 * sy, (h.x - m.right) / 2);
+      const gap = h.x - g.right, auxLane = Math.max(a.bottom, b.bottom) + 12 * sy;
+      const gridHomeY = g.y + g.h / 2;
       const routes = {
         grid_main: `M ${g.x + g.w / 2} ${g.bottom} V ${m.y}`,
-        grid_home: `M ${g.right} ${gridHomeY} H ${gridHomeLane - elbow} Q ${gridHomeLane} ${gridHomeY} ${gridHomeLane} ${gridHomeY + elbow} V ${homePortY - elbow} Q ${gridHomeLane} ${homePortY} ${h.x} ${homePortY}`,
+        grid_home: `M ${g.right} ${gridHomeY} C ${g.right + gap * .45} ${gridHomeY} ${h.x - gap * .25} ${h.y + h.h * .25} ${h.x} ${h.y + h.h * .25}`,
         main_home: `M ${m.right} ${m.y + m.h * .78} C ${m.right + (h.x - m.right) * .4} ${m.y + m.h * .78} ${h.x - (h.x - m.right) * .4} ${h.y + h.h * .72} ${h.x} ${h.y + h.h * .72}`,
         auxiliary_1_main: `M ${a.x + a.w * .75} ${a.y} C ${a.x + a.w * .75} ${a.y - 20 * sy} ${m.x + m.w * .37} ${a.y - 20 * sy} ${m.x + m.w * .37} ${m.bottom}`,
         auxiliary_2_main: `M ${b.x + b.w * .66} ${b.y} C ${b.x + b.w * .66} ${b.y - 20 * sy} ${m.x + m.w * .77} ${b.y - 20 * sy} ${m.x + m.w * .77} ${m.bottom}`,
@@ -526,8 +514,7 @@
       };
       for (const [id, node] of this._consumerNodes) {
         const c = rect(`consumer:${id}`), start = h.y + h.h * [.12, .28, .44, .56, .72, .88][Number(node.dataset.slot)], end = c.y + c.h / 2, span = c.x - h.right;
-        const controlX = h.right + span * .97;
-        routes[`home_consumer_${id}`] = `M ${h.right} ${start} C ${controlX} ${start} ${controlX} ${start + (end - start) * .4} ${c.x} ${end}`;
+        routes[`home_consumer_${id}`] = `M ${h.right} ${start} C ${h.right + span * .45} ${start} ${c.x - span * .45} ${end} ${c.x} ${end}`;
       }
       this._paintRoutes(base, rect, routes, {}, true);
     }

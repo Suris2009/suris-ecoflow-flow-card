@@ -29,18 +29,17 @@ const server = http.createServer((req, res) => {
     const geometry = () => page.evaluate(() => {
       const d = card._diagram.getBoundingClientRect();
       const nodes = Object.fromEntries([...card.shadowRoot.querySelectorAll('.node')].map(node => { const r = node.getBoundingClientRect(); return [node.dataset.key, { left: r.left - d.left, top: r.top - d.top, right: r.right - d.left, bottom: r.bottom - d.top }]; }));
-      const paths = Object.values(card._flows).map(flow => { const p = flow.querySelector('.flow-track'), length = p.getTotalLength(); return { name: flow.dataset.flow, length, color: getComputedStyle(p).stroke, trackVisible: getComputedStyle(p).visibility, active: flow.classList.contains('active'), samples: Array.from({ length: 121 }, (_, i) => { const q = p.getPointAtLength(length * i / 120); return { x: q.x, y: q.y }; }) }; });
+      const paths = Object.values(card._flows).map(flow => { const p = flow.querySelector('.flow-track'), length = p.getTotalLength(); return { name: flow.dataset.flow, length, color: getComputedStyle(p).stroke, trackVisible: getComputedStyle(p).visibility, dashesVisible: getComputedStyle(flow.querySelector('.flow-dashes')).visibility, animations: flow._animations.map(a => a.playState), active: flow.classList.contains('active'), samples: Array.from({ length: 121 }, (_, i) => { const q = p.getPointAtLength(length * i / 120); return { x: q.x, y: q.y }; }) }; });
       const fontSizes = [...card.shadowRoot.querySelectorAll('.node h3,.row,.consumer .value')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height).map(e => parseFloat(getComputedStyle(e).fontSize));
       const clipped = [...card.shadowRoot.querySelectorAll('.node h3,.value,.label,.grid-outage')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height && !e.hidden).map(e => ({ text: e.textContent, clipped: e.scrollWidth > e.clientWidth + 1, optionalName: e.matches('.show-name.grid h3,.show-name.home h3') && getComputedStyle(e).textOverflow === 'ellipsis' && e.title === e.textContent, width:e.clientWidth, scrollWidth:e.scrollWidth, font:getComputedStyle(e).fontSize, wrap:getComputedStyle(e).overflowWrap, whitespace:getComputedStyle(e).whiteSpace }));
       const identities = ['grid', 'home'].map(key => { const node = card._nodes[key], heading = node.querySelector('h3'), r = heading.getBoundingClientRect(); return { key, enabled: card._config[key].show_name === true, name: getComputedStyle(heading).display, text: heading.textContent, expected: card._config[key].name, tooltip: heading.title, box: { left:r.left-d.left, right:r.right-d.left, top:r.top-d.top, bottom:r.bottom-d.top }, icon: getComputedStyle(node.querySelector('.icon')).display, svg: getComputedStyle(node.querySelector('.icon svg')).display }; });
       const powerFonts = ['grid.output', 'home.power'].map(key => getComputedStyle(card._values[key]).fontSize);
-      const stationRows = ['main', 'auxiliary_1', 'auxiliary_2'].flatMap(key => [...card._nodes[key].querySelectorAll('.row')].map(row => { const label = row.querySelector('.label').getBoundingClientRect(), value = row.querySelector('.value').getBoundingClientRect(), node = card._nodes[key].getBoundingClientRect(); return { key, field: row.classList[1], stacked: row.classList.contains('side-stack'), aligned: Math.abs(label.bottom - value.bottom) < .3, fits: label.left >= node.left + 1 && label.right <= value.left + .3 && value.right <= node.right - 1 }; }));
       const captions = [...card._consumerNodes.values()].map(node => { const h = node.querySelector('h3'), style = getComputedStyle(h); return { text: h.textContent, full: h.title, aria: h.getAttribute('aria-label'), whitespace: style.whiteSpace, height: h.getBoundingClientRect().height, lineHeight: parseFloat(style.lineHeight), fontSize: parseFloat(style.fontSize) }; });
       const consumerIcons = [...card._consumerNodes.entries()].map(([id, node]) => {
         const artwork = node.querySelector('.icon'), haIcon = artwork.querySelector('ha-icon'), fallback = artwork.querySelector('.fallback'), r = node.getBoundingClientRect(), icon = artwork.getBoundingClientRect(), title = node.querySelector('h3').getBoundingClientRect(), value = node.querySelector('.value').getBoundingClientRect(), image = (haIcon.shadowRoot?.querySelector('ha-svg-icon')?.shadowRoot?.querySelector('svg') || fallback.querySelector('svg')).getBoundingClientRect();
         return { id, display: getComputedStyle(artwork).display, height: icon.height, assigned: haIcon.getAttribute('icon'), expected: card._config.consumers.find(c => c.id === id).icon, fallback: getComputedStyle(fallback).display, defined: !!customElements.get('ha-icon'), iconTop: icon.top, iconBottom: icon.bottom, titleTop: title.top, titleBottom: title.bottom, valueTop: value.top, valueBottom: value.bottom, nodeTop: r.top, nodeBottom: r.bottom, imageCenter: (image.top + image.bottom) / 2, imageMiddleX: (image.left + image.right) / 2, containerMiddleX: (icon.left + icon.right) / 2 };
       });
-      return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped, identities, powerFonts, captions, consumerIcons, stationRows, homeBorder: parseFloat(getComputedStyle(card._nodes.home).borderTopWidth) };
+      return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped, identities, powerFonts, captions, consumerIcons, homeBorder: parseFloat(getComputedStyle(card._nodes.home).borderTopWidth) };
     });
     const onBorder = (p, r) => p.x >= r.left - .3 && p.x <= r.right + .3 && p.y >= r.top - .3 && p.y <= r.bottom + .3 && Math.min(Math.abs(p.x - r.left), Math.abs(p.x - r.right), Math.abs(p.y - r.top), Math.abs(p.y - r.bottom)) < .3;
     const intersects = (a, b, c, d) => {
@@ -90,27 +89,42 @@ const server = http.createServer((req, res) => {
         assert.equal(icon.fallback === 'none', icon.defined, `${label}: wrong fallback visibility`);
       }
       const entries = Object.entries(g.nodes);
+      // The owner explicitly chose the original lower-row position after reviewing
+      // its overlap at 5–6 consumers on narrow screens. Do not move that row.
+      const narrowAuxConflict = g.width < 400 && count >= 5;
+      const lowerConsumer = key => key.startsWith('consumer:') && Object.keys(g.nodes).filter(k => k.startsWith('consumer:')).indexOf(key) >= 4;
+      const acceptedOverlap = (a, b) => narrowAuxConflict && ((a === 'auxiliary_2' && lowerConsumer(b)) || (b === 'auxiliary_2' && lowerConsumer(a)));
       for (let i = 0; i < entries.length; i++) {
         const [key, r] = entries[i];
         assert(r.left >= -.3 && r.top >= -.3 && r.right <= g.width + .3 && r.bottom <= g.height + .3, `${label}: clipped node ${key}`);
-        for (let j = i + 1; j < entries.length; j++) { const [other, q] = entries[j]; assert(!(r.left < q.right - .3 && r.right > q.left + .3 && r.top < q.bottom - .3 && r.bottom > q.top + .3), `${label}: overlapping ${key} and ${other}`); }
+        for (let j = i + 1; j < entries.length; j++) { const [other, q] = entries[j]; assert(acceptedOverlap(key, other) || !(r.left < q.right - .3 && r.right > q.left + .3 && r.top < q.bottom - .3 && r.bottom > q.top + .3), `${label}: overlapping ${key} and ${other}`); }
       }
       const connections = { grid_main: ['grid', 'main'], grid_home: ['grid', 'home'], main_home: ['main', 'home'], grid_auxiliary_1: ['grid', 'auxiliary_1'], grid_auxiliary_2: ['grid', 'auxiliary_2'], auxiliary_1_main: ['auxiliary_1', 'main'], auxiliary_2_main: ['auxiliary_2', 'main'] };
-      const gridHome = g.paths.find(p => p.name === 'grid_home'), gridMain = g.paths.find(p => p.name === 'grid_main');
-      assert(Math.abs(gridHome.samples[0].y - (g.nodes.grid.top + g.nodes.grid.bottom) / 2) < .3, `${label}: grid-to-home flow must leave the grid center`);
-      assert(gridMain.length >= 43.7, `${label}: grid charging route is too short`);
+      const gridHome = g.paths.find(p => p.name === 'grid_home');
+      assert(Math.abs(gridHome.samples[0].y - (g.nodes.grid.top + g.nodes.grid.bottom) / 2) < .3, `${label}: city-to-home must leave the city center`);
+      assert(await page.evaluate(() => !card._nodes.main.querySelector('.ac')), `${label}: main Grid row must be absent`);
       for (const route of g.paths) {
         const [source, target] = connections[route.name] || ['home', `consumer:${route.name.slice(14)}`];
         assert(onBorder(route.samples[0], g.nodes[source]) && onBorder(route.samples.at(-1), g.nodes[target]), `${label}: detached ${route.name}`);
-        assert.equal(route.trackVisible, route.active ? 'visible' : 'hidden', `${label}: inactive line visible`);
+        assert.equal(route.trackVisible, route.active ? 'visible' : 'hidden', `${label}: only active routes must be visible`);
+        if (!route.active) {
+          assert.equal(route.dashesVisible, 'hidden', `${label}: inactive route must not show colored dashes`);
+          assert(route.animations.every(state => state === 'paused'), `${label}: inactive route must be stationary`);
+        }
         if (source === 'home') assert(route.length >= 28 && route.samples.at(-1).x - route.samples[0].x >= 27.9, `${label}: consumer line too short`);
         for (const p of route.samples) {
           assert(p.x >= -.3 && p.y >= -.3 && p.x <= g.width + .3 && p.y <= g.height + .3, `${label}: clipped ${route.name}`);
-          for (const [key, r] of entries) assert(!(p.x > r.left + .35 && p.x < r.right - .35 && p.y > r.top + .35 && p.y < r.bottom - .35), `${label}: ${route.name} runs inside ${key}`);
+          for (const [key, r] of entries) assert((key === 'auxiliary_2' && narrowAuxConflict && lowerConsumer(target)) || !(p.x > r.left + .35 && p.x < r.right - .35 && p.y > r.top + .35 && p.y < r.bottom - .35), `${label}: ${route.name} runs inside ${key}`);
+        }
+        if (source === 'home') {
+          const midpoint = route.samples[60], start = route.samples[0], end = route.samples.at(-1);
+          assert(Math.abs(midpoint.x - (start.x + end.x) / 2) < .5 && Math.abs(midpoint.y - (start.y + end.y) / 2) < .5, `${label}: retain the symmetric consumer curves from 2.1.1`);
         }
       }
       if (checkCrossings) for (let i = 0; i < g.paths.length; i++) for (let j = i + 1; j < g.paths.length; j++) {
         const a = g.paths[i], b = g.paths[j];
+        const lowerHomeRoute = name => name.startsWith('home_consumer_') && lowerConsumer(`consumer:${name.slice(14)}`);
+        if (narrowAuxConflict && ((a.name === 'auxiliary_2_main' && lowerHomeRoute(b.name)) || (b.name === 'auxiliary_2_main' && lowerHomeRoute(a.name)))) continue;
         for (let x = 1; x < a.samples.length; x++) for (let y = 1; y < b.samples.length; y++) assert(!intersects(a.samples[x - 1], a.samples[x], b.samples[y - 1], b.samples[y]), `${label}: crossing ${a.name} and ${b.name}`);
       }
       assert(Math.abs((g.nodes.grid.right - g.nodes.grid.left) - (g.nodes.grid.bottom - g.nodes.grid.top)) < .3, `${label}: grid must be square`);
@@ -143,21 +157,21 @@ const server = http.createServer((req, res) => {
     await page.locator('.layout-switch').click();
     await page.evaluate(() => { delete config.grid.show_name; delete config.home.show_name; delete config.grid.name; delete config.home.name; card.setConfig(config); refresh(); });
     await page.setViewportSize({ width: 390, height: 900 });
-    await page.evaluate(() => { window.powerCaseConfig = JSON.parse(JSON.stringify(config)); window.powerCaseStates = JSON.parse(JSON.stringify(states)); });
-    for (const language of ['uk', 'en']) for (const width of [320, 390, 768, 1150]) for (const count of [2, 6]) {
+    await page.evaluate(() => { window.savedConfig = JSON.parse(JSON.stringify(config)); window.savedStates = JSON.parse(JSON.stringify(states)); });
+    for (const language of ['uk', 'en']) for (const width of [320, 358, 390, 430, 768, 1150]) {
       await page.setViewportSize({ width, height: 900 });
-      await page.evaluate(({ language, count }) => {
-        config.language = language; config.grid.show_name = true; config.home.show_name = true;
-        config.grid.name = language === 'uk' ? 'Місто' : 'City'; config.home.name = language === 'uk' ? 'Дім' : 'Home';
-        config.main.name = 'Delta 2 Max'; config.auxiliary_1.name = 'Delta Max'; config.auxiliary_2.name = 'River Max';
-        for (const [id, value] of Object.entries({ grid: 6000, m_in: 5450, m_ac: 1480, m_pv1: 1780, m_pv2: 2190, a_in: 1780, a_out: 1780, b_in: 2190, b_out: 2190, m_out: 0 })) states[`sensor.${id}`].state = String(value);
-        card.setConfig(config); setCount(count);
-      }, { language, count });
-      const g = await verify(`${language} / ${width}px / kW on all stations / ${count} consumers`, count);
-      assert(g.stationRows.every(row => !row.stacked && row.aligned && row.fits), `${language} / ${width}px: station readings must fit one row: ${JSON.stringify(g.stationRows.filter(row => row.stacked || !row.aligned || !row.fits))}`);
-      if (width === 390) assert(g.height <= 410, 'Expanded stations made the mobile card too tall');
+      await page.evaluate(language => {
+        config.language = language; config.auxiliary_1.name = 'Delta Max'; config.auxiliary_2.name = 'River Max';
+        for (const id of ['a_in', 'a_out', 'b_in', 'b_out']) states[`sensor.${id}`].state = '1250';
+        card.setConfig(config); setCount(4);
+      }, language);
+      await verify(`1250 W / ${language} / ${width}px`, 4);
+      assert(await page.evaluate(() => ['auxiliary_1', 'auxiliary_2'].every(key => [...card._nodes[key].querySelectorAll('.row')].every(row => {
+        const a = row.querySelector('.label').getBoundingClientRect(), b = row.querySelector('.value').getBoundingClientRect(), n = card._nodes[key].getBoundingClientRect();
+        return !row.classList.contains('side-stack') && a.right <= b.left + .3 && b.right <= n.right - 1 && Math.abs(a.bottom - b.bottom) < .3 && !row.style.fontSize;
+      }))), `${language} / ${width}px: 1.25 kW must fit without smaller text`);
     }
-    await page.evaluate(() => { window.config = powerCaseConfig; window.states = powerCaseStates; card.setConfig(config); refresh(); });
+    await page.evaluate(() => { window.config = savedConfig; window.states = savedStates; card.setConfig(config); refresh(); });
     await page.setViewportSize({ width: 390, height: 900 });
     await page.evaluate(() => { setCount(6); states['binary_sensor.grid'].state = 'off'; refresh(); });
     await verify('grid outage', 6);
@@ -221,6 +235,6 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => card.remove());
     assert(await page.evaluate(() => Object.values(card._flows).every(f => f._animations.every(a => a.playState === 'paused'))), 'Detached card animations still running');
     assert.deepEqual(errors, []);
-    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, centered native Home Assistant consumer icons and fallback within preserved heights, 30% lower moving-dot density, unchanged title fonts, grid/home icons and matching power fonts, equal wider consumer rectangles with preserved heights, single-line titles with two-dot truncation, smaller power fonts, square grid outage, hidden inactive lines, complete noncrossing routes, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
+    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, centered native Home Assistant consumer icons and fallback within preserved heights, 30% lower moving-dot density, unchanged title fonts, grid/home icons and matching power fonts, equal wider consumer rectangles with preserved heights, single-line titles with two-dot truncation, smaller power fonts, square grid outage, hidden inactive lines, original curved routes with documented narrow-screen auxiliary overlaps, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
   } finally { await browser.close(); }
 })().then(() => server.close(), error => { console.error(error); server.close(); process.exitCode = 1; });

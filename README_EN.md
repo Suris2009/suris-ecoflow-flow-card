@@ -1,6 +1,8 @@
-# Suris EcoFlow Flow Card 2.1.2
+# Suris EcoFlow Flow Card 2.1.3
 
-[Українська](README.md) · [Stable release 2.1.2](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.2) · [Download JS](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/download/v2.1.2/suris-ecoflow-flow-card.js)
+[Українська](README.md) · [Stable release 2.1.3](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.3) · [Download JS](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/download/v2.1.3/suris-ecoflow-flow-card.js)
+
+**Stable release 2.1.3.** [Changes](RELEASE_NOTES.md).
 
 A Home Assistant energy flow card that brings the city grid, three EcoFlow stations, Home and individual consumers into one diagram.
 
@@ -12,7 +14,7 @@ A Home Assistant energy flow card that brings the city grid, three EcoFlow stati
 - **Custom colors.** Set separate colors for the city grid, each station and each device. Choose presets, use a palette, mix hue, saturation and lightness, or restore defaults. Home’s border automatically takes the color of its power source.
 - **Five animations.** Moving dashes, dots, arrows, pulsing light strips and one moving dot. Dot size is adjustable from 2 to 10 px.
 - **Adjustable speed and activity threshold.** Set the overall movement speed in the editor; each line also responds to its own power. Live readings adjust speed without restarting the animation. Inactive connections stay hidden.
-- **All key readings.** Battery charge, input and output for three stations; a dedicated AC input and two XT60(1)/XT60(2) inputs for the main EcoFlow. Home shows power and optional voltage. Values automatically use W or kW.
+- **All key readings.** Battery charge, input and output for three stations; two XT60(1)/XT60(2) inputs for the main EcoFlow. Home shows power and optional voltage. Values automatically use W or kW.
 - **Automatic Home source detection.** Power readings determine the source. A separate Home power sensor is optional: the card can use main EcoFlow output or calculate Home demand from grid power minus station charging.
 - **Grid outage warning.** An optional availability sensor triggers a pulsing No grid message inside the grid block. Supplying sources have clockwise moving dashed borders; Home retains a solid border.
 - **Names, icons and details.** Side flow keeps consumer names on one line, ending long names with two dots; the full name remains in the tooltip. Icons are centered between name and power. Clicking a reading with a configured entity opens its details.
@@ -34,11 +36,11 @@ Screenshots of the actual card with demonstration readings. Station names, entit
 
 ## Installation and upgrades
 
-Add `https://github.com/Suris2009/suris-ecoflow-flow-card` as a HACS custom Dashboard repository, install **2.1.2**, and reload the Home Assistant frontend. Add **Suris EcoFlow Flow Card** to your dashboard and select entities in the visual editor.
+Add `https://github.com/Suris2009/suris-ecoflow-flow-card` as a HACS custom Dashboard repository, install **2.1.3**, and reload the Home Assistant frontend. Add **Suris EcoFlow Flow Card** to your dashboard and select entities in the visual editor.
 
 HACS resource: `/hacsfiles/suris-ecoflow-flow-card/suris-ecoflow-flow-card.js`, type **JavaScript module**. An existing resource continues to use the same file.
 
-For manual installation, download the release JS file, put it in `www` under your Home Assistant configuration directory, and add `/local/suris-ecoflow-flow-card.js?v=2.1.2` as a **JavaScript module** resource. Restart Home Assistant if you have just created `www` for the first time.
+For manual installation, download the release JS file, put it in `www` under your Home Assistant configuration directory, and add `/local/suris-ecoflow-flow-card.js?v=2.1.3` as a **JavaScript module** resource. Restart Home Assistant if you have just created `www` for the first time.
 
 Upgrading from stable 2.0.8 or a 2.1 beta retains entities, consumers, colors and animation settings. Existing configurations initially use Classic; a Side flow selection already saved in the browser is also retained. No duplicate card or resource is needed.
 
@@ -65,7 +67,7 @@ appearance:
 
 In **City grid** and **Home**, enter text in **Name** and enable **Show name above the block in Side flow**. Each name is controlled independently and appears above its frame. Long names are truncated, with the full text in a tooltip. Names are hidden by default and do not increase the card height.
 
-<img src="preview-sideflow-stations-en.png" width="390" alt="Side flow with grid and Home names above the frames">
+<img src="preview-sideflow-names-en.png" width="390" alt="Side flow with grid and Home names above the frames">
 
 ## Individual consumers
 
@@ -100,10 +102,6 @@ Without a configured main total input sensor, total input can be calculated from
 The availability sensor only controls the **No grid** warning and grid output visibility; it never chooses Home’s source. Set the available state to `on` or `off` according to your sensor.
 
 Supported units: W, kW, mW, MW, Вт and кВт; a reading without a unit is treated as W. Missing values appear as `—`, while a real zero appears as `0 W`. Battery charge uses valid 0–100% readings; Classic battery icons fill to match charge.
-
-In Side flow, the main and both auxiliary stations use wider blocks that account for reading labels and W / kW values. Grid charging has at least 44 px of visible route. Grid → Home leaves the center of the grid block’s right edge. Consumer routes clear the wider station blocks.
-
-<img src="preview-sideflow-charging-en.png" width="390" alt="1.48 kW charging readings on a single row">
 
 ## Animation, speed and colors
 

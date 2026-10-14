@@ -20,10 +20,13 @@ const root = path.resolve(__dirname, '..');
       window.active=()=>Object.entries(card._flows).filter(([,flow])=>flow.classList.contains('active')).map(([name])=>name).sort();
     });
     const assertFlowVisibility=async()=>{
-      const flows=await page.evaluate(()=>Object.entries(card._flows).map(([name,flow])=>({name,active:flow.classList.contains('active'),track:getComputedStyle(flow.querySelector('.flow-track')).visibility,dashes:getComputedStyle(flow.querySelector('.flow-dashes')).visibility})));
+      const flows=await page.evaluate(()=>Object.entries(card._flows).map(([name,flow])=>({name,active:flow.classList.contains('active'),track:getComputedStyle(flow.querySelector('.flow-track')).visibility,color:getComputedStyle(flow.querySelector('.flow-track')).stroke,animations:flow._animations.map(a=>a.playState),dashes:getComputedStyle(flow.querySelector('.flow-dashes')).visibility})));
       for(const flow of flows){
         const expected=flow.active?'visible':'hidden';
         assert.equal(flow.track,expected,`${flow.name} track visibility must follow activity`);
+        if(!flow.active){
+          assert(flow.animations.every(state=>state==='paused'),`${flow.name} inactive track must be stationary`);
+        }
         assert.equal(flow.dashes,expected,`${flow.name} dashes visibility must follow activity`);
       }
     };
