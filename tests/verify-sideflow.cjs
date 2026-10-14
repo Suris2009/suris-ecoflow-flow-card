@@ -34,12 +34,13 @@ const server = http.createServer((req, res) => {
       const clipped = [...card.shadowRoot.querySelectorAll('.node h3,.value,.label,.grid-outage')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height && !e.hidden).map(e => ({ text: e.textContent, clipped: e.scrollWidth > e.clientWidth + 1, optionalName: e.matches('.show-name.grid h3,.show-name.home h3') && getComputedStyle(e).textOverflow === 'ellipsis' && e.title === e.textContent, width:e.clientWidth, scrollWidth:e.scrollWidth, font:getComputedStyle(e).fontSize, wrap:getComputedStyle(e).overflowWrap, whitespace:getComputedStyle(e).whiteSpace }));
       const identities = ['grid', 'home'].map(key => { const node = card._nodes[key], heading = node.querySelector('h3'), r = heading.getBoundingClientRect(); return { key, enabled: card._config[key].show_name === true, name: getComputedStyle(heading).display, text: heading.textContent, expected: card._config[key].name, tooltip: heading.title, box: { left:r.left-d.left, right:r.right-d.left, top:r.top-d.top, bottom:r.bottom-d.top }, icon: getComputedStyle(node.querySelector('.icon')).display, svg: getComputedStyle(node.querySelector('.icon svg')).display }; });
       const powerFonts = ['grid.output', 'home.power'].map(key => getComputedStyle(card._values[key]).fontSize);
+      const stationRows = ['main', 'auxiliary_1', 'auxiliary_2'].flatMap(key => [...card._nodes[key].querySelectorAll('.row')].map(row => { const label = row.querySelector('.label').getBoundingClientRect(), value = row.querySelector('.value').getBoundingClientRect(), node = card._nodes[key].getBoundingClientRect(); return { key, field: row.classList[1], stacked: row.classList.contains('side-stack'), aligned: Math.abs(label.bottom - value.bottom) < .3, fits: label.left >= node.left + 1 && label.right <= value.left + .3 && value.right <= node.right - 1 }; }));
       const captions = [...card._consumerNodes.values()].map(node => { const h = node.querySelector('h3'), style = getComputedStyle(h); return { text: h.textContent, full: h.title, aria: h.getAttribute('aria-label'), whitespace: style.whiteSpace, height: h.getBoundingClientRect().height, lineHeight: parseFloat(style.lineHeight), fontSize: parseFloat(style.fontSize) }; });
       const consumerIcons = [...card._consumerNodes.entries()].map(([id, node]) => {
         const artwork = node.querySelector('.icon'), haIcon = artwork.querySelector('ha-icon'), fallback = artwork.querySelector('.fallback'), r = node.getBoundingClientRect(), icon = artwork.getBoundingClientRect(), title = node.querySelector('h3').getBoundingClientRect(), value = node.querySelector('.value').getBoundingClientRect(), image = (haIcon.shadowRoot?.querySelector('ha-svg-icon')?.shadowRoot?.querySelector('svg') || fallback.querySelector('svg')).getBoundingClientRect();
         return { id, display: getComputedStyle(artwork).display, height: icon.height, assigned: haIcon.getAttribute('icon'), expected: card._config.consumers.find(c => c.id === id).icon, fallback: getComputedStyle(fallback).display, defined: !!customElements.get('ha-icon'), iconTop: icon.top, iconBottom: icon.bottom, titleTop: title.top, titleBottom: title.bottom, valueTop: value.top, valueBottom: value.bottom, nodeTop: r.top, nodeBottom: r.bottom, imageCenter: (image.top + image.bottom) / 2, imageMiddleX: (image.left + image.right) / 2, containerMiddleX: (icon.left + icon.right) / 2 };
       });
-      return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped, identities, powerFonts, captions, consumerIcons, homeBorder: parseFloat(getComputedStyle(card._nodes.home).borderTopWidth) };
+      return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped, identities, powerFonts, captions, consumerIcons, stationRows, homeBorder: parseFloat(getComputedStyle(card._nodes.home).borderTopWidth) };
     });
     const onBorder = (p, r) => p.x >= r.left - .3 && p.x <= r.right + .3 && p.y >= r.top - .3 && p.y <= r.bottom + .3 && Math.min(Math.abs(p.x - r.left), Math.abs(p.x - r.right), Math.abs(p.y - r.top), Math.abs(p.y - r.bottom)) < .3;
     const intersects = (a, b, c, d) => {
@@ -95,6 +96,9 @@ const server = http.createServer((req, res) => {
         for (let j = i + 1; j < entries.length; j++) { const [other, q] = entries[j]; assert(!(r.left < q.right - .3 && r.right > q.left + .3 && r.top < q.bottom - .3 && r.bottom > q.top + .3), `${label}: overlapping ${key} and ${other}`); }
       }
       const connections = { grid_main: ['grid', 'main'], grid_home: ['grid', 'home'], main_home: ['main', 'home'], grid_auxiliary_1: ['grid', 'auxiliary_1'], grid_auxiliary_2: ['grid', 'auxiliary_2'], auxiliary_1_main: ['auxiliary_1', 'main'], auxiliary_2_main: ['auxiliary_2', 'main'] };
+      const gridHome = g.paths.find(p => p.name === 'grid_home'), gridMain = g.paths.find(p => p.name === 'grid_main');
+      assert(Math.abs(gridHome.samples[0].y - (g.nodes.grid.top + g.nodes.grid.bottom) / 2) < .3, `${label}: grid-to-home flow must leave the grid center`);
+      assert(gridMain.length >= 43.7, `${label}: grid charging route is too short`);
       for (const route of g.paths) {
         const [source, target] = connections[route.name] || ['home', `consumer:${route.name.slice(14)}`];
         assert(onBorder(route.samples[0], g.nodes[source]) && onBorder(route.samples.at(-1), g.nodes[target]), `${label}: detached ${route.name}`);
@@ -138,6 +142,22 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.evaluate(() => card._layout), 'classic', 'Changing name visibility reset the saved view');
     await page.locator('.layout-switch').click();
     await page.evaluate(() => { delete config.grid.show_name; delete config.home.show_name; delete config.grid.name; delete config.home.name; card.setConfig(config); refresh(); });
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.evaluate(() => { window.powerCaseConfig = JSON.parse(JSON.stringify(config)); window.powerCaseStates = JSON.parse(JSON.stringify(states)); });
+    for (const language of ['uk', 'en']) for (const width of [320, 390, 768, 1150]) for (const count of [2, 6]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(({ language, count }) => {
+        config.language = language; config.grid.show_name = true; config.home.show_name = true;
+        config.grid.name = language === 'uk' ? 'Місто' : 'City'; config.home.name = language === 'uk' ? 'Дім' : 'Home';
+        config.main.name = 'Delta 2 Max'; config.auxiliary_1.name = 'Delta Max'; config.auxiliary_2.name = 'River Max';
+        for (const [id, value] of Object.entries({ grid: 6000, m_in: 5450, m_ac: 1480, m_pv1: 1780, m_pv2: 2190, a_in: 1780, a_out: 1780, b_in: 2190, b_out: 2190, m_out: 0 })) states[`sensor.${id}`].state = String(value);
+        card.setConfig(config); setCount(count);
+      }, { language, count });
+      const g = await verify(`${language} / ${width}px / kW on all stations / ${count} consumers`, count);
+      assert(g.stationRows.every(row => !row.stacked && row.aligned && row.fits), `${language} / ${width}px: station readings must fit one row: ${JSON.stringify(g.stationRows.filter(row => row.stacked || !row.aligned || !row.fits))}`);
+      if (width === 390) assert(g.height <= 410, 'Expanded stations made the mobile card too tall');
+    }
+    await page.evaluate(() => { window.config = powerCaseConfig; window.states = powerCaseStates; card.setConfig(config); refresh(); });
     await page.setViewportSize({ width: 390, height: 900 });
     await page.evaluate(() => { setCount(6); states['binary_sensor.grid'].state = 'off'; refresh(); });
     await verify('grid outage', 6);

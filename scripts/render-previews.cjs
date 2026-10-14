@@ -7,7 +7,7 @@ const assert = require('node:assert/strict');
 const mdi = require('@mdi/js');
 const root = path.resolve(__dirname, '..');
 const fontRoot = path.dirname(require.resolve('@fontsource-variable/roboto'));
-const iconPaths = { 'mdi:water-boiler': mdi.mdiWaterBoiler, 'mdi:kettle': mdi.mdiKettle, 'mdi:washing-machine': mdi.mdiWashingMachine, 'mdi:fridge': mdi.mdiFridge, 'mdi:lightbulb': mdi.mdiLightbulb, 'mdi:power-socket-eu': mdi.mdiPowerSocketEu };
+const iconPaths = { 'mdi:water-boiler': mdi.mdiWaterBoiler, 'mdi:kettle': mdi.mdiKettle, 'mdi:washing-machine': mdi.mdiWashingMachine, 'mdi:fridge': mdi.mdiFridge, 'mdi:lightbulb': mdi.mdiLightbulb, 'mdi:power-socket-eu': mdi.mdiPowerSocketEu, 'mdi:heat-wave': mdi.mdiHeatWave, 'mdi:heating-coil': mdi.mdiHeatingCoil };
 const server = http.createServer((req, res) => {
   if (req.url === '/card.js') { res.setHeader('Content-Type', 'text/javascript; charset=utf-8'); res.end(fs.readFileSync(path.join(root, 'suris-ecoflow-flow-card.js'))); }
   else if (req.url === '/font.css') { res.setHeader('Content-Type', 'text/css'); res.end(fs.readFileSync(path.join(fontRoot, 'wght.css'))); }
@@ -23,8 +23,10 @@ const server = http.createServer((req, res) => {
       { name: 'classic-grid', layout: 'classic', mode: 'grid', theme: 'dark', animation: 'arrows' },
       { name: 'sideflow-main', layout: 'sideflow', mode: 'main', theme: 'dark', animation: 'arrows' },
       { name: 'sideflow-outage', layout: 'sideflow', mode: 'outage', theme: 'light', animation: 'single_dot' },
-      { name: 'sideflow-names', layout: 'sideflow', mode: 'grid', theme: 'dark', animation: 'dots', names: true }
-    ].filter(shot => !process.env.SURIS_PREVIEW_SHOT || shot.name === process.env.SURIS_PREVIEW_SHOT)) {
+      { name: 'sideflow-names', layout: 'sideflow', mode: 'grid', theme: 'dark', animation: 'dots', names: true },
+      { name: 'sideflow-charging', layout: 'sideflow', mode: 'grid', theme: 'light', animation: 'dots', names: true, charging: true },
+      { name: 'sideflow-stations', layout: 'sideflow', mode: 'grid', theme: 'dark', animation: 'dots', names: true, stationKW: true }
+    ].filter(shot => !process.env.SURIS_PREVIEW_SHOT || process.env.SURIS_PREVIEW_SHOT.split(',').includes(shot.name))) {
       const page = await browser.newPage({ viewport: { width: 430, height: 1000 }, deviceScaleFactor: 2 });
       const errors = []; page.on('pageerror', error => errors.push(error.message));
       await page.goto(`http://127.0.0.1:${server.address().port}`);
@@ -49,6 +51,14 @@ const server = http.createServer((req, res) => {
         devices.forEach(([id, , , watts]) => states[`sensor.${id}`] = s(watts));
         const config = { type: 'custom:suris-ecoflow-flow-card', title: language === 'uk' ? 'Енергопотоки' : 'Energy flows', language, grid: { name: language === 'uk' ? 'Міська мережа' : 'City grid', power: 'sensor.grid', available_entity: 'binary_sensor.grid', available_state: 'on' }, auxiliary_1: { name: 'DELTA Max', soc: 'sensor.a_soc', input_power: 'sensor.a_in', output_power: 'sensor.a_out' }, auxiliary_2: { name: 'RIVER Max', soc: 'sensor.b_soc', input_power: 'sensor.b_in', output_power: 'sensor.b_out' }, main: { name: 'DELTA 2 Max', soc: 'sensor.m_soc', input_power: 'sensor.m_in', output_power: 'sensor.m_out', ac_input_power: 'sensor.m_ac', solar_input_power: 'sensor.m_pv1', solar_input_power_2: 'sensor.m_pv2' }, home: { name: language === 'uk' ? 'Дім' : 'Home', voltage: 'sensor.voltage' }, consumers: devices.map(([id, icon, color], i) => ({ id, name: names[i], icon, color, power: `sensor.${id}` })), appearance: { layout: shot.layout, animation: shot.animation, duration: 3, dot_size: 5, auxiliary_2_color: '#ff941e' } };
         if (shot.names) { config.grid.show_name = true; config.home.show_name = true; }
+        if (shot.charging) {
+          config.grid.name = language === 'uk' ? 'Місто' : 'City';
+          config.consumers = [{ id: 'floor', name: language === 'uk' ? 'Тепла підлога' : 'Floor heating', icon: 'mdi:heat-wave', color: '#ff9b18', power: 'sensor.floor' }, { id: 'dryer', name: language === 'uk' ? 'Сушарка' : 'Dryer', icon: 'mdi:heating-coil', color: '#9d4564', power: 'sensor.dryer' }];
+          states['sensor.floor'] = s(67); states['sensor.dryer'] = s(21);
+          states['sensor.grid'] = s(2024); states['sensor.m_in'] = s(1479); states['sensor.m_ac'] = s(1479); states['sensor.a_in'] = s(0); states['sensor.b_in'] = s(0); states['sensor.a_soc'] = s('unavailable', '%'); states['sensor.b_soc'] = s('unavailable', '%'); states['sensor.voltage'] = s(220, 'V');
+          config.appearance.main_color = '#df3948'; config.appearance.auxiliary_1_color = '#47bd79';
+        }
+        if (shot.stationKW) { states['sensor.grid'] = s(7550); states['sensor.m_in'] = s(1480); states['sensor.m_ac'] = s(1480); states['sensor.a_in'] = s(1780); states['sensor.b_in'] = s(2190); config.auxiliary_2.name = 'DELTA Pro'; }
         window.card = document.createElement('suris-ecoflow-flow-card'); card.setConfig(config); card.hass = { states }; document.querySelector('#host').append(card);
       }, { iconPaths, language, shot });
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -57,10 +67,10 @@ const server = http.createServer((req, res) => {
         const d = card._diagram.getBoundingClientRect();
         return { consumers: card._consumerNodes.size, source: card._data.home.source, homePower: card._data.home.power, charging: card._data.grid.output, outage: card._nodes.grid.classList.contains('grid-absent'), outside: [...card.shadowRoot.querySelectorAll('.node')].some(n => { const r = n.getBoundingClientRect(); return r.left < d.left - .5 || r.right > d.right + .5 || r.top < d.top - .5 || r.bottom > d.bottom + .5; }), missingIcons: [...card.shadowRoot.querySelectorAll('.consumer ha-icon')].some(n => !n.shadowRoot?.querySelector('ha-svg-icon')?.shadowRoot?.querySelector('path')?.getAttribute('d')), fontLoaded: document.fonts.check('400 16px "Roboto Variable"') };
       });
-      assert.equal(actual.consumers, 6); assert.equal(actual.source, shot.mode === 'grid' ? 'grid' : 'main'); assert.equal(actual.homePower, 2100); assert.equal(actual.outage, shot.mode !== 'grid'); assert(!actual.outside && !actual.missingIcons && actual.fontLoaded); assert.deepEqual(errors, []);
+      assert.equal(actual.consumers, shot.charging ? 2 : 6); assert.equal(actual.source, shot.mode === 'grid' ? 'grid' : 'main'); assert.equal(actual.homePower, shot.charging ? 545 : 2100); assert.equal(actual.outage, shot.mode !== 'grid'); assert(!actual.outside && !actual.missingIcons && actual.fontLoaded); assert.deepEqual(errors, []);
       const filename = `preview-${shot.name}-${language}.png`;
       await page.locator('suris-ecoflow-flow-card').screenshot({ path: path.join(root, filename) });
-      console.log(`${filename}: six consumers, ${actual.source}, 2100 W, native card render verified`);
+      console.log(`${filename}: ${actual.consumers} consumers, ${actual.source}, ${actual.homePower} W, native card render verified`);
       await page.close();
     }
   } finally { await browser.close(); }
