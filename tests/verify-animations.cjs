@@ -26,7 +26,7 @@ const root = path.resolve(__dirname, '..');
         await page.waitForTimeout(70);
         const result=await page.evaluate(()=>Object.entries(card._flows).map(([name,f])=>({name,active:f.classList.contains('active'),track:getComputedStyle(f.querySelector('.flow-track')).visibility,particles:[...f.querySelectorAll('.flow-particle')].map(p=>({visible:getComputedStyle(p).visibility,display:getComputedStyle(p).display})),animations:f._animations.map(a=>a.playState)})));
         for(const flow of result) {
-          assert.equal(flow.track,flow.active?'visible':'hidden',`${style}/${width}: ${flow.name} track`);
+          assert.equal(flow.track,'visible',`${style}/${width}: ${flow.name} track`);
           assert(flow.animations.every(state=>state===(flow.active?'running':'paused')),`${style}/${width}: ${flow.name} playback`);
           if(style==='single_dot') assert.equal(flow.particles.length,flow.name.startsWith('home_consumer_')?0:1,`One continuous dot on ${flow.name}`);
           if(['dots','arrows','single_dot'].includes(style)&&flow.name.startsWith('home_consumer_')) assert.equal(flow.animations.length,0,'A branch must receive the row particle instead of running its own loop');

@@ -29,7 +29,7 @@ const server = http.createServer((req, res) => {
     const geometry = () => page.evaluate(() => {
       const d = card._diagram.getBoundingClientRect();
       const nodes = Object.fromEntries([...card.shadowRoot.querySelectorAll('.node')].map(node => { const r = node.getBoundingClientRect(); return [node.dataset.key, { left: r.left - d.left, top: r.top - d.top, right: r.right - d.left, bottom: r.bottom - d.top }]; }));
-      const paths = Object.values(card._flows).map(flow => { const p = flow.querySelector('.flow-track'), length = p.getTotalLength(); return { name: flow.dataset.flow, length, color: getComputedStyle(p).stroke, trackVisible: getComputedStyle(p).visibility, active: flow.classList.contains('active'), samples: Array.from({ length: 121 }, (_, i) => { const q = p.getPointAtLength(length * i / 120); return { x: q.x, y: q.y }; }) }; });
+      const paths = Object.values(card._flows).map(flow => { const p = flow.querySelector('.flow-track'), length = p.getTotalLength(); return { name: flow.dataset.flow, length, color: getComputedStyle(p).stroke, trackVisible: getComputedStyle(p).visibility, dashesVisible: getComputedStyle(flow.querySelector('.flow-dashes')).visibility, animations: flow._animations.map(a => a.playState), active: flow.classList.contains('active'), samples: Array.from({ length: 121 }, (_, i) => { const q = p.getPointAtLength(length * i / 120); return { x: q.x, y: q.y }; }) }; });
       const fontSizes = [...card.shadowRoot.querySelectorAll('.node h3,.row,.consumer .value')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height).map(e => parseFloat(getComputedStyle(e).fontSize));
       const clipped = [...card.shadowRoot.querySelectorAll('.node h3,.value,.label,.grid-outage')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height && !e.hidden).map(e => ({ text: e.textContent, clipped: e.scrollWidth > e.clientWidth + 1, optionalName: e.matches('.show-name.grid h3,.show-name.home h3') && getComputedStyle(e).textOverflow === 'ellipsis' && e.title === e.textContent, width:e.clientWidth, scrollWidth:e.scrollWidth, font:getComputedStyle(e).fontSize, wrap:getComputedStyle(e).overflowWrap, whitespace:getComputedStyle(e).whiteSpace }));
       const identities = ['grid', 'home'].map(key => { const node = card._nodes[key], heading = node.querySelector('h3'), r = heading.getBoundingClientRect(); return { key, enabled: card._config[key].show_name === true, name: getComputedStyle(heading).display, text: heading.textContent, expected: card._config[key].name, tooltip: heading.title, box: { left:r.left-d.left, right:r.right-d.left, top:r.top-d.top, bottom:r.bottom-d.top }, icon: getComputedStyle(node.querySelector('.icon')).display, svg: getComputedStyle(node.querySelector('.icon svg')).display }; });
@@ -106,7 +106,13 @@ const server = http.createServer((req, res) => {
       for (const route of g.paths) {
         const [source, target] = connections[route.name] || ['home', `consumer:${route.name.slice(14)}`];
         assert(onBorder(route.samples[0], g.nodes[source]) && onBorder(route.samples.at(-1), g.nodes[target]), `${label}: detached ${route.name}`);
-        assert.equal(route.trackVisible, route.active ? 'visible' : 'hidden', `${label}: inactive line visible`);
+        assert.equal(route.trackVisible, 'visible', `${label}: route track must stay visible`);
+        if (!route.active) {
+          const rgb = route.color.match(/\d+/g).map(Number);
+          assert(rgb[0] === rgb[1] && rgb[1] === rgb[2], `${label}: inactive route must be grey`);
+          assert.equal(route.dashesVisible, 'hidden', `${label}: inactive route must not show colored dashes`);
+          assert(route.animations.every(state => state === 'paused'), `${label}: inactive route must be stationary`);
+        }
         if (source === 'home') assert(route.length >= 28 && route.samples.at(-1).x - route.samples[0].x >= 27.9, `${label}: consumer line too short`);
         for (const p of route.samples) {
           assert(p.x >= -.3 && p.y >= -.3 && p.x <= g.width + .3 && p.y <= g.height + .3, `${label}: clipped ${route.name}`);
@@ -231,6 +237,6 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => card.remove());
     assert(await page.evaluate(() => Object.values(card._flows).every(f => f._animations.every(a => a.playState === 'paused'))), 'Detached card animations still running');
     assert.deepEqual(errors, []);
-    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, centered native Home Assistant consumer icons and fallback within preserved heights, 30% lower moving-dot density, unchanged title fonts, grid/home icons and matching power fonts, equal wider consumer rectangles with preserved heights, single-line titles with two-dot truncation, smaller power fonts, square grid outage, hidden inactive lines, original curved routes with documented narrow-screen auxiliary overlaps, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
+    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, centered native Home Assistant consumer icons and fallback within preserved heights, 30% lower moving-dot density, unchanged title fonts, grid/home icons and matching power fonts, equal wider consumer rectangles with preserved heights, single-line titles with two-dot truncation, smaller power fonts, square grid outage, stationary grey inactive lines, original curved routes with documented narrow-screen auxiliary overlaps, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
   } finally { await browser.close(); }
 })().then(() => server.close(), error => { console.error(error); server.close(); process.exitCode = 1; });

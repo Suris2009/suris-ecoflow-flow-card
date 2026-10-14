@@ -20,10 +20,15 @@ const root = path.resolve(__dirname, '..');
       window.active=()=>Object.entries(card._flows).filter(([,flow])=>flow.classList.contains('active')).map(([name])=>name).sort();
     });
     const assertFlowVisibility=async()=>{
-      const flows=await page.evaluate(()=>Object.entries(card._flows).map(([name,flow])=>({name,active:flow.classList.contains('active'),track:getComputedStyle(flow.querySelector('.flow-track')).visibility,dashes:getComputedStyle(flow.querySelector('.flow-dashes')).visibility})));
+      const flows=await page.evaluate(()=>Object.entries(card._flows).map(([name,flow])=>({name,active:flow.classList.contains('active'),track:getComputedStyle(flow.querySelector('.flow-track')).visibility,color:getComputedStyle(flow.querySelector('.flow-track')).stroke,animations:flow._animations.map(a=>a.playState),dashes:getComputedStyle(flow.querySelector('.flow-dashes')).visibility})));
       for(const flow of flows){
         const expected=flow.active?'visible':'hidden';
-        assert.equal(flow.track,expected,`${flow.name} track visibility must follow activity`);
+        assert.equal(flow.track,'visible',`${flow.name} track must stay visible`);
+        if(!flow.active){
+          const rgb=flow.color.match(/\d+/g).map(Number);
+          assert(rgb[0]===rgb[1]&&rgb[1]===rgb[2],`${flow.name} inactive track must be grey`);
+          assert(flow.animations.every(state=>state==='paused'),`${flow.name} inactive track must be stationary`);
+        }
         assert.equal(flow.dashes,expected,`${flow.name} dashes visibility must follow activity`);
       }
     };
@@ -71,6 +76,6 @@ const root = path.resolve(__dirname, '..');
     await page.setViewportSize({width:1040,height:1000});
     await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-offline-grid.png')});
     assert.deepEqual(errors,[]);
-    console.log('PASS: offline main station, grid-to-home flow, live animation, grid warning independence, charging subtraction, main output priority, hidden inactive tracks, visible unknown-source frame and reduced motion.');
+    console.log('PASS: offline main station, grid-to-home flow, live animation, grid warning independence, charging subtraction, main output priority, stationary grey inactive tracks, visible unknown-source frame and reduced motion.');
   } finally {await browser.close();}
 })().catch(error=>{console.error(error);process.exit(1)});

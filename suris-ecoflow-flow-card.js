@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.1.3-beta.2 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.1.3-beta.3 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.1.3-beta.2';
+  const VERSION = '2.1.3-beta.3';
   const ANIMATIONS = ['dashes', 'dots', 'arrows', 'pulse', 'single_dot'];
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
@@ -185,7 +185,7 @@
     *{box-sizing:border-box}ha-card{display:block;overflow:hidden;background:var(--ha-card-background,var(--card-background-color,#1c1c1c));color:var(--primary-text-color,#e8e8e8);padding:16px;border-radius:var(--ha-card-border-radius,16px)}
     .wrap{container-type:inline-size}h2{font-size:22px;font-weight:600;margin:0}.card-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.card-header h2{min-width:0;overflow-wrap:anywhere}.layout-switch{flex:none;font:inherit;font-size:12px;color:inherit;background:transparent;border:1px solid var(--divider-color,#60656d);border-radius:8px;padding:5px 8px;cursor:pointer}.layout-switch[hidden]{display:none}.layout-switch:focus-visible{outline:2px solid var(--flow-main);outline-offset:2px}.diagram{position:relative;height:clamp(540px,65cqw,720px)}
     .lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-    .flow path{fill:none;stroke:color-mix(in srgb,var(--primary-text-color,#9aa0a6) 55%,transparent);stroke-width:1.5;stroke-linejoin:miter;stroke-linecap:butt;opacity:.40}.flow .flow-track{visibility:hidden}.flow.active .flow-track{stroke:var(--color);opacity:.28;visibility:visible}.flow .flow-dashes{stroke:var(--color);stroke-width:3;stroke-linecap:round;stroke-dasharray:7 21;opacity:.95;visibility:hidden}.flow.active .flow-dashes{visibility:visible}
+    .flow path{fill:none;stroke:color-mix(in srgb,var(--primary-text-color,#9aa0a6) 55%,transparent);stroke-width:1.5;stroke-linejoin:miter;stroke-linecap:butt;opacity:.40}.flow .flow-track{stroke:#9e9e9e;opacity:.55;visibility:visible}.flow.active .flow-track{stroke:var(--color);opacity:.28;visibility:visible}.flow .flow-dashes{stroke:var(--color);stroke-width:3;stroke-linecap:round;stroke-dasharray:7 21;opacity:.95;visibility:hidden}.flow.active .flow-dashes{visibility:visible}
     .node{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0;background:transparent;background:color-mix(in srgb,var(--ha-card-background,var(--card-background-color,#1c1c1c)) 8%,transparent);border:2px solid var(--node-color,var(--divider-color,#60656d));border-radius:12px;padding:12px 10px;z-index:1;min-height:140px;height:auto}
     .flow .flow-particle{fill:var(--color);stroke:none;opacity:.95;visibility:hidden;offset-anchor:0px 0px;offset-rotate:auto}.flow.active .flow-particle{visibility:visible}
     .node.supplying{border-color:transparent}.node-border{position:absolute;overflow:visible;pointer-events:none;display:none;z-index:2}.node-border.active{display:block}.node-border path{fill:none;stroke:var(--node-color);stroke-width:2;stroke-linecap:round;stroke-dasharray:7 7}
@@ -465,7 +465,7 @@
       };
       const gridSize = Math.max(74, Math.min(110, 88 * sx));
       const gridTitleSpace = this._config.grid.show_name ? Math.ceil(this._nodes.grid.querySelector('h3').getBoundingClientRect().height) + 6 : 0;
-      place(this._nodes.grid, Math.max(14, 22 * sx), 12 * sy + gridTitleSpace, gridSize, gridSize);
+      place(this._nodes.grid, Math.max(14, 22 * sx), 4 * sy + gridTitleSpace, gridSize, gridSize);
       place(this._nodes.main, Math.max(12, 10 * sx), 0, 126 * sx);
       place(this._nodes.home, 176 * sx, 0, 84 * sx);
       this._nodes.home.style.minHeight = `${90 * sy}px`;
