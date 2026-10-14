@@ -1,8 +1,8 @@
-/* Suris EcoFlow Flow Card v2.1.1 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.1.3-beta.2 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.1.1';
+  const VERSION = '2.1.3-beta.2';
   const ANIMATIONS = ['dashes', 'dots', 'arrows', 'pulse', 'single_dot'];
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
@@ -200,6 +200,7 @@
     @container(max-width:520px){.node.home{padding-inline:3px}}
     .node.consumer{height:72px;min-height:72px;padding:4px;gap:3px;border-radius:9px}.consumer h3{font-size:clamp(11px,1.5cqw,13px);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}.consumer .icon{height:22px;margin:0;color:var(--node-color)}.consumer ha-icon{--mdc-icon-size:22px;width:22px;height:22px}.consumer ha-icon:not(:defined){display:none}.consumer ha-icon:defined+.fallback{display:none}.consumer .fallback{height:22px}.consumer .fallback svg{width:22px}.consumer .value{width:100%;text-align:center;font-size:12px;line-height:16px}.consumer:focus-within{outline:1px solid var(--node-color);outline-offset:2px}
     .sideflow .node{right:auto;bottom:auto;min-height:0;height:auto;padding:5px 6px;gap:2px;background:var(--ha-card-background,var(--card-background-color,#1c1c1c));border-radius:10px}
+    .sideflow .auxiliary_1,.sideflow .auxiliary_2{padding-inline:1px}
     .sideflow .node h3{font-size:clamp(11.5px,3.625cqw,14.5px);line-height:1.1;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow-wrap:anywhere}
     .sideflow .node .icon{display:none}.sideflow .row{font-size:clamp(11px,3.25cqw,13px);line-height:1.2;gap:2px}.sideflow .row[hidden]{display:none}
     .sideflow .grid h3,.sideflow .home h3{display:none}.sideflow .grid .icon,.sideflow .home .icon{display:flex;height:clamp(28px,8cqw,38px);margin:0}.sideflow .grid .icon{color:var(--flow-grid)}.sideflow .home .icon{color:var(--flow-home)}
@@ -327,7 +328,7 @@
         }
         else {
           this._row(node, 'soc', text.soc); this._row(node, 'input', text.input);
-          if (key === 'main') { this._row(node, 'ac', text.ac); this._row(node, 'solar_1', 'XT60(1)'); this._row(node, 'solar_2', 'XT60(2)'); }
+          if (key === 'main') { this._row(node, 'solar_1', 'XT60(1)'); this._row(node, 'solar_2', 'XT60(2)'); }
           this._row(node, 'output', text.output);
         }
         this._nodes[key] = node; this._diagram.append(node);
@@ -364,7 +365,6 @@
         let entity = c[node][field === 'soc' ? 'soc' : `${field}_power`];
         if (node === 'grid') entity = c.grid.power;
         if (node === 'home') entity = field === 'voltage' ? c.home.voltage : c.home.power;
-        if (node === 'main' && field === 'ac') entity = c.main.ac_input_power;
         if (node === 'main' && field === 'solar_1') entity = c.main.solar_input_power;
         if (node === 'main' && field === 'solar_2') entity = c.main.solar_input_power_2;
         if (field === 'soc') value = value != null && value >= 0 && value <= 100 ? `${formatter.format(value)}%` : '—';
@@ -469,8 +469,9 @@
       place(this._nodes.main, Math.max(12, 10 * sx), 0, 126 * sx);
       place(this._nodes.home, 176 * sx, 0, 84 * sx);
       this._nodes.home.style.minHeight = `${90 * sy}px`;
-      place(this._nodes.auxiliary_1, Math.max(12, 8 * sx), 0, 100 * sx);
-      place(this._nodes.auxiliary_2, 124 * sx, 0, 100 * sx);
+      const auxWidth = Math.max(110, 120 * sx);
+      place(this._nodes.auxiliary_1, Math.max(12, 8 * sx), 0, auxWidth);
+      place(this._nodes.auxiliary_2, 124 * sx + auxWidth - 100 * sx, 0, auxWidth);
       const consumerHeight = Math.max(60, Math.min(64, width * .16)), rightInset = 3 * sx;
       const consumerWidth = Math.min(consumerHeight * 1.55, width - rightInset - 260 * sx - 28), consumerX = width - rightInset - consumerWidth;
       for (const node of this._consumerNodes.values()) place(node, consumerX, 0, consumerWidth, consumerHeight);
@@ -501,7 +502,7 @@
       };
       const g = rect('grid'), a = rect('auxiliary_1'), b = rect('auxiliary_2'), m = rect('main'), h = rect('home'), sy = this._sideScale;
       const gap = h.x - g.right, auxLane = Math.max(a.bottom, b.bottom) + 12 * sy;
-      const gridHomeY = g.y + g.h / 2 - this._sideGridTitleSpace;
+      const gridHomeY = g.y + g.h / 2;
       const routes = {
         grid_main: `M ${g.x + g.w / 2} ${g.bottom} V ${m.y}`,
         grid_home: `M ${g.right} ${gridHomeY} C ${g.right + gap * .45} ${gridHomeY} ${h.x - gap * .25} ${h.y + h.h * .25} ${h.x} ${h.y + h.h * .25}`,

@@ -1,0 +1,36 @@
+name: Beta release
+on:
+  push:
+    branches: ['beta/**']
+    paths: ['package.json', '.github/workflows/beta-release.yml']
+permissions:
+  contents: read
+concurrency:
+  group: beta-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate beta source
+        run: |
+          node --check suris-ecoflow-flow-card.js
+          node tests/verify-model.cjs
+          node scripts/validate-release.cjs
+          node -e 'if (!/^[0-9]+\.[0-9]+\.[0-9]+-beta\.[1-9][0-9]*$/.test(require("./package.json").version)) process.exit(1)'
+      - name: Publish beta asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="$(node -p 'require("./package.json").version')"
+          sha256sum suris-ecoflow-flow-card.js > SHA256SUMS.txt
+          gh release create "v${VERSION}" suris-ecoflow-flow-card.js SHA256SUMS.txt \
+            --target "$GITHUB_SHA" \
+            --title "Suris EcoFlow Flow Card ${VERSION}" \
+            --notes-file RELEASE_NOTES.md --prerelease --latest=false

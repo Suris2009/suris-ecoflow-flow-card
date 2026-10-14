@@ -1,21 +1,29 @@
-# 2.1.1 — Home border and optional names / Рамка дому та необов’язкові назви
-
-## English
-
-- Increase Home’s solid border slightly, from 3 px to 4 px, in both layouts.
-- Add separate switches for custom grid and Home names above their frames in Side flow. The names do not increase card height or replace the icons.
-- Keep existing view preferences, power calculations, consumer sizes, flow colors and animations.
-
-In **City grid** and **Home**, enter text in **Name** and enable **Show name above the block in Side flow**. Each name is controlled independently and appears above its frame. Long names are truncated, with the full text in a tooltip. Names are hidden by default and do not increase the card height.
-
-<img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.1/preview-sideflow-names-en.png" width="390" alt="Side flow with grid and Home names above the frames">
+# 2.1.3-beta.2 — Minimal changes to 2.1.1 / Мінімальні зміни до 2.1.1
 
 ## Українська
 
-- Суцільна рамка дому трохи товстіша: 4 px замість 3 px в обох виглядах.
-- Додано окремі перемикачі довільних назв над рамками мережі й дому в боковому вигляді. Назви не збільшують висоту картки та не замінюють іконки.
-- Збережено вибір вигляду, розрахунки потужності, розміри споживачів, кольори й анімації потоків.
+Випуск підготовлено заново з вихідної стабільної версії **2.1.1**.
 
-У блоках **Міська мережа** та **Дім** введи текст у полі **Назва** й увімкни **Показувати назву над блоком у боковому вигляді**. Назви вмикаються окремо та показуються над відповідними рамками. Довгі назви скорочуються, а повний текст доступний у підказці. За замовчуванням назви приховані; висота картки не збільшується.
+- Прибрано рядок «Мережа» з головної станції.
+- Допоміжні станції розширено для показників до **1,25 kW** в одному рядку. Розмір шрифту збережено, ширина не залежить від показань датчиків.
+- Вихід потоку місто → дім розміщено по центру правої сторони міського блоку.
 
-<img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.1/preview-sideflow-names-uk.png" width="390" alt="Боковий потік із назвами над рамками мережі й дому">
+Форма кривих потоків, положення нижнього ряду, анімації та розрахунки залишаються як у 2.1.1. AC-датчик залишається в налаштуваннях для розрахунків і потоку заряджання головної станції.
+
+На вузьких екранах із 5–6 приладами ширші допоміжні блоки та їхні потоки можуть накладатися на нижні прилади. Нижній ряд зберігає початкове розташування 2.1.1.
+
+<img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.3-beta.2/preview-sideflow-feedback-uk.png" width="390" alt="Початкові криві потоків 2.1.1 з трьома мінімальними змінами">
+
+## English
+
+Rebuilt from the original stable **2.1.1** source.
+
+- Remove the Grid row from the main station.
+- Widen the auxiliary stations to display readings up to **1.25 kW** on one line. Retain the text size and fixed widths independent of sensor readings.
+- Place the city-to-Home outlet at the midpoint of the city block's right edge.
+
+Flow curves, the lower-row position, animations and power calculations retain their 2.1.1 behavior. The AC entity remains configured for calculations and the main station's grid charging flow.
+
+On narrow screens with 5–6 consumers, wider auxiliary blocks and their flows may overlap lower consumers. The lower row retains its original 2.1.1 position.
+
+<img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.3-beta.2/preview-sideflow-feedback-en.png" width="390" alt="Original 2.1.1 flow curves with three minimal changes">

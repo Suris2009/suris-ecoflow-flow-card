@@ -89,12 +89,20 @@ const server = http.createServer((req, res) => {
         assert.equal(icon.fallback === 'none', icon.defined, `${label}: wrong fallback visibility`);
       }
       const entries = Object.entries(g.nodes);
+      // The owner explicitly chose the original lower-row position after reviewing
+      // its overlap at 5–6 consumers on narrow screens. Do not move that row.
+      const narrowAuxConflict = g.width < 400 && count >= 5;
+      const lowerConsumer = key => key.startsWith('consumer:') && Object.keys(g.nodes).filter(k => k.startsWith('consumer:')).indexOf(key) >= 4;
+      const acceptedOverlap = (a, b) => narrowAuxConflict && ((a === 'auxiliary_2' && lowerConsumer(b)) || (b === 'auxiliary_2' && lowerConsumer(a)));
       for (let i = 0; i < entries.length; i++) {
         const [key, r] = entries[i];
         assert(r.left >= -.3 && r.top >= -.3 && r.right <= g.width + .3 && r.bottom <= g.height + .3, `${label}: clipped node ${key}`);
-        for (let j = i + 1; j < entries.length; j++) { const [other, q] = entries[j]; assert(!(r.left < q.right - .3 && r.right > q.left + .3 && r.top < q.bottom - .3 && r.bottom > q.top + .3), `${label}: overlapping ${key} and ${other}`); }
+        for (let j = i + 1; j < entries.length; j++) { const [other, q] = entries[j]; assert(acceptedOverlap(key, other) || !(r.left < q.right - .3 && r.right > q.left + .3 && r.top < q.bottom - .3 && r.bottom > q.top + .3), `${label}: overlapping ${key} and ${other}`); }
       }
       const connections = { grid_main: ['grid', 'main'], grid_home: ['grid', 'home'], main_home: ['main', 'home'], grid_auxiliary_1: ['grid', 'auxiliary_1'], grid_auxiliary_2: ['grid', 'auxiliary_2'], auxiliary_1_main: ['auxiliary_1', 'main'], auxiliary_2_main: ['auxiliary_2', 'main'] };
+      const gridHome = g.paths.find(p => p.name === 'grid_home');
+      assert(Math.abs(gridHome.samples[0].y - (g.nodes.grid.top + g.nodes.grid.bottom) / 2) < .3, `${label}: city-to-home must leave the city center`);
+      assert(await page.evaluate(() => !card._nodes.main.querySelector('.ac')), `${label}: main Grid row must be absent`);
       for (const route of g.paths) {
         const [source, target] = connections[route.name] || ['home', `consumer:${route.name.slice(14)}`];
         assert(onBorder(route.samples[0], g.nodes[source]) && onBorder(route.samples.at(-1), g.nodes[target]), `${label}: detached ${route.name}`);
@@ -102,11 +110,17 @@ const server = http.createServer((req, res) => {
         if (source === 'home') assert(route.length >= 28 && route.samples.at(-1).x - route.samples[0].x >= 27.9, `${label}: consumer line too short`);
         for (const p of route.samples) {
           assert(p.x >= -.3 && p.y >= -.3 && p.x <= g.width + .3 && p.y <= g.height + .3, `${label}: clipped ${route.name}`);
-          for (const [key, r] of entries) assert(!(p.x > r.left + .35 && p.x < r.right - .35 && p.y > r.top + .35 && p.y < r.bottom - .35), `${label}: ${route.name} runs inside ${key}`);
+          for (const [key, r] of entries) assert((key === 'auxiliary_2' && narrowAuxConflict && lowerConsumer(target)) || !(p.x > r.left + .35 && p.x < r.right - .35 && p.y > r.top + .35 && p.y < r.bottom - .35), `${label}: ${route.name} runs inside ${key}`);
+        }
+        if (source === 'home') {
+          const midpoint = route.samples[60], start = route.samples[0], end = route.samples.at(-1);
+          assert(Math.abs(midpoint.x - (start.x + end.x) / 2) < .5 && Math.abs(midpoint.y - (start.y + end.y) / 2) < .5, `${label}: retain the symmetric consumer curves from 2.1.1`);
         }
       }
       if (checkCrossings) for (let i = 0; i < g.paths.length; i++) for (let j = i + 1; j < g.paths.length; j++) {
         const a = g.paths[i], b = g.paths[j];
+        const lowerHomeRoute = name => name.startsWith('home_consumer_') && lowerConsumer(`consumer:${name.slice(14)}`);
+        if (narrowAuxConflict && ((a.name === 'auxiliary_2_main' && lowerHomeRoute(b.name)) || (b.name === 'auxiliary_2_main' && lowerHomeRoute(a.name)))) continue;
         for (let x = 1; x < a.samples.length; x++) for (let y = 1; y < b.samples.length; y++) assert(!intersects(a.samples[x - 1], a.samples[x], b.samples[y - 1], b.samples[y]), `${label}: crossing ${a.name} and ${b.name}`);
       }
       assert(Math.abs((g.nodes.grid.right - g.nodes.grid.left) - (g.nodes.grid.bottom - g.nodes.grid.top)) < .3, `${label}: grid must be square`);
@@ -138,6 +152,22 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.evaluate(() => card._layout), 'classic', 'Changing name visibility reset the saved view');
     await page.locator('.layout-switch').click();
     await page.evaluate(() => { delete config.grid.show_name; delete config.home.show_name; delete config.grid.name; delete config.home.name; card.setConfig(config); refresh(); });
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.evaluate(() => { window.savedConfig = JSON.parse(JSON.stringify(config)); window.savedStates = JSON.parse(JSON.stringify(states)); });
+    for (const language of ['uk', 'en']) for (const width of [320, 358, 390, 430, 768, 1150]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(language => {
+        config.language = language; config.auxiliary_1.name = 'Delta Max'; config.auxiliary_2.name = 'River Max';
+        for (const id of ['a_in', 'a_out', 'b_in', 'b_out']) states[`sensor.${id}`].state = '1250';
+        card.setConfig(config); setCount(4);
+      }, language);
+      await verify(`1250 W / ${language} / ${width}px`, 4);
+      assert(await page.evaluate(() => ['auxiliary_1', 'auxiliary_2'].every(key => [...card._nodes[key].querySelectorAll('.row')].every(row => {
+        const a = row.querySelector('.label').getBoundingClientRect(), b = row.querySelector('.value').getBoundingClientRect(), n = card._nodes[key].getBoundingClientRect();
+        return !row.classList.contains('side-stack') && a.right <= b.left + .3 && b.right <= n.right - 1 && Math.abs(a.bottom - b.bottom) < .3 && !row.style.fontSize;
+      }))), `${language} / ${width}px: 1.25 kW must fit without smaller text`);
+    }
+    await page.evaluate(() => { window.config = savedConfig; window.states = savedStates; card.setConfig(config); refresh(); });
     await page.setViewportSize({ width: 390, height: 900 });
     await page.evaluate(() => { setCount(6); states['binary_sensor.grid'].state = 'off'; refresh(); });
     await verify('grid outage', 6);
@@ -201,6 +231,6 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => card.remove());
     assert(await page.evaluate(() => Object.values(card._flows).every(f => f._animations.every(a => a.playState === 'paused'))), 'Detached card animations still running');
     assert.deepEqual(errors, []);
-    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, centered native Home Assistant consumer icons and fallback within preserved heights, 30% lower moving-dot density, unchanged title fonts, grid/home icons and matching power fonts, equal wider consumer rectangles with preserved heights, single-line titles with two-dot truncation, smaller power fonts, square grid outage, hidden inactive lines, complete noncrossing routes, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
+    console.log('PASS: side flow at 320–1150 px and 0–6 consumers, centered native Home Assistant consumer icons and fallback within preserved heights, 30% lower moving-dot density, unchanged title fonts, grid/home icons and matching power fonts, equal wider consumer rectangles with preserved heights, single-line titles with two-dot truncation, smaller power fonts, square grid outage, hidden inactive lines, original curved routes with documented narrow-screen auxiliary overlaps, readable text, five animations, unchanged source logic, classic switch and preference, reduced motion and cleanup.');
   } finally { await browser.close(); }
 })().then(() => server.close(), error => { console.error(error); server.close(); process.exitCode = 1; });
