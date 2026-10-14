@@ -149,7 +149,7 @@ const root = path.resolve(__dirname, '..');
  assert(!(await page.evaluate(()=>active())).includes('grid_main'));
  assert(!(await page.evaluate(()=>active())).includes('grid_auxiliary_1'));
  assert((await page.evaluate(()=>active())).includes('auxiliary_1_main'));
- assert.equal(await page.evaluate(()=>card.shadowRoot.querySelector('.main .ac .value').textContent),'—');
+ assert(await page.evaluate(()=>!card.shadowRoot.querySelector('.main .ac') && !card._values['main.ac']), 'Main station must not render an AC/grid row');
  await page.evaluate(()=>{states['sensor.main_ac'].state='3';refresh()});
  assert(!(await page.evaluate(()=>active())).includes('grid_main'));
  await page.evaluate(()=>{states['sensor.main_ac'].state='3.1';refresh()});
