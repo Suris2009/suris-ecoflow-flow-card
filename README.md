@@ -1,6 +1,6 @@
-# Suris EcoFlow Flow Card 2.1.0
+# Suris EcoFlow Flow Card 2.1.1
 
-[English](README_EN.md) · [Стабільний реліз 2.1.0](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.0) · [Завантажити JS](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/download/v2.1.0/suris-ecoflow-flow-card.js)
+[English](README_EN.md) · [Стабільний реліз 2.1.1](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.1) · [Завантажити JS](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/download/v2.1.1/suris-ecoflow-flow-card.js)
 
 Картка енергопотоків для Home Assistant, яка показує міську мережу, три станції EcoFlow, дім та індивідуальні споживачі в одній схемі.
 
@@ -34,11 +34,11 @@
 
 ## Встановлення та оновлення
 
-Додай `https://github.com/Suris2009/suris-ecoflow-flow-card` як користувацький репозиторій HACS для карток панелі огляду (Dashboard), встанови **2.1.0** та перезавантаж інтерфейс Home Assistant. Додай картку **Suris EcoFlow Flow Card** на панель і вибери сутності у візуальному редакторі.
+Додай `https://github.com/Suris2009/suris-ecoflow-flow-card` як користувацький репозиторій HACS для карток панелі огляду (Dashboard), встанови **2.1.1** та перезавантаж інтерфейс Home Assistant. Додай картку **Suris EcoFlow Flow Card** на панель і вибери сутності у візуальному редакторі.
 
 Ресурс HACS: `/hacsfiles/suris-ecoflow-flow-card/suris-ecoflow-flow-card.js`, тип **JavaScript module**. Якщо ресурс уже додано, використовується той самий файл.
 
-Для ручного встановлення завантаж JS-файл із релізу, поклади його до `www` у каталозі конфігурації Home Assistant та додай ресурс `/local/suris-ecoflow-flow-card.js?v=2.1.0` типу **JavaScript module**. Якщо каталог `www` створено вперше, перезапусти Home Assistant.
+Для ручного встановлення завантаж JS-файл із релізу, поклади його до `www` у каталозі конфігурації Home Assistant та додай ресурс `/local/suris-ecoflow-flow-card.js?v=2.1.1` типу **JavaScript module**. Якщо каталог `www` створено вперше, перезапусти Home Assistant.
 
 При оновленні зі стабільної 2.0.8 або бети 2.1 налаштування сутностей, приладів, кольорів і анімації зберігаються. Наявні картки початково використовують класичне розташування; збережений у браузері вибір бокового вигляду також залишається. Дублювати картку чи JS-ресурс не потрібно.
 
@@ -60,6 +60,12 @@ appearance:
 ```
 
 `layout` приймає `classic` або `sideflow`. Вибір кнопкою зберігається локально для цієї картки й браузера; він не змінює налаштування датчиків.
+
+## Назви мережі й дому
+
+У блоках **Міська мережа** та **Дім** введи текст у полі **Назва** й увімкни **Показувати назву над блоком у боковому вигляді**. Назви вмикаються окремо та показуються над відповідними рамками. Довгі назви скорочуються, а повний текст доступний у підказці. За замовчуванням назви приховані; висота картки не збільшується.
+
+<img src="preview-sideflow-names-uk.png" width="390" alt="Боковий потік із назвами над рамками мережі й дому">
 
 ## Індивідуальні споживачі
 

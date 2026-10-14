@@ -27,7 +27,7 @@ const root = path.resolve(__dirname, '..');
  });
  await page.evaluate(()=>{states['sensor.home_voltage']={state:'229.6',attributes:{unit_of_measurement:'V'}};config.home={voltage:'sensor.home_voltage'};card.setConfig(config);refresh()});
  assert.equal(await page.evaluate(()=>card._values['home.voltage'].textContent),'230 V');
- assert.equal(await page.evaluate(()=>getComputedStyle(card._nodes.home).borderTopWidth),'3px');
+ assert.equal(await page.evaluate(()=>getComputedStyle(card._nodes.home).borderTopWidth),'4px');
  await page.evaluate(()=>{states['sensor.home_voltage'].state='unavailable';refresh()});
  assert.equal(await page.evaluate(()=>card._values['home.voltage'].textContent),'—');
  await page.evaluate(()=>{delete config.home.voltage;card.setConfig(config)});
@@ -167,3 +167,4 @@ const root = path.resolve(__dirname, '..');
  await page.setViewportSize({width:1060,height:900});await page.waitForTimeout(80);await verifyLayout('preview desktop');await page.locator('suris-ecoflow-flow-card').screenshot({path:path.join(root,'preview-desktop.png')});
  assert.deepEqual(errors,[]);console.log('PASS: twenty configurable consumers, strongest six, stable ties and slots, W/kW filtering, independent borders, shared row feeders in home color, static home outline and lower-first filling, automatic height for zero/one/two rows, color presets and native picker, HSL mixing through black, default reset and slider focus, all orthogonal paths and node bounds, add/remove limits, icon picker schema, draft text and colors, focus, configuration feedback, more-info and reduced motion.');await browser.close();
 })().catch(error=>{console.error(error);process.exit(1)});
+

@@ -175,6 +175,20 @@ const root = path.resolve(__dirname, '..');
   return{count:forms.length,events:events.length,home:final.home.power,transfer:final.auxiliary_1.transfer_power,solar2:final.main.solar_input_power_2,color3:final.appearance.auxiliary_2_color,stable};
  });
  assert.deepEqual(result,{count:7,events:4,home:'sensor.new_home',transfer:'sensor.a_dc',solar2:'sensor.pv2',color3:'#ff8800',stable:true});
+ const namedEditor=await page.evaluate(async()=>{
+  const editor=await customElements.get('suris-ecoflow-flow-card').getConfigElement();editor.setConfig(config);editor.hass={states};document.body.append(editor);
+  const initial=[...editor.shadowRoot.querySelectorAll('ha-form')],events=[];editor.addEventListener('config-changed',e=>{events.push(e.detail.config);editor.setConfig(e.detail.config)});
+  for(const index of [1,5]) {
+   const form=initial[index];if(!form.schema.find(field=>field.name==='show_name')?.selector.boolean)throw new Error('Missing name visibility switch');
+   if(form.computeLabel({name:'show_name'})!=='Показувати назву над блоком у боковому вигляді')throw new Error('Missing Ukrainian name visibility label');
+   form.dispatchEvent(new CustomEvent('value-changed',{detail:{value:{...form.data,name:index===1?'Мережа':'Квартира',show_name:true}},bubbles:true,composed:true}));
+  }
+  const final=events.at(-1);const stable=initial.every((form,i)=>editor.shadowRoot.querySelectorAll('ha-form')[i]===form);
+  editor.setConfig({...final,language:'en'});
+  const english=editor.shadowRoot.querySelectorAll('ha-form')[1].computeLabel({name:'show_name'});editor.remove();
+  return{grid:final.grid.name,home:final.home.name,gridVisible:final.grid.show_name,homeVisible:final.home.show_name,stable,english};
+ });
+ assert.deepEqual(namedEditor,{grid:'Мережа',home:'Квартира',gridVisible:true,homeVisible:true,stable:true,english:'Show name above the block in Side flow'});
  // Exercise real keystrokes and the parent configuration feedback used by Home Assistant.
  await page.evaluate(async()=>{
   window.editor=await customElements.get('suris-ecoflow-flow-card').getConfigElement();editor.hass={states};editor.setConfig(config);document.body.append(editor);
@@ -361,3 +375,4 @@ const root = path.resolve(__dirname, '..');
  console.log('PASS: clockwise supplying outlines, continuous wattage-dependent outline speed, source switching, seven orthogonal flows, correct endpoints, matching dash paths and wattage-dependent speed, straight first-station transfer, one-corner home feed, unavailable data, kW conversion, unsupported units, threshold, XT60 labels, independent battery charge levels, unavailable charge, transparent light/dark/gradient themes, home input without approximation symbol, named/HEX/RGB/HSL colors, total input, editor clearing and typing, focus and cursor, draft validation, configuration feedback, saved selections, stable preview, more-info, all rows on one line at mobile widths, W/kW in both languages, mobile bounds, reduced motion, empty configuration.');
  await browser.close();
 })().catch(error=>{console.error(error);process.exit(1)});
+

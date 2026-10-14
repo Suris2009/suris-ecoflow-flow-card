@@ -22,8 +22,9 @@ const server = http.createServer((req, res) => {
       { name: 'sideflow-grid', layout: 'sideflow', mode: 'grid', theme: 'dark', animation: 'dots' },
       { name: 'classic-grid', layout: 'classic', mode: 'grid', theme: 'dark', animation: 'arrows' },
       { name: 'sideflow-main', layout: 'sideflow', mode: 'main', theme: 'dark', animation: 'arrows' },
-      { name: 'sideflow-outage', layout: 'sideflow', mode: 'outage', theme: 'light', animation: 'single_dot' }
-    ]) {
+      { name: 'sideflow-outage', layout: 'sideflow', mode: 'outage', theme: 'light', animation: 'single_dot' },
+      { name: 'sideflow-names', layout: 'sideflow', mode: 'grid', theme: 'dark', animation: 'dots', names: true }
+    ].filter(shot => !process.env.SURIS_PREVIEW_SHOT || shot.name === process.env.SURIS_PREVIEW_SHOT)) {
       const page = await browser.newPage({ viewport: { width: 430, height: 1000 }, deviceScaleFactor: 2 });
       const errors = []; page.on('pageerror', error => errors.push(error.message));
       await page.goto(`http://127.0.0.1:${server.address().port}`);
@@ -47,6 +48,7 @@ const server = http.createServer((req, res) => {
         const states = { 'sensor.grid': s(grid ? 2700 : 0), 'binary_sensor.grid': s(grid ? 'on' : 'off'), 'sensor.a_soc': s(68, '%'), 'sensor.b_soc': s(81, '%'), 'sensor.m_soc': s(80, '%'), 'sensor.a_in': s(grid ? 200 : 0), 'sensor.b_in': s(grid ? 100 : 0), 'sensor.a_out': s(transfer ? 350 : 0), 'sensor.b_out': s(transfer ? 300 : 0), 'sensor.m_in': s(grid ? 300 : transfer ? 650 : 0), 'sensor.m_ac': s(grid ? 300 : 0), 'sensor.m_pv1': s(transfer ? 350 : 0), 'sensor.m_pv2': s(transfer ? 300 : 0), 'sensor.m_out': s(grid ? 0 : 2100), 'sensor.voltage': s(grid ? 230 : 228, 'V') };
         devices.forEach(([id, , , watts]) => states[`sensor.${id}`] = s(watts));
         const config = { type: 'custom:suris-ecoflow-flow-card', title: language === 'uk' ? 'Енергопотоки' : 'Energy flows', language, grid: { name: language === 'uk' ? 'Міська мережа' : 'City grid', power: 'sensor.grid', available_entity: 'binary_sensor.grid', available_state: 'on' }, auxiliary_1: { name: 'DELTA Max', soc: 'sensor.a_soc', input_power: 'sensor.a_in', output_power: 'sensor.a_out' }, auxiliary_2: { name: 'RIVER Max', soc: 'sensor.b_soc', input_power: 'sensor.b_in', output_power: 'sensor.b_out' }, main: { name: 'DELTA 2 Max', soc: 'sensor.m_soc', input_power: 'sensor.m_in', output_power: 'sensor.m_out', ac_input_power: 'sensor.m_ac', solar_input_power: 'sensor.m_pv1', solar_input_power_2: 'sensor.m_pv2' }, home: { name: language === 'uk' ? 'Дім' : 'Home', voltage: 'sensor.voltage' }, consumers: devices.map(([id, icon, color], i) => ({ id, name: names[i], icon, color, power: `sensor.${id}` })), appearance: { layout: shot.layout, animation: shot.animation, duration: 3, dot_size: 5, auxiliary_2_color: '#ff941e' } };
+        if (shot.names) { config.grid.show_name = true; config.home.show_name = true; }
         window.card = document.createElement('suris-ecoflow-flow-card'); card.setConfig(config); card.hass = { states }; document.querySelector('#host').append(card);
       }, { iconPaths, language, shot });
       await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));

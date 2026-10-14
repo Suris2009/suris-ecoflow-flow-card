@@ -31,15 +31,15 @@ const server = http.createServer((req, res) => {
       const nodes = Object.fromEntries([...card.shadowRoot.querySelectorAll('.node')].map(node => { const r = node.getBoundingClientRect(); return [node.dataset.key, { left: r.left - d.left, top: r.top - d.top, right: r.right - d.left, bottom: r.bottom - d.top }]; }));
       const paths = Object.values(card._flows).map(flow => { const p = flow.querySelector('.flow-track'), length = p.getTotalLength(); return { name: flow.dataset.flow, length, color: getComputedStyle(p).stroke, trackVisible: getComputedStyle(p).visibility, active: flow.classList.contains('active'), samples: Array.from({ length: 121 }, (_, i) => { const q = p.getPointAtLength(length * i / 120); return { x: q.x, y: q.y }; }) }; });
       const fontSizes = [...card.shadowRoot.querySelectorAll('.node h3,.row,.consumer .value')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height).map(e => parseFloat(getComputedStyle(e).fontSize));
-      const clipped = [...card.shadowRoot.querySelectorAll('.node h3,.value,.label,.grid-outage')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height && !e.hidden).map(e => ({ text: e.textContent, clipped: e.scrollWidth > e.clientWidth + 1, width:e.clientWidth, scrollWidth:e.scrollWidth, font:getComputedStyle(e).fontSize, wrap:getComputedStyle(e).overflowWrap, whitespace:getComputedStyle(e).whiteSpace }));
-      const identities = ['grid', 'home'].map(key => { const node = card._nodes[key]; return { name: getComputedStyle(node.querySelector('h3')).display, icon: getComputedStyle(node.querySelector('.icon')).display, svg: getComputedStyle(node.querySelector('.icon svg')).display }; });
+      const clipped = [...card.shadowRoot.querySelectorAll('.node h3,.value,.label,.grid-outage')].filter(e => getComputedStyle(e).display !== 'none' && e.getBoundingClientRect().height && !e.hidden).map(e => ({ text: e.textContent, clipped: e.scrollWidth > e.clientWidth + 1, optionalName: e.matches('.show-name.grid h3,.show-name.home h3') && getComputedStyle(e).textOverflow === 'ellipsis' && e.title === e.textContent, width:e.clientWidth, scrollWidth:e.scrollWidth, font:getComputedStyle(e).fontSize, wrap:getComputedStyle(e).overflowWrap, whitespace:getComputedStyle(e).whiteSpace }));
+      const identities = ['grid', 'home'].map(key => { const node = card._nodes[key], heading = node.querySelector('h3'), r = heading.getBoundingClientRect(); return { key, enabled: card._config[key].show_name === true, name: getComputedStyle(heading).display, text: heading.textContent, expected: card._config[key].name, tooltip: heading.title, box: { left:r.left-d.left, right:r.right-d.left, top:r.top-d.top, bottom:r.bottom-d.top }, icon: getComputedStyle(node.querySelector('.icon')).display, svg: getComputedStyle(node.querySelector('.icon svg')).display }; });
       const powerFonts = ['grid.output', 'home.power'].map(key => getComputedStyle(card._values[key]).fontSize);
       const captions = [...card._consumerNodes.values()].map(node => { const h = node.querySelector('h3'), style = getComputedStyle(h); return { text: h.textContent, full: h.title, aria: h.getAttribute('aria-label'), whitespace: style.whiteSpace, height: h.getBoundingClientRect().height, lineHeight: parseFloat(style.lineHeight), fontSize: parseFloat(style.fontSize) }; });
       const consumerIcons = [...card._consumerNodes.entries()].map(([id, node]) => {
         const artwork = node.querySelector('.icon'), haIcon = artwork.querySelector('ha-icon'), fallback = artwork.querySelector('.fallback'), r = node.getBoundingClientRect(), icon = artwork.getBoundingClientRect(), title = node.querySelector('h3').getBoundingClientRect(), value = node.querySelector('.value').getBoundingClientRect(), image = (haIcon.shadowRoot?.querySelector('ha-svg-icon')?.shadowRoot?.querySelector('svg') || fallback.querySelector('svg')).getBoundingClientRect();
         return { id, display: getComputedStyle(artwork).display, height: icon.height, assigned: haIcon.getAttribute('icon'), expected: card._config.consumers.find(c => c.id === id).icon, fallback: getComputedStyle(fallback).display, defined: !!customElements.get('ha-icon'), iconTop: icon.top, iconBottom: icon.bottom, titleTop: title.top, titleBottom: title.bottom, valueTop: value.top, valueBottom: value.bottom, nodeTop: r.top, nodeBottom: r.bottom, imageCenter: (image.top + image.bottom) / 2, imageMiddleX: (image.left + image.right) / 2, containerMiddleX: (icon.left + icon.right) / 2 };
       });
-      return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped, identities, powerFonts, captions, consumerIcons };
+      return { width: d.width, height: d.height, nodes, paths, fontSizes, clipped, identities, powerFonts, captions, consumerIcons, homeBorder: parseFloat(getComputedStyle(card._nodes.home).borderTopWidth) };
     });
     const onBorder = (p, r) => p.x >= r.left - .3 && p.x <= r.right + .3 && p.y >= r.top - .3 && p.y <= r.bottom + .3 && Math.min(Math.abs(p.x - r.left), Math.abs(p.x - r.right), Math.abs(p.y - r.top), Math.abs(p.y - r.bottom)) < .3;
     const intersects = (a, b, c, d) => {
@@ -50,9 +50,21 @@ const server = http.createServer((req, res) => {
       await settled(); const g = await geometry();
       assert.equal(g.paths.length, 7 + count, `${label}: one direct route per consumer`);
       assert(Math.min(...g.fontSizes) >= 11, `${label}: unreadable text`);
-      assert(!g.clipped.some(e => e.clipped), `${label}: clipped text ${JSON.stringify(g.clipped.filter(e => e.clipped))}`);
+      assert(!g.clipped.some(e => e.clipped && !e.optionalName), `${label}: clipped text ${JSON.stringify(g.clipped.filter(e => e.clipped && !e.optionalName))}`);
       assert.equal(g.powerFonts[0], g.powerFonts[1], `${label}: grid output and home input must use the same font size`);
-      assert(g.identities.every(n => n.name === 'none' && n.icon === 'flex'), `${label}: grid/home must show icons instead of names`);
+      assert.equal(g.homeBorder, 4, `${label}: home border thickness`);
+      for (const identity of g.identities) {
+        assert.equal(identity.name, identity.enabled ? 'block' : 'none', `${label}: wrong optional name visibility`);
+        assert.equal(identity.icon, 'flex', `${label}: grid/home icon hidden`);
+        if (identity.enabled) {
+          assert.equal(identity.text, identity.expected, `${label}: custom name changed`);
+          assert.equal(identity.tooltip, identity.expected, `${label}: full name tooltip missing`);
+          const r = identity.box;
+          assert(r.top >= -.3 && r.left >= -.3 && r.right <= g.width + .3 && r.bottom < g.nodes[identity.key].top, `${label}: name is not above its block or leaves the card`);
+          for (const q of Object.values(g.nodes)) assert(!(r.left < q.right - .3 && r.right > q.left + .3 && r.top < q.bottom - .3 && r.bottom > q.top + .3), `${label}: name overlaps a block`);
+          for (const path of g.paths) for (const p of path.samples) assert(!(p.x > r.left + .3 && p.x < r.right - .3 && p.y > r.top + .3 && p.y < r.bottom - .3), `${label}: flow overlaps name`);
+        }
+      }
       const consumers = Object.entries(g.nodes).filter(([key]) => key.startsWith('consumer:')).map(([, r]) => ({ width: r.right - r.left, height: r.bottom - r.top }));
       for (const c of consumers) {
         assert(c.width > c.height + 10, `${label}: consumer must be a wider rectangle`);
@@ -104,6 +116,28 @@ const server = http.createServer((req, res) => {
       await page.setViewportSize({ width, height: 900 });
       for (let count = 0; count <= 6; count++) { await page.evaluate(count => setCount(count), count); const g = await verify(`${width}px / ${count} consumers`, count); if (width === 390) assert(g.height <= 410, `Compact side flow became too tall: ${JSON.stringify({height:g.height,nodes:g.nodes})}`); }
     }
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.evaluate(() => setCount(6));
+    const originalModel = await page.evaluate(() => JSON.stringify(card._data));
+    for (const width of [320, 390, 768, 1150]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.evaluate(() => { config.grid.show_name = false; config.home.show_name = false; card.setConfig(config); refresh(); });
+      const original = await verify('names off at ' + width, 6);
+      for (const [gridName, homeName] of [[true, false], [false, true], [true, true]]) {
+        await page.evaluate(([gridName, homeName]) => { config.grid.show_name = gridName; config.home.show_name = homeName; config.grid.name = 'Міська мережа'; config.home.name = 'Квартира'; card.setConfig(config); refresh(); }, [gridName, homeName]);
+        const named = await verify('optional names at ' + width + ' / ' + gridName + ',' + homeName, 6);
+        assert.equal(named.height, original.height, 'Optional names must not increase card height');
+        assert.equal(await page.evaluate(() => JSON.stringify(card._data)), originalModel, 'Names changed the power model');
+      }
+    }
+    await page.setViewportSize({ width: 320, height: 900 });
+    await page.evaluate(() => { config.grid.name = 'Міська мережа з довільною довгою назвою'; config.home.name = 'Сімейна квартира з довільною довгою назвою'; card.setConfig(config); refresh(); });
+    await verify('long custom grid/home names', 6);
+    await page.locator('.layout-switch').click();
+    await page.evaluate(() => { config.grid.show_name = false; card.setConfig(config); refresh(); });
+    assert.equal(await page.evaluate(() => card._layout), 'classic', 'Changing name visibility reset the saved view');
+    await page.locator('.layout-switch').click();
+    await page.evaluate(() => { delete config.grid.show_name; delete config.home.show_name; delete config.grid.name; delete config.home.name; card.setConfig(config); refresh(); });
     await page.setViewportSize({ width: 390, height: 900 });
     await page.evaluate(() => { setCount(6); states['binary_sensor.grid'].state = 'off'; refresh(); });
     await verify('grid outage', 6);

@@ -1,6 +1,6 @@
-# Suris EcoFlow Flow Card 2.1.0
+# Suris EcoFlow Flow Card 2.1.1
 
-[Українська](README.md) · [Stable release 2.1.0](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.0) · [Download JS](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/download/v2.1.0/suris-ecoflow-flow-card.js)
+[Українська](README.md) · [Stable release 2.1.1](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.1) · [Download JS](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/download/v2.1.1/suris-ecoflow-flow-card.js)
 
 A Home Assistant energy flow card that brings the city grid, three EcoFlow stations, Home and individual consumers into one diagram.
 
@@ -34,11 +34,11 @@ Screenshots of the actual card with demonstration readings. Station names, entit
 
 ## Installation and upgrades
 
-Add `https://github.com/Suris2009/suris-ecoflow-flow-card` as a HACS custom Dashboard repository, install **2.1.0**, and reload the Home Assistant frontend. Add **Suris EcoFlow Flow Card** to your dashboard and select entities in the visual editor.
+Add `https://github.com/Suris2009/suris-ecoflow-flow-card` as a HACS custom Dashboard repository, install **2.1.1**, and reload the Home Assistant frontend. Add **Suris EcoFlow Flow Card** to your dashboard and select entities in the visual editor.
 
 HACS resource: `/hacsfiles/suris-ecoflow-flow-card/suris-ecoflow-flow-card.js`, type **JavaScript module**. An existing resource continues to use the same file.
 
-For manual installation, download the release JS file, put it in `www` under your Home Assistant configuration directory, and add `/local/suris-ecoflow-flow-card.js?v=2.1.0` as a **JavaScript module** resource. Restart Home Assistant if you have just created `www` for the first time.
+For manual installation, download the release JS file, put it in `www` under your Home Assistant configuration directory, and add `/local/suris-ecoflow-flow-card.js?v=2.1.1` as a **JavaScript module** resource. Restart Home Assistant if you have just created `www` for the first time.
 
 Upgrading from stable 2.0.8 or a 2.1 beta retains entities, consumers, colors and animation settings. Existing configurations initially use Classic; a Side flow selection already saved in the browser is also retained. No duplicate card or resource is needed.
 
@@ -60,6 +60,12 @@ appearance:
 ```
 
 `layout` accepts `classic` or `sideflow`. Button selections are stored locally for this card and browser without changing sensor configuration.
+
+## Grid and Home names
+
+In **City grid** and **Home**, enter text in **Name** and enable **Show name above the block in Side flow**. Each name is controlled independently and appears above its frame. Long names are truncated, with the full text in a tooltip. Names are hidden by default and do not increase the card height.
+
+<img src="preview-sideflow-names-en.png" width="390" alt="Side flow with grid and Home names above the frames">
 
 ## Individual consumers
 
