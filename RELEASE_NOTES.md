@@ -1,31 +1,36 @@
-# 2.1.3 — Stable / Стабільний випуск
+# 2.1.4-beta.1 — Battery layout preview / Попередній вигляд батарей
 
-## Українська
+Це підготовлена бета у гілці `preview/2.1.4-beta.1`. Реліз і встановлення в Home Assistant ще не виконувались.
 
-Стабільна версія на основі перевіреної **2.1.3-beta.3**. Неактивні сірі лінії прибрано; показано лише активні потоки.
+- Додано перемикач «Показувати другу допоміжну станцію» в її розділі редактора. Вимкнення прибирає блок та обидва його маршрути. Збережені сутності й розрахунок реального споживання залишаються доступними.
+- Коли друга допоміжна станція прихована, у боковому вигляді блок першої ширший на 25%, головної — приблизно на 8%.
+- У боковому вигляді головна й перша допоміжна станції мають значки батарей. Заповнення відповідає заряду: 0–20% — червоне, понад 20–50% — жовте, понад 50% — зелене. Недоступний заряд показано порожнім сірим значком із рискою.
+- Демонстраційний варіант показує DELTA 2 Max та DELTA Max 2000; RIVER Max приховано. Показники на зображенні умовні.
 
-Зміни від 2.1.1:
+Налаштування для цього варіанта (додаються до наявної конфігурації):
 
-- Прибрано рядок «Мережа» з головної станції. AC-датчик збережено для розрахунків і потоку заряджання.
-- Допоміжні станції розширено під **1,25 kW** в одному рядку, зі збереженням шрифту та положення нижнього ряду.
-- Вихід місто → дім розміщено по центру правої сторони міського блоку.
-- Міську мережу трохи піднято — на 8 px з урахуванням масштабу, щоб подовжити лінію до головної станції.
+```yaml
+auxiliary_2:
+  visible: false
+appearance:
+  layout: sideflow
+```
 
-Форма кривих, активні кольори, анімації, розрахунки та налаштування збережені. Після оновлення перезавантаж інтерфейс Home Assistant.
+Попередні конфігурації з трьома станціями підтримуються: видимість другої допоміжної станції типово увімкнена. Перемикач дозволяє повернути її без повторного налаштування датчиків.
 
-<img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.3/preview-sideflow-feedback-uk.png" width="390" alt="Стабільна картка 2.1.3 з активними потоками">
+Відтворити зображення:
+
+```sh
+SURIS_PREVIEW_SHOT=sideflow-battery-beta npm run previews
+```
+
+![Попередній вигляд](preview-sideflow-battery-beta-uk.png)
 
 ## English
 
-Stable release based on the tested **2.1.3-beta.3**. Inactive grey lines are removed; only active flows are shown.
+Prepared beta source for visual review only. No release, installation or production changes have been made.
 
-Changes from 2.1.1:
-
-- Remove the Grid row from the main station. Retain the AC entity for calculations and the charging flow.
-- Widen auxiliary stations for **1.25 kW** on one line, preserving fonts and the lower-row position.
-- Center the city-to-Home outlet on the city block's right edge.
-- Slightly raise the city grid by 8 px, scaled with the card, to lengthen the line to the main station.
-
-Flow curves, active colors, animations, calculations and settings are retained. Reload the Home Assistant frontend after updating.
-
-<img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.3/preview-sideflow-feedback-en.png" width="390" alt="Stable 2.1.3 card showing active flows">
+- Hide the second auxiliary station and its routes with `auxiliary_2.visible: false` or the visual editor switch; retain its configured entities and power accounting.
+- In Side flow, widen the remaining auxiliary station by 25% and the main station by about 8% when the second auxiliary is hidden.
+- Show battery icons on the main and first auxiliary stations. Live fill and charge colors use their own sensors: red through 20%, amber through 50%, green above 50%; missing or invalid charge clears the fill and shows a grey dash.
+- Preview DELTA 2 Max and DELTA Max 2000 without RIVER Max using demonstration readings.

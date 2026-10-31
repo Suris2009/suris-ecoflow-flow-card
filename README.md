@@ -1,4 +1,10 @@
-# Suris EcoFlow Flow Card 2.1.3
+# Suris EcoFlow Flow Card 2.1.4-beta.1 — Preview
+
+Підготовлений попередній вигляд бети; реліз ще не опубліковано. [Зміни й налаштування](RELEASE_NOTES.md). Стабільна версія — 2.1.3.
+
+<img src="preview-sideflow-battery-beta-uk.png" width="390" alt="DELTA 2 Max і DELTA Max 2000 з кольоровими значками заряду, без RIVER Max">
+
+## Стабільна версія 2.1.3
 
 [English](README_EN.md) · [Стабільний реліз 2.1.3](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.3) · [Завантажити JS](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/download/v2.1.3/suris-ecoflow-flow-card.js)
 

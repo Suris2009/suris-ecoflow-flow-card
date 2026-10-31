@@ -1,15 +1,15 @@
-/* Suris EcoFlow Flow Card v2.1.3 | MIT | No external dependencies. */
+/* Suris EcoFlow Flow Card v2.1.4-beta.1 | MIT | No external dependencies. */
 (() => {
   'use strict';
   const TAG = 'suris-ecoflow-flow-card';
-  const VERSION = '2.1.3';
+  const VERSION = '2.1.4-beta.1';
   const ANIMATIONS = ['dashes', 'dots', 'arrows', 'pulse', 'single_dot'];
   const NS = 'http://www.w3.org/2000/svg';
   let cardSequence = 0;
   const DEFAULTS = {
     type: `custom:${TAG}`, title: 'Енергопотоки', language: 'uk',
     grid: { name: 'Міська мережа' },
-    auxiliary_1: { name: 'EcoFlow №2' }, auxiliary_2: { name: 'EcoFlow №3' },
+    auxiliary_1: { name: 'EcoFlow №2' }, auxiliary_2: { name: 'EcoFlow №3', visible: true },
     main: { name: 'Головна EcoFlow' },
     home: { name: 'Дім' }, consumers: [],
     appearance: { layout: 'classic', show_layout_switch: true, grid_color: '#4b9fff', solar_color: '#ffcc42', main_color: '#27d9d5', threshold: 3, duration: 3, animation: 'dashes', dot_size: 5 }
@@ -70,6 +70,7 @@
     for (const key of ['grid', 'home']) {
       if (result[key].show_name != null && typeof result[key].show_name !== 'boolean') throw new Error(`${key}.show_name must be a boolean`);
     }
+    if (typeof result.auxiliary_2.visible !== 'boolean') throw new Error('auxiliary_2.visible must be a boolean');
     const number = (key) => a[key] == null || a[key] === '' ? DEFAULTS.appearance[key] : Number(a[key]);
     a.threshold = number('threshold'); a.duration = number('duration'); a.dot_size = number('dot_size');
     a.animation ||= 'dashes';
@@ -189,7 +190,7 @@
     .node{position:absolute;display:flex;flex-direction:column;justify-content:center;gap:7px;min-width:0;background:transparent;background:color-mix(in srgb,var(--ha-card-background,var(--card-background-color,#1c1c1c)) 8%,transparent);border:2px solid var(--node-color,var(--divider-color,#60656d));border-radius:12px;padding:12px 10px;z-index:1;min-height:140px;height:auto}
     .flow .flow-particle{fill:var(--color);stroke:none;opacity:.95;visibility:hidden;offset-anchor:0px 0px;offset-rotate:auto}.flow.active .flow-particle{visibility:visible}
     .node.supplying{border-color:transparent}.node-border{position:absolute;overflow:visible;pointer-events:none;display:none;z-index:2}.node-border.active{display:block}.node-border path{fill:none;stroke:var(--node-color);stroke-width:2;stroke-linecap:round;stroke-dasharray:7 7}
-    .node h3{font-size:clamp(12px,1.9cqw,20px);line-height:1.25;text-align:center;margin:0;font-weight:600;overflow-wrap:anywhere}.node .icon{display:flex;justify-content:center;height:clamp(30px,5cqw,56px);margin:4px 0}.icon svg{height:100%;width:64px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.icon .battery-fill{fill:var(--node-color,var(--flow-main));stroke:none}
+    .node h3{font-size:clamp(12px,1.9cqw,20px);line-height:1.25;text-align:center;margin:0;font-weight:600;overflow-wrap:anywhere}.node .icon{display:flex;justify-content:center;height:clamp(30px,5cqw,56px);margin:4px 0}.icon svg{height:100%;width:64px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}.icon .battery-fill{fill:var(--battery-color,var(--node-color,var(--flow-main)));stroke:none}
     .row{display:flex;align-items:baseline;justify-content:space-between;gap:4px;flex-wrap:nowrap;font-size:clamp(11px,1.6cqw,17px);line-height:1.35;min-width:0}.label{color:var(--secondary-text-color,#aaa);white-space:nowrap}.value{flex-shrink:0;font:inherit;color:inherit;font-weight:600;text-align:right;white-space:nowrap;background:none;border:0;padding:0;min-width:0}.value[data-entity]{cursor:pointer}.value:focus-visible{outline:2px solid var(--flow-main);outline-offset:2px}.value:disabled{opacity:1}
     .grid{left:0;top:37%;width:22%}.home{right:0;top:37%;width:22%}.auxiliary_1{left:0;bottom:1%;width:25%}.auxiliary_2{right:0;bottom:1%;width:25%}.main{left:36%;bottom:1%;width:28%;min-height:max(220px,28cqw)}
     .status{margin-top:8px;color:var(--secondary-text-color,#aaa);font-size:12px;min-height:16px;text-align:center}.status:empty{display:none}
@@ -203,6 +204,10 @@
     .sideflow .auxiliary_1,.sideflow .auxiliary_2{padding-inline:1px}
     .sideflow .node h3{font-size:clamp(11.5px,3.625cqw,14.5px);line-height:1.1;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;white-space:normal;overflow-wrap:anywhere}
     .sideflow .node .icon{display:none}.sideflow .row{font-size:clamp(11px,3.25cqw,13px);line-height:1.2;gap:2px}.sideflow .row[hidden]{display:none}
+    .charge-icon{display:none}.charge-icon svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.charge-icon .battery-fill{fill:var(--battery-color);stroke:none}
+    .sideflow .main .soc .label,.sideflow .auxiliary_1 .soc .label{position:relative;padding-left:29px}
+    .sideflow .main .charge-icon,.sideflow .auxiliary_1 .charge-icon{display:inline-flex;position:absolute;left:0;top:50%;transform:translateY(-50%);width:24px;height:15px;color:var(--battery-color,var(--secondary-text-color,#888))}
+    .sideflow.single-auxiliary .auxiliary_1{padding-inline:7px}
     .sideflow .grid h3,.sideflow .home h3{display:none}.sideflow .grid .icon,.sideflow .home .icon{display:flex;height:clamp(28px,8cqw,38px);margin:0}.sideflow .grid .icon{color:var(--flow-grid)}.sideflow .home .icon{color:var(--flow-home)}
     .sideflow .node.home{padding-inline:5px}.sideflow .grid.show-name h3,.sideflow .home.show-name h3{position:absolute;bottom:calc(100% + 6px);left:-14px;right:-14px;display:block;font-size:clamp(11.5px,3.25cqw,13px);line-height:1.2;white-space:nowrap;overflow-wrap:normal;text-overflow:ellipsis}
     .sideflow .home.show-name h3{left:0;right:0}
@@ -212,6 +217,7 @@
     .sideflow .grid.grid-absent .icon{display:flex;height:auto;margin:3px 0 0}.sideflow .grid.grid-absent .icon svg{display:none}.sideflow .grid-outage{position:static;font-size:clamp(11px,3.25cqw,13px);white-space:normal;overflow-wrap:anywhere}
     .sideflow .node.consumer{min-height:45px;padding:3px 2px;gap:3px}.sideflow .consumer h3{display:block;font-size:clamp(11px,2.9cqw,13px);line-height:1.05;white-space:nowrap;overflow-wrap:normal;text-overflow:clip;-webkit-line-clamp:unset}.sideflow .consumer .value{font-size:clamp(11.5px,3.5cqw,14px);line-height:1.1}
     .sideflow .consumer .icon{display:flex;align-items:center;flex:0 0 18px;height:18px;margin:0;line-height:0}.sideflow .consumer ha-icon{display:flex;align-items:center;justify-content:center;line-height:0;--mdc-icon-size:18px;width:18px;height:18px}.sideflow .consumer ha-icon:not(:defined){display:none}.sideflow .consumer .fallback{display:flex;align-items:center;justify-content:center;line-height:0;height:18px}.sideflow .consumer ha-icon:defined+.fallback{display:none}.sideflow .consumer .fallback svg{display:block;width:18px}
+    .node[hidden],.node-border[hidden]{display:none}
     @media(prefers-reduced-motion:reduce){.flow .flow-dashes,.flow .flow-particle{display:none}.flow.active .flow-track{stroke-width:3;opacity:.92}.grid-outage{animation:none}}
   `;
   class SurisEcoFlowFlowCard extends HTMLElement {
@@ -263,6 +269,10 @@
     _applyLayout() {
       const text = t(this._config), sideflow = this._layout === 'sideflow';
       this.shadowRoot.querySelector('.wrap').classList.toggle('sideflow', sideflow);
+      const showAuxiliary2 = this._config.auxiliary_2.visible;
+      this.shadowRoot.querySelector('.wrap').classList.toggle('single-auxiliary', !showAuxiliary2);
+      this._nodes.auxiliary_2.hidden = !showAuxiliary2;
+      this._borders.auxiliary_2.hidden = !showAuxiliary2;
       const button = this.shadowRoot.querySelector('.layout-switch');
       button.hidden = !this._config.appearance.show_layout_switch;
       button.textContent = text.view;
@@ -273,8 +283,9 @@
         this._nodes[key].classList.toggle('show-name', this._config[key].show_name === true);
         this._nodes[key].querySelector('h3').title = this._config[key].name;
       }
-      if (this._appliedLayout === this._layout) return;
-      this._appliedLayout = this._layout; this._geometry = '';
+      const layoutKey = `${this._layout}:${showAuxiliary2}`;
+      if (this._appliedLayout === layoutKey) return;
+      this._appliedLayout = layoutKey; this._geometry = '';
       for (const node of [...Object.values(this._nodes), ...this._consumerNodes.values()]) {
         for (const property of ['left', 'top', 'right', 'bottom', 'width', 'height', 'min-height']) node.style.removeProperty(property);
         for (const row of node.querySelectorAll('.row')) { row.classList.remove('side-stack'); row.style.removeProperty('font-size'); }
@@ -288,6 +299,11 @@
     _row(node, field, label) {
       const row = document.createElement('div'); row.className = `row ${field}`;
       const caption = document.createElement('span'); caption.className = 'label'; caption.textContent = label;
+      if (field === 'soc' && ['main', 'auxiliary_1'].includes(node.dataset.key)) {
+        const charge = document.createElement('span'); charge.className = 'charge-icon';
+        charge.innerHTML = '<svg viewBox="0 0 40 22"><rect x="2" y="3" width="32" height="16" rx="2"/><path d="M35 8h2v6h-2"/><rect class="battery-fill" x="5" y="6" width="0" height="10" rx="1"/><path class="battery-unknown" d="M13 11h10"/></svg>';
+        caption.prepend(charge);
+      }
       const value = document.createElement('button'); value.className = 'value'; value.type = 'button';
       value.addEventListener('click', () => {
         if (value.dataset.entity) this.dispatchEvent(new CustomEvent('hass-more-info', { bubbles: true, composed: true, detail: { entityId: value.dataset.entity } }));
@@ -378,12 +394,21 @@
       }
       this._fitRows();
       for (const key of ['auxiliary_1', 'auxiliary_2', 'main']) {
-        const soc = data[key].soc, battery = this._nodes[key].querySelector('.icon svg');
+        const soc = data[key].soc;
         const known = soc != null && soc >= 0 && soc <= 100;
-        const height = known ? 33 * soc / 100 : 0;
-        const fill = battery.querySelector('.battery-fill');
-        fill.setAttribute('height', String(height)); fill.setAttribute('y', String(52 - height));
-        battery.querySelector('.battery-unknown').style.display = known ? 'none' : '';
+        const color = !known ? 'var(--secondary-text-color,#888)' : soc <= 20 ? '#ef4444' : soc <= 50 ? '#f59e0b' : '#22c55e';
+        for (const battery of this._nodes[key].querySelectorAll('.icon svg,.charge-icon svg')) {
+          battery.parentElement.style.setProperty('--battery-color', color);
+          battery.setAttribute('role', 'img'); battery.removeAttribute('aria-hidden');
+          battery.setAttribute('aria-label', `${c[key].name}, ${text.soc}: ${known ? `${formatter.format(soc)}%` : text.unavailable}`);
+          const fill = battery.querySelector('.battery-fill');
+          if (battery.parentElement.classList.contains('charge-icon')) fill.setAttribute('width', String(known ? 26 * soc / 100 : 0));
+          else {
+            const height = known ? 33 * soc / 100 : 0;
+            fill.setAttribute('height', String(height)); fill.setAttribute('y', String(52 - height));
+          }
+          battery.querySelector('.battery-unknown').style.display = known ? 'none' : '';
+        }
       }
       const status = this.shadowRoot.querySelector('.status');
       status.textContent = data.home.source === 'unknown' ? text.sourceUnknown : '';
@@ -466,10 +491,11 @@
       const gridSize = Math.max(74, Math.min(110, 88 * sx));
       const gridTitleSpace = this._config.grid.show_name ? Math.ceil(this._nodes.grid.querySelector('h3').getBoundingClientRect().height) + 6 : 0;
       place(this._nodes.grid, Math.max(14, 22 * sx), 4 * sy + gridTitleSpace, gridSize, gridSize);
-      place(this._nodes.main, Math.max(12, 10 * sx), 0, 126 * sx);
+      const singleAuxiliary = !this._config.auxiliary_2.visible;
+      place(this._nodes.main, Math.max(12, 10 * sx), 0, (singleAuxiliary ? 136 : 126) * sx);
       place(this._nodes.home, 176 * sx, 0, 84 * sx);
       this._nodes.home.style.minHeight = `${90 * sy}px`;
-      const auxWidth = Math.max(110, 120 * sx);
+      const auxWidth = singleAuxiliary ? Math.max(124, 150 * sx) : Math.max(110, 120 * sx);
       place(this._nodes.auxiliary_1, Math.max(12, 8 * sx), 0, auxWidth);
       place(this._nodes.auxiliary_2, 124 * sx + auxWidth - 100 * sx, 0, auxWidth);
       const consumerHeight = Math.max(60, Math.min(64, width * .16)), rightInset = 3 * sx;
@@ -485,7 +511,7 @@
       for (const key of ['auxiliary_1', 'auxiliary_2']) this._nodes[key].style.top = `${auxY}px`;
       const step = consumerHeight + 4 * sy;
       for (const node of this._consumerNodes.values()) node.style.top = `${12 * sy + Number(node.dataset.slot) * step}px`;
-      const nodeBottom = Math.max(...[...Object.values(this._nodes), ...this._consumerNodes.values()].map(node => node.offsetTop + node.offsetHeight));
+      const nodeBottom = Math.max(...[...Object.values(this._nodes), ...this._consumerNodes.values()].filter(node => !node.hidden).map(node => node.offsetTop + node.offsetHeight));
       const auxBottom = Math.max(...['auxiliary_1', 'auxiliary_2'].map(key => this._nodes[key].offsetTop + this._nodes[key].offsetHeight));
       this._diagram.style.height = `${Math.max(nodeBottom + 12, auxBottom + 18 * sy)}px`;
       this._diagram.dataset.consumerRows = String(this._consumerNodes.size);
@@ -535,7 +561,7 @@
     _syncBorders() {
       for (const [key, border] of Object.entries(this._borders || {})) {
         const outgoing = Object.keys(this._data?.flows || {}).filter(name => name.startsWith(`${key}_`) && this._data.flows[name]);
-        const active = key !== 'home' && outgoing.length > 0, animation = border._animation;
+        const active = key !== 'home' && !this._nodes[key].hidden && outgoing.length > 0, animation = border._animation;
         this._nodes[key].classList.toggle('supplying', active); border.classList.toggle('active', active);
         const watts = outgoing.reduce((total, name) => total + this._data.flow_power[name], 0);
         animation.updatePlaybackRate(flowSpeed(watts, this._config.appearance.duration) / 14);
@@ -548,6 +574,7 @@
       const base = this._diagram.getBoundingClientRect();
       for (const [key, border] of Object.entries(this._borders || {})) {
         const node = this._nodes[key], { width: w, height: h, left, top } = node.getBoundingClientRect();
+        if (node.hidden) continue;
         if (!w || !h) continue;
         Object.assign(border.style, { left: `${left - base.left}px`, top: `${top - base.top}px`, width: `${w}px`, height: `${h}px` });
         const r = Math.max(0, Math.min(parseFloat(getComputedStyle(node).borderTopLeftRadius) - 1, (w - 2) / 2, (h - 2) / 2));
@@ -666,7 +693,11 @@
       this._paintRoutes(base, rect, routes, journeys, false);
     }
     _paintRoutes(base, rect, routes, journeys, direct) {
-      const geometry = JSON.stringify([routes, journeys, this._config.appearance.animation, direct]); if (geometry === this._geometry && this._svg.childElementCount) return;
+      if (!this._config.auxiliary_2.visible) {
+        delete routes.grid_auxiliary_2;
+        delete routes.auxiliary_2_main;
+      }
+      const geometry = JSON.stringify([base.width, base.height, routes, journeys, this._config.appearance.animation, direct]); if (geometry === this._geometry && this._svg.childElementCount) return;
       const oldFlows = this._flows;
       for (const [name, flow] of Object.entries(oldFlows)) if (!(name in routes)) for (const animation of flow._animations || []) animation.cancel();
       this._geometry = geometry; this._svg.setAttribute('viewBox', `0 0 ${base.width} ${base.height}`); this._svg.replaceChildren(); this._flows = {};
@@ -675,6 +706,7 @@
       for (const [attribute, value] of Object.entries({ x: 0, y: 0, width: base.width, height: base.height })) mask.setAttribute(attribute, String(value));
       const area = document.createElementNS(NS, 'rect'); area.setAttribute('width', String(base.width)); area.setAttribute('height', String(base.height)); area.setAttribute('fill', 'white'); mask.append(area);
       for (const [key, node] of [...Object.entries(this._nodes), ...[...this._consumerNodes].map(([id, node]) => [`consumer:${id}`, node])]) {
+        if (node.hidden) continue;
         const bounds = rect(key), cutout = document.createElementNS(NS, 'rect');
         for (const [attribute, value] of Object.entries({ x: bounds.x, y: bounds.y, width: bounds.w, height: bounds.h, rx: parseFloat(getComputedStyle(node).borderTopLeftRadius) })) cutout.setAttribute(attribute, String(value));
         cutout.setAttribute('fill', 'black'); mask.append(cutout);
@@ -709,6 +741,8 @@
   };
   Object.assign(FIELD_LABELS.uk, { layout: 'Розташування блоків', show_layout_switch: 'Кнопка перемикання вигляду', show_name: 'Показувати назву над блоком у боковому вигляді', voltage: 'Напруга дому (необов’язково)', available_entity: 'Наявність міської мережі (необов’язково)' });
   Object.assign(FIELD_LABELS.en, { layout: 'Block layout', show_layout_switch: 'Show view switch', show_name: 'Show name above the block in Side flow', voltage: 'Home voltage (optional)', available_entity: 'Grid availability (optional)' });
+  Object.assign(FIELD_LABELS.uk, { visible: 'Показувати другу допоміжну станцію' });
+  Object.assign(FIELD_LABELS.en, { visible: 'Show the second auxiliary station' });
   const entityField = (name, power = true) => ({ name, selector: { entity: power ? { domain: 'sensor' } : {} } });
   const textField = (name) => ({ name, selector: { text: {} } });
   const rgbToHsl = hex => {
@@ -825,7 +859,7 @@
         ['', text.settings, [textField('title'), { name: 'language', selector: { select: { options: [{ value: 'uk', label: 'Українська' }, { value: 'en', label: 'English' }], mode: 'dropdown' } } }], ''],
         ['grid', text.grid, [textField('name'), { name: 'show_name', selector: { boolean: {} } }, entityField('power'), entityField('available_entity', false), textField('available_state')], text.gridHint],
         ['auxiliary_1', c.auxiliary_1.name || DEFAULTS.auxiliary_1.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
-        ['auxiliary_2', c.auxiliary_2.name || DEFAULTS.auxiliary_2.name, [...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
+        ['auxiliary_2', c.auxiliary_2.name || DEFAULTS.auxiliary_2.name, [{ name: 'visible', selector: { boolean: {} } }, ...stationSchema, entityField('grid_charge_power'), entityField('transfer_power')], text.auxHint],
         ['main', text.main, [...stationSchema, entityField('ac_input_power'), entityField('solar_input_power'), entityField('solar_input_power_2'), entityField('home_feed_power')], text.mainHint],
         ['home', text.home, [textField('name'), { name: 'show_name', selector: { boolean: {} } }, entityField('power'), { name: 'voltage', selector: { entity: { domain: 'sensor', device_class: 'voltage' } } }], `${text.sourceHint} ${text.homeDerived}`],
         ['appearance', c.language === 'en' ? 'Flow appearance' : 'Вигляд потоків', [{ name: 'layout', selector: { select: { mode: 'dropdown', options: ['classic', 'sideflow'].map(value => ({ value, label: text[value] })) } } }, { name: 'show_layout_switch', selector: { boolean: {} } }, { name: 'animation', selector: { select: { mode: 'dropdown', options: ANIMATIONS.map((value, i) => ({ value, label: (c.language === 'en' ? ['Current animation (dashes)', 'Moving dots', 'Moving arrows', 'Pulsing light strips', 'One moving dot'] : ['Поточна анімація (штрихи)', 'Рухомі точки', 'Рухомі стрілки', 'Пульсуючі світлові смуги', 'Одна рухома точка'])[i] })) } } }, { name: 'dot_size', selector: { number: { min: 2, max: 10, step: 1, mode: 'slider', unit_of_measurement: 'px' } } }, textField('grid_color'), textField('auxiliary_1_color'), textField('auxiliary_2_color'), textField('main_color'), { name: 'threshold', selector: { number: { min: 0, max: 1000, step: 1, mode: 'box', unit_of_measurement: text.watts } } }, { name: 'duration', selector: { number: { min: .5, max: 20, step: .5, mode: 'box', unit_of_measurement: 's' } } }], `${text.flowHint} ${c.language === 'en' ? 'Open a color below to choose a swatch or mix hue, saturation and brightness. Each source color applies to its border and outgoing flows. Home uses its active source color. Colors: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). An empty field restores the default color.' : 'Відкрий колір нижче, щоб обрати зразок або змішати відтінок, насиченість і яскравість. Колір джерела застосовується до його рамки та вихідних потоків. Рамка дому має колір активного джерела. Кольори: red, green, #ff0000, rgb(255, 0, 0), hsl(120, 100%, 25%). Порожнє поле повертає типовий колір.'}`]

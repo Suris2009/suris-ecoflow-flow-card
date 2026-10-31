@@ -24,7 +24,8 @@ const server = http.createServer((req, res) => {
       { name: 'sideflow-main', layout: 'sideflow', mode: 'main', theme: 'dark', animation: 'arrows' },
       { name: 'sideflow-outage', layout: 'sideflow', mode: 'outage', theme: 'light', animation: 'single_dot' },
       { name: 'sideflow-names', layout: 'sideflow', mode: 'grid', theme: 'dark', animation: 'dots', names: true },
-      { name: 'sideflow-feedback', layout: 'sideflow', mode: 'feedback', theme: 'light', animation: 'dots', names: true }
+      { name: 'sideflow-feedback', layout: 'sideflow', mode: 'feedback', theme: 'light', animation: 'dots', names: true },
+      { name: 'sideflow-battery-beta', layout: 'sideflow', mode: 'battery-preview', theme: 'light', animation: 'dots', names: true }
     ].filter(shot => !process.env.SURIS_PREVIEW_SHOT || shot.name === process.env.SURIS_PREVIEW_SHOT)) {
       const page = await browser.newPage({ viewport: { width: 430, height: 1000 }, deviceScaleFactor: 2 });
       const errors = []; page.on('pageerror', error => errors.push(error.message));
@@ -50,7 +51,7 @@ const server = http.createServer((req, res) => {
         devices.forEach(([id, , , watts]) => states[`sensor.${id}`] = s(watts));
         const config = { type: 'custom:suris-ecoflow-flow-card', title: language === 'uk' ? 'Енергопотоки' : 'Energy flows', language, grid: { name: language === 'uk' ? 'Міська мережа' : 'City grid', power: 'sensor.grid', available_entity: 'binary_sensor.grid', available_state: 'on' }, auxiliary_1: { name: 'DELTA Max', soc: 'sensor.a_soc', input_power: 'sensor.a_in', output_power: 'sensor.a_out' }, auxiliary_2: { name: 'RIVER Max', soc: 'sensor.b_soc', input_power: 'sensor.b_in', output_power: 'sensor.b_out' }, main: { name: 'DELTA 2 Max', soc: 'sensor.m_soc', input_power: 'sensor.m_in', output_power: 'sensor.m_out', ac_input_power: 'sensor.m_ac', solar_input_power: 'sensor.m_pv1', solar_input_power_2: 'sensor.m_pv2' }, home: { name: language === 'uk' ? 'Дім' : 'Home', voltage: 'sensor.voltage' }, consumers: devices.map(([id, icon, color], i) => ({ id, name: names[i], icon, color, power: `sensor.${id}` })), appearance: { layout: shot.layout, animation: shot.animation, duration: 3, dot_size: 5, auxiliary_2_color: '#ff941e' } };
         if (shot.names) { config.grid.show_name = true; config.home.show_name = true; }
-        if (shot.mode === 'feedback') {
+        if (['feedback', 'battery-preview'].includes(shot.mode)) {
           config.grid.name = language === 'uk' ? 'Місто' : 'City';
           const fixture = [['floor', language === 'uk' ? 'Тепла підлога' : 'Floor heating', 'mdi:heat-wave', '#ff9b18', 74], ['fridge', language === 'uk' ? 'Холодильник' : 'Fridge', 'mdi:fridge', '#4b9fff', 69], ['lamp', language === 'uk' ? 'Торшер' : 'Floor lamp', 'mdi:floor-lamp', '#67a921', 11], ['dryer', language === 'uk' ? 'Сушарка' : 'Dryer', 'mdi:heating-coil', '#9d4564', 6]];
           config.consumers = fixture.map(([id, name, icon, color, watts]) => { states[`sensor.${id}`] = s(watts); return { id, name, icon, color, power: `sensor.${id}` }; });
@@ -58,6 +59,14 @@ const server = http.createServer((req, res) => {
           states['sensor.m_out'] = s(313); states['sensor.m_soc'] = s(71, '%'); states['sensor.voltage'] = s(231, 'V');
           states['sensor.a_soc'] = s('unavailable', '%'); states['sensor.b_soc'] = s('unavailable', '%');
           config.appearance.main_color = '#df3948'; config.appearance.auxiliary_1_color = '#47bd79';
+          if (shot.mode === 'battery-preview') {
+            config.auxiliary_1.name = 'DELTA Max 2000';
+            config.auxiliary_2.visible = false;
+            states['sensor.a_soc'] = s(44, '%');
+            states['sensor.a_out'] = s(120);
+            states['sensor.m_in'] = s(120);
+            states['sensor.m_pv1'] = s(120);
+          }
         }
         window.card = document.createElement('suris-ecoflow-flow-card'); card.setConfig(config); card.hass = { states }; document.querySelector('#host').append(card);
       }, { iconPaths, language, shot });
@@ -65,12 +74,25 @@ const server = http.createServer((req, res) => {
       await page.evaluate(() => { card._drawPaths(); for (const flow of Object.values(card._flows)) flow._animations.forEach((a, i, list) => { a.pause(); a.currentTime = 1000 * (i + .5) / list.length; }); for (const border of Object.values(card._borders)) { border._animation.pause(); border._animation.currentTime = 250; } card.shadowRoot.querySelector('.grid-outage').getAnimations().forEach(a => { a.pause(); a.currentTime = 0; }); });
       const actual = await page.evaluate(() => {
         const d = card._diagram.getBoundingClientRect();
-        return { consumers: card._consumerNodes.size, source: card._data.home.source, homePower: card._data.home.power, charging: card._data.grid.output, outage: card._nodes.grid.classList.contains('grid-absent'), outside: [...card.shadowRoot.querySelectorAll('.node')].some(n => { const r = n.getBoundingClientRect(); return r.left < d.left - .5 || r.right > d.right + .5 || r.top < d.top - .5 || r.bottom > d.bottom + .5; }), missingIcons: [...card.shadowRoot.querySelectorAll('.consumer ha-icon')].some(n => !n.shadowRoot?.querySelector('ha-svg-icon')?.shadowRoot?.querySelector('path')?.getAttribute('d')), fontLoaded: document.fonts.check('400 16px "Roboto Variable"') };
+        return { consumers: card._consumerNodes.size, source: card._data.home.source, homePower: card._data.home.power, charging: card._data.grid.output, outage: card._nodes.grid.classList.contains('grid-absent'), outside: [...card.shadowRoot.querySelectorAll('.node')].filter(n => !n.hidden).some(n => { const r = n.getBoundingClientRect(); return r.left < d.left - .5 || r.right > d.right + .5 || r.top < d.top - .5 || r.bottom > d.bottom + .5; }), missingIcons: [...card.shadowRoot.querySelectorAll('.consumer ha-icon')].some(n => !n.shadowRoot?.querySelector('ha-svg-icon')?.shadowRoot?.querySelector('path')?.getAttribute('d')), fontLoaded: document.fonts.check('400 16px "Roboto Variable"') };
       });
-      assert.equal(actual.consumers, shot.mode === 'feedback' ? 4 : 6); assert.equal(actual.source, shot.mode === 'grid' ? 'grid' : 'main'); assert.equal(actual.homePower, shot.mode === 'feedback' ? 313 : 2100); assert.equal(actual.outage, shot.mode !== 'grid'); assert(!actual.outside && !actual.missingIcons && actual.fontLoaded); assert.deepEqual(errors, []);
+      const feedback = ['feedback', 'battery-preview'].includes(shot.mode);
+      assert.equal(actual.consumers, feedback ? 4 : 6); assert.equal(actual.source, shot.mode === 'grid' ? 'grid' : 'main'); assert.equal(actual.homePower, feedback ? 313 : 2100); assert.equal(actual.outage, shot.mode !== 'grid'); assert(!actual.outside && !actual.missingIcons && actual.fontLoaded); assert.deepEqual(errors, []);
+      if (shot.mode === 'battery-preview') {
+        const batteries = await page.evaluate(() => ({
+          hidden: card._nodes.auxiliary_2.hidden && getComputedStyle(card._nodes.auxiliary_2).display === 'none',
+          removedRoutes: !card._flows.grid_auxiliary_2 && !card._flows.auxiliary_2_main,
+          alignedCanvas: Math.abs(card._svg.viewBox.baseVal.height - card._diagram.getBoundingClientRect().height) < .5,
+          colors: ['auxiliary_1', 'main'].map(key => getComputedStyle(card._nodes[key].querySelector('.charge-icon .battery-fill')).fill),
+          icons: ['auxiliary_1', 'main'].every(key => card._nodes[key].querySelector('.charge-icon').getBoundingClientRect().height >= 15),
+          wider: card._nodes.auxiliary_1.offsetWidth > 120 * card._diagram.clientWidth / 400
+        }));
+        assert(batteries.hidden && batteries.removedRoutes && batteries.icons && batteries.wider && batteries.alignedCanvas);
+        assert.deepEqual(batteries.colors, ['rgb(245, 158, 11)', 'rgb(34, 197, 94)']);
+      }
       const filename = `preview-${shot.name}-${language}.png`;
       await page.locator('suris-ecoflow-flow-card').screenshot({ path: path.join(root, filename) });
-      console.log(`${filename}: ${actual.consumers} consumers, ${actual.source}, 2100 W, native card render verified`);
+      console.log(`${filename}: ${actual.consumers} consumers, ${actual.source}, ${actual.homePower} W, native card render verified`);
       await page.close();
     }
   } finally { await browser.close(); }
