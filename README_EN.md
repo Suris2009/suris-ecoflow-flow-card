@@ -1,20 +1,10 @@
-# Suris EcoFlow Flow Card 2.1.4-beta.1 — Beta
+# Suris EcoFlow Flow Card 2.1.4
 
-[Beta release](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.4-beta.1) · [Changes and setup](RELEASE_NOTES.md). Stable release: 2.1.3.
+[Українська](README.md) · [Stable release 2.1.4](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.4) · [Download JS](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/download/v2.1.4/suris-ecoflow-flow-card.js)
 
-In HACS, enable beta versions and choose **2.1.4-beta.1**. In the second auxiliary station editor section, disable **Show the second auxiliary station** to use the two-station layout. Charge indicators appear in Side flow.
+**Stable release 2.1.4.** [Changes](RELEASE_NOTES.md).
 
-<img src="preview-sideflow-battery-beta-en.png" width="390" alt="Two-station Side flow with live charge indicators">
-
-## Stable release documentation
-
-# Suris EcoFlow Flow Card 2.1.3
-
-[Українська](README.md) · [Stable release 2.1.3](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.3) · [Download JS](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/download/v2.1.3/suris-ecoflow-flow-card.js)
-
-**Stable release 2.1.3.** [Changes](RELEASE_NOTES.md).
-
-A Home Assistant energy flow card that brings the city grid, three EcoFlow stations, Home and individual consumers into one diagram.
+A Home Assistant energy flow card that brings the city grid, up to three EcoFlow stations, Home and individual consumers into one diagram.
 
 **Flows follow changes in consumption.** Each line responds to its own power readings: higher consumption makes movement faster; lower consumption slows it down. Direction shows energy moving from its source to its consumer. Readings, active connections and animation speed update with Home Assistant sensors. Equal power produces equal visual speed regardless of route length.
 
@@ -32,6 +22,14 @@ A Home Assistant energy flow card that brings the city grid, three EcoFlow stati
 
 Configure the card in the visual editor without mandatory YAML. The interface supports Ukrainian and English. The card runs locally using existing Home Assistant entities, without runtime dependencies or a CDN. Install and update through HACS or a single JS file. Existing card settings are retained when upgrading.
 
+## Station visibility and names
+
+In the second auxiliary station editor section, disable **Show the second auxiliary station** to hide its block and routes. In Side flow, the remaining auxiliary block becomes 25% wider and the main block about 8% wider. Configured entities are retained, and the switch can restore the station.
+
+Each of the three stations supports a custom **Name** in its own editor section. The main and first auxiliary station show live charge indicators: red through 20%, amber above 20% through 50%, and green above 50%. Unavailable readings clear the fill and show a grey dash.
+
+<img src="preview-sideflow-battery-beta-en.png" width="390" alt="DELTA 2 Max and DELTA Max 2000 with charge indicators, without RIVER Max. Demonstration readings.">
+
 ## Screenshots
 
 Screenshots of the actual card with demonstration readings. Station names, entities and colors are configurable.
@@ -46,11 +44,11 @@ Screenshots of the actual card with demonstration readings. Station names, entit
 
 ## Installation and upgrades
 
-Add `https://github.com/Suris2009/suris-ecoflow-flow-card` as a HACS custom Dashboard repository, install **2.1.3**, and reload the Home Assistant frontend. Add **Suris EcoFlow Flow Card** to your dashboard and select entities in the visual editor.
+Add `https://github.com/Suris2009/suris-ecoflow-flow-card` as a HACS custom Dashboard repository, install **2.1.4**, and reload the Home Assistant frontend. Add **Suris EcoFlow Flow Card** to your dashboard and select entities in the visual editor.
 
 HACS resource: `/hacsfiles/suris-ecoflow-flow-card/suris-ecoflow-flow-card.js`, type **JavaScript module**. An existing resource continues to use the same file.
 
-For manual installation, download the release JS file, put it in `www` under your Home Assistant configuration directory, and add `/local/suris-ecoflow-flow-card.js?v=2.1.3` as a **JavaScript module** resource. Restart Home Assistant if you have just created `www` for the first time.
+For manual installation, download the release JS file, put it in `www` under your Home Assistant configuration directory, and add `/local/suris-ecoflow-flow-card.js?v=2.1.4` as a **JavaScript module** resource. Restart Home Assistant if you have just created `www` for the first time.
 
 Upgrading from stable 2.0.8 or a 2.1 beta retains entities, consumers, colors and animation settings. Existing configurations initially use Classic; a Side flow selection already saved in the browser is also retained. No duplicate card or resource is needed.
 

@@ -1,3 +1,9 @@
+# 2.1.4 — Stable / Стабільний випуск
+
+Стабільний реліз перевіреної 2.1.4-beta.1. Збережено кольорові значки заряду, перемикач другої допоміжної станції, ширші блоки за її відсутності, плавні лінії та власні назви всіх трьох станцій. Функціональність бети не змінено.
+
+Promote the tested 2.1.4-beta.1 to stable. Retain live charge indicators, optional second auxiliary station, wider remaining blocks, smooth flows and existing custom names for all three stations. Update version metadata and release documentation only.
+
 ## 2.1.4-beta.1 — Battery charge indicators
 
 - Add an optional second auxiliary station visibility switch and remove its routes when hidden.
