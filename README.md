@@ -1,6 +1,8 @@
-# Suris EcoFlow Flow Card 2.1.4-beta.1 — Preview
+# Suris EcoFlow Flow Card 2.1.4-beta.1 — Beta
 
-Підготовлений попередній вигляд бети; реліз ще не опубліковано. [Зміни й налаштування](RELEASE_NOTES.md). Стабільна версія — 2.1.3.
+[Бета-реліз 2.1.4-beta.1](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.4-beta.1) · [Зміни й налаштування](RELEASE_NOTES.md). Стабільна версія — 2.1.3.
+
+У HACS увімкни показ бета-версій і вибери **2.1.4-beta.1**. Для двох станцій вимкни **«Показувати другу допоміжну станцію»** в її розділі редактора. Значки заряду доступні в боковому вигляді.
 
 <img src="preview-sideflow-battery-beta-uk.png" width="390" alt="DELTA 2 Max і DELTA Max 2000 з кольоровими значками заряду, без RIVER Max">
 

@@ -1,9 +1,9 @@
-## 2.1.4-beta.1 — Battery preview (not published)
+## 2.1.4-beta.1 — Battery charge indicators
 
 - Add an optional second auxiliary station visibility switch and remove its routes when hidden.
 - Widen the first auxiliary and main blocks in Side flow when only one auxiliary is visible.
 - Show live, charge-colored battery icons on the main and first auxiliary stations.
-- Prepare mobile screenshots with demonstration states before release or installation.
+- Include reviewed mobile screenshots with demonstration states and keep the stable release at 2.1.3.
 
 # 2.1.3 — Stable / Стабільний випуск
 

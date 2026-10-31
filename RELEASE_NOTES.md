@@ -1,13 +1,18 @@
-# 2.1.4-beta.1 — Battery layout preview / Попередній вигляд батарей
+# 2.1.4-beta.1 — Кольоровий заряд і дві станції / Charge indicators and two stations
 
-Це підготовлена бета у гілці `preview/2.1.4-beta.1`. Реліз і встановлення в Home Assistant ще не виконувались.
+## Українська
 
-- Додано перемикач «Показувати другу допоміжну станцію» в її розділі редактора. Вимкнення прибирає блок та обидва його маршрути. Збережені сутності й розрахунок реального споживання залишаються доступними.
-- Коли друга допоміжна станція прихована, у боковому вигляді блок першої ширший на 25%, головної — приблизно на 8%.
-- У боковому вигляді головна й перша допоміжна станції мають значки батарей. Заповнення відповідає заряду: 0–20% — червоне, понад 20–50% — жовте, понад 50% — зелене. Недоступний заряд показано порожнім сірим значком із рискою.
-- Демонстраційний варіант показує DELTA 2 Max та DELTA Max 2000; RIVER Max приховано. Показники на зображенні умовні.
+Бета-версія з попередньо переглянутим оформленням бокового потоку.
 
-Налаштування для цього варіанта (додаються до наявної конфігурації):
+- Додано кольорові значки заряду в головній станції та першій допоміжній: червоний до 20%, жовтий до 50%, зелений понад 50%. Заповнення відповідає власному датчику кожної станції; недоступні показники показано порожнім сірим значком із рискою.
+- Другу допоміжну станцію (RIVER Max у прикладі) можна прибрати разом з її двома лініями. У її розділі візуального редактора вимкни **«Показувати другу допоміжну станцію»**.
+- Якщо друга допоміжна станція прихована, блок першої (DELTA Max 2000 у прикладі) ширший на 25%, головної — приблизно на 8%. Значки стоять у рядку «Заряд», зберігаючи компактну висоту.
+- Збережено плавні лінії та наявні сутності. Приховування станції змінює її відображення; налаштовані датчики залишаються у розрахунку споживання.
+- Виправлено узгодження SVG з висотою картки після зміни кількості видимих блоків.
+
+**HACS:** відкрий повторне завантаження картки, увімкни показ бета-версій, вибери **2.1.4-beta.1** та перезавантаж інтерфейс Home Assistant. Для вигляду на зображенні вимкни показ RIVER Max і вибери «Боковий потік».
+
+Той самий варіант через YAML (додай до наявних відповідних розділів):
 
 ```yaml
 auxiliary_2:
@@ -16,21 +21,24 @@ appearance:
   layout: sideflow
 ```
 
-Попередні конфігурації з трьома станціями підтримуються: видимість другої допоміжної станції типово увімкнена. Перемикач дозволяє повернути її без повторного налаштування датчиків.
+Попередні конфігурації з трьома станціями підтримуються: показ другої допоміжної станції типово увімкнено. Повернути її можна тим самим перемикачем.
 
-Відтворити зображення:
+<img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.4-beta.1/preview-sideflow-battery-beta-uk.png" width="390" alt="DELTA 2 Max і DELTA Max 2000 з кольоровими значками заряду, без RIVER Max. Демонстраційні показники.">
 
-```sh
-SURIS_PREVIEW_SHOT=sideflow-battery-beta npm run previews
-```
-
-![Попередній вигляд](preview-sideflow-battery-beta-uk.png)
+Перевірено: усі наявні тести; ширини 320–1150 px; живе оновлення кольору та заповнення, недоступний заряд, незалежність датчиків, приховування й повернення другої допоміжної станції в обох виглядах. Стабільний реліз — **2.1.3**.
 
 ## English
 
-Prepared beta source for visual review only. No release, installation or production changes have been made.
+Beta release of the reviewed Side flow design.
 
-- Hide the second auxiliary station and its routes with `auxiliary_2.visible: false` or the visual editor switch; retain its configured entities and power accounting.
-- In Side flow, widen the remaining auxiliary station by 25% and the main station by about 8% when the second auxiliary is hidden.
-- Show battery icons on the main and first auxiliary stations. Live fill and charge colors use their own sensors: red through 20%, amber through 50%, green above 50%; missing or invalid charge clears the fill and shows a grey dash.
-- Preview DELTA 2 Max and DELTA Max 2000 without RIVER Max using demonstration readings.
+- Add live charge-colored battery icons to the main and first auxiliary stations: red through 20%, amber through 50%, green above 50%. Each icon uses its own charge sensor; unavailable readings clear the fill and show a grey dash.
+- Hide the second auxiliary station and both of its routes using **Show the second auxiliary station** in its visual editor section, or `auxiliary_2.visible: false`.
+- Widen the first auxiliary block by 25% and the main block by about 8% when the second auxiliary is hidden. Icons sit on the Charge row to retain compact height.
+- Preserve smooth flow curves and configured entities. Hiding a station affects its display; configured sensors remain in power accounting.
+- Keep the SVG viewport aligned with changes in diagram height.
+
+In HACS, open Redownload, enable beta versions, select **2.1.4-beta.1**, and reload the Home Assistant frontend. To match the screenshot, hide RIVER Max and select Side flow. Existing configurations retain all three stations until the visibility switch is disabled.
+
+<img src="https://raw.githubusercontent.com/Suris2009/suris-ecoflow-flow-card/v2.1.4-beta.1/preview-sideflow-battery-beta-en.png" width="390" alt="DELTA 2 Max and DELTA Max 2000 with charge indicators, without RIVER Max. Demonstration readings.">
+
+Validation: complete existing regression suite; 320–1150 px widths; live charge colors and fill, unavailable readings, independent sensors, and hiding/restoring the second auxiliary station in both layouts. Stable release remains **2.1.3**.

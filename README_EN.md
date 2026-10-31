@@ -1,3 +1,13 @@
+# Suris EcoFlow Flow Card 2.1.4-beta.1 — Beta
+
+[Beta release](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.4-beta.1) · [Changes and setup](RELEASE_NOTES.md). Stable release: 2.1.3.
+
+In HACS, enable beta versions and choose **2.1.4-beta.1**. In the second auxiliary station editor section, disable **Show the second auxiliary station** to use the two-station layout. Charge indicators appear in Side flow.
+
+<img src="preview-sideflow-battery-beta-en.png" width="390" alt="Two-station Side flow with live charge indicators">
+
+## Stable release documentation
+
 # Suris EcoFlow Flow Card 2.1.3
 
 [Українська](README.md) · [Stable release 2.1.3](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/tag/v2.1.3) · [Download JS](https://github.com/Suris2009/suris-ecoflow-flow-card/releases/download/v2.1.3/suris-ecoflow-flow-card.js)

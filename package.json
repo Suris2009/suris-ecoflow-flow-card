@@ -3,7 +3,7 @@
   "version": "2.1.4-beta.1",
   "private": true,
   "license": "MIT",
-  "description": "Home Assistant flow card with a visual editor for three EcoFlow stations",
+  "description": "Home Assistant energy flow card with optional auxiliary stations and live battery charge indicators",
   "scripts": {
     "test": "node tests/verify-model.cjs && node tests/verify-browser.cjs && node tests/verify-consumers.cjs && node tests/verify-offline-grid.cjs && node tests/verify-animations.cjs && node tests/verify-sideflow.cjs",
     "previews": "node scripts/render-previews.cjs"
