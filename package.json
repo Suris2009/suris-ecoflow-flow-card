@@ -1,6 +1,6 @@
 {
   "name": "suris-ecoflow-flow-card",
-  "version": "2.1.4",
+  "version": "2.1.5-beta.1",
   "private": true,
   "license": "MIT",
   "description": "Home Assistant energy flow card with optional auxiliary stations and live battery charge indicators",

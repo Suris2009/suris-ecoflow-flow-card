@@ -1,3 +1,17 @@
+# 2.1.5-beta.1 — Потужність станцій і споживання дому / Station power and Home consumption
+
+## Українська
+
+- Окремі AC IN, XT60(1), XT60(2) та AC OUT головної станції.
+- AC IN і AC OUT першої допоміжної станції для показників та відповідних потоків.
+- Розрахунок споживання дому з фізичних входів станцій або виходу головної станції.
+
+## English
+
+- Show separate readings for the main station’s AC IN, XT60(1), XT60(2), and AC OUT.
+- Use the first auxiliary’s AC IN and AC OUT for its displayed readings and corresponding flows.
+- Calculate Home consumption from the stations’ grid inputs or the main station’s Home output.
+
 # 2.1.4 — Stable / Стабільний випуск
 
 Стабільний реліз перевіреної 2.1.4-beta.1. Збережено кольорові значки заряду, перемикач другої допоміжної станції, ширші блоки за її відсутності, плавні лінії та власні назви всіх трьох станцій. Функціональність бети не змінено.

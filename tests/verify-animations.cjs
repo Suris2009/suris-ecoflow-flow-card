@@ -12,7 +12,7 @@ const root = path.resolve(__dirname, '..');
     await page.evaluate(()=>{
       const reading=value=>({state:String(value),attributes:{unit_of_measurement:'W'}});
       window.states={'sensor.grid':reading(2000),'sensor.ac':reading(300),'sensor.main':reading(0),'sensor.a_in':reading(200),'sensor.b_in':reading(100),'sensor.a_out':reading(0),'sensor.b_out':reading(0)};
-      window.config={grid:{power:'sensor.grid'},main:{ac_input_power:'sensor.ac',output_power:'sensor.main'},auxiliary_1:{input_power:'sensor.a_in',output_power:'sensor.a_out'},auxiliary_2:{input_power:'sensor.b_in',output_power:'sensor.b_out'},consumers:Array.from({length:6},(_,i)=>({id:`load_${i}`,name:`Load ${i}`,power:`sensor.load_${i}`}))};
+      window.config={grid:{power:'sensor.grid'},main:{ac_input_power:'sensor.ac',output_power:'sensor.main'},auxiliary_1:{ac_input_power:'sensor.a_in',ac_output_power:'sensor.a_out'},auxiliary_2:{input_power:'sensor.b_in',output_power:'sensor.b_out'},consumers:Array.from({length:6},(_,i)=>({id:`load_${i}`,name:`Load ${i}`,power:`sensor.load_${i}`}))};
       config.consumers.forEach((c,i)=>states[c.power]=reading(100+i*50));
       window.card=document.createElement('suris-ecoflow-flow-card');card.setConfig(config);card.hass={states};document.querySelector('#host').append(card);
       window.choose=(style,size=5)=>{config.appearance={...config.appearance,animation:style,dot_size:size};card.setConfig(config)};

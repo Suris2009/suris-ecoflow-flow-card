@@ -14,8 +14,8 @@ A Home Assistant energy flow card that brings the city grid, up to three EcoFlow
 - **Custom colors.** Set separate colors for the city grid, each station and each device. Choose presets, use a palette, mix hue, saturation and lightness, or restore defaults. Home’s border automatically takes the color of its power source.
 - **Five animations.** Moving dashes, dots, arrows, pulsing light strips and one moving dot. Dot size is adjustable from 2 to 10 px.
 - **Adjustable speed and activity threshold.** Set the overall movement speed in the editor; each line also responds to its own power. Live readings adjust speed without restarting the animation. Inactive connections stay hidden.
-- **All key readings.** Battery charge, input and output for three stations; two XT60(1)/XT60(2) inputs for the main EcoFlow. Home shows power and optional voltage. Values automatically use W or kW.
-- **Automatic Home source detection.** Power readings determine the source. A separate Home power sensor is optional: the card can use main EcoFlow output or calculate Home demand from grid power minus station charging.
+- **Key readings.** Station charge, AC IN and AC OUT for the first auxiliary, and three separate inputs and the Home output for the main EcoFlow. Home shows calculated consumption and optional voltage. Values automatically use W or kW.
+- **Automatic Home source detection.** The card uses the main EcoFlow’s Home output or calculates consumption from the grid meter and the stations’ grid inputs.
 - **Grid outage warning.** An optional availability sensor triggers a pulsing No grid message inside the grid block. Supplying sources have clockwise moving dashed borders; Home retains a solid border.
 - **Names, icons and details.** Side flow keeps consumer names on one line, ending long names with two dots; the full name remains in the tooltip. Icons are centered between name and power. Clicking a reading with a configured entity opens its details.
 - **Mobile layouts and themes.** Light and dark themes, a compact Side flow view, and automatic Classic height reduction when a consumer row is unused. System reduced-motion preferences are respected.
@@ -83,29 +83,25 @@ In the visual editor, use **Add consumer**, enter a name, and choose a power sen
 
 Active means power **above** the configured threshold, 3 W by default. Zero, negative, unknown and unavailable readings are not displayed. Existing devices take priority on equal power; retained devices keep their slots, and empty slots fill automatically.
 
-Use **power sensors in W / kW**, not accumulated energy in Wh / kWh. The consumer list shows part of Home’s demand and does not replace Home input with the sum of the six visible devices.
+Use **power sensors in W / kW**, not accumulated energy in Wh / kWh. The consumer list shows part of Home’s demand and does not replace calculated Home consumption with the sum of the six visible devices.
 
 In Side flow, long names end with two dots (`..`); tooltips retain full names. Classic keeps its existing ellipsis behavior. Clicking consumer power opens its entity details.
 
 ## Station, grid and Home entities
 
-| Block | Configuration |
+| Block | Sensors |
 | --- | --- |
-| City grid | Power; optional grid availability sensor and its available state. |
-| Each auxiliary station | Charge (%), total input and output; optional dedicated grid charging and transfer-to-main power. |
-| Main EcoFlow | Charge (%), total input and output, separate AC input, two XT60(1)/XT60(2) DC inputs; optional dedicated Home feed output. |
-| Home | Optional power and voltage sensors; voltage appears below power in V. |
+| City grid | Power and an optional grid availability sensor. |
+| First auxiliary (DELTA Max) | Charge (%), grid input (AC IN), output to main EcoFlow (AC OUT). |
+| Second auxiliary | Charge (%), total input and output, and dedicated grid charging and transfer sensors when needed. |
+| Main EcoFlow | Charge (%), grid input (AC IN), XT60(1) and XT60(2) inputs, output to Home (AC OUT). |
+| Home | Calculated consumption and an optional voltage sensor. |
 
-Home’s source follows the main station’s Home feed output. A dedicated Home feed sensor takes priority over total output. Power above the threshold selects EcoFlow; an available nonnegative reading at or below the threshold selects grid. If EcoFlow output is unavailable, grid power above the threshold can identify grid supply.
+The main station’s Home feed determines the source. Output above the threshold selects the main EcoFlow. An available nonnegative reading at or below the threshold selects the grid. If the EcoFlow output is unavailable, grid power above the threshold can identify grid supply.
 
-Without a separate Home power sensor:
+On EcoFlow, Home consumption equals the main station’s AC OUT. On grid, the card subtracts the main and first auxiliary’s full AC IN readings and the second auxiliary’s configured grid draw from the grid meter. Unavailable inputs count as zero in this calculation. The first auxiliary’s AC IN tooltip shows station consumption from the grid as AC IN − AC OUT when both readings are available and AC IN is at least AC OUT.
 
-- On EcoFlow, the selected main Home feed output is used.
-- On grid, Home demand is grid power minus charging for the two auxiliaries and the main AC input. Missing or unavailable charging readings count as zero in this calculation.
-
-Select a dedicated **Grid charging power** entity if an auxiliary’s total input includes other sources, and **Transfer power to main EcoFlow** if its total output includes other loads. The grid-to-main route uses only the main station’s separate AC input.
-
-Without a configured main total input sensor, total input can be calculated from the selected AC and XT60 inputs when all selected readings are available.
+If the first auxiliary previously used `Total In Power`, check that **Grid input** points to `AC In Power` after updating. The card maps standard EcoFlow entity IDs by their shared device prefix. Select the sensor in the editor for renamed entities.
 
 The availability sensor only controls the **No grid** warning and grid output visibility; it never chooses Home’s source. Set the available state to `on` or `off` according to your sensor.
 
@@ -123,7 +119,7 @@ In **Flow appearance**:
 | Active flow threshold | Power must be strictly above the threshold; 3 W by default. |
 | Colors | Separate grid, EcoFlow #2, EcoFlow #3 and main colors; each device color is in its own section. |
 
-Speed follows the respective route’s power: displayed Home input, station charging or transfer output. A Classic row feeder uses the sum of that row’s displayed devices; dots and arrows follow complete journeys to each consumer. In single-dot mode, the row’s dot visits consumers in turn.
+Speed follows the respective route’s power: calculated Home consumption, station charging or transfer output. A Classic row feeder uses the sum of that row’s displayed devices; dots and arrows follow complete journeys to each consumer. In single-dot mode, the row’s dot visits consumers in turn.
 
 Moving dots are 30% less dense than in 2.0.8: independent routes use 40 px spacing instead of 28 px, while shared journey particle counts are rounded to 70% of their previous count, with at least one particle. Movement speed is retained.
 

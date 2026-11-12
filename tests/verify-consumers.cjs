@@ -18,7 +18,7 @@ const root = path.resolve(__dirname, '..');
   });
   const state=(value,unit='W')=>({state:String(value),attributes:{unit_of_measurement:unit}});
   window.states={'sensor.grid':state(2500),'binary_sensor.grid':state('on'),'sensor.a_soc':state(68,'%'),'sensor.b_soc':state(81,'%'),'sensor.m_soc':state(74,'%'),'sensor.a_in':state(100),'sensor.a_out':state(0),'sensor.b_in':state(100),'sensor.b_out':state(0),'sensor.m_ac':state(200),'sensor.m_pv':state(0),'sensor.m_pv2':state(0),'sensor.m_out':state(0)};
-  window.config={type:'custom:suris-ecoflow-flow-card',grid:{power:'sensor.grid',available_entity:'binary_sensor.grid'},auxiliary_1:{name:'Delta Max',soc:'sensor.a_soc',input_power:'sensor.a_in',output_power:'sensor.a_out'},auxiliary_2:{name:'River Max',soc:'sensor.b_soc',input_power:'sensor.b_in',output_power:'sensor.b_out'},main:{name:'Delta 2 Max',soc:'sensor.m_soc',ac_input_power:'sensor.m_ac',solar_input_power:'sensor.m_pv',solar_input_power_2:'sensor.m_pv2',output_power:'sensor.m_out'},consumers:[],appearance:{grid_color:'#2996ff',auxiliary_1_color:'green',auxiliary_2_color:'orange',main_color:'#e22'}};
+  window.config={type:'custom:suris-ecoflow-flow-card',grid:{power:'sensor.grid',available_entity:'binary_sensor.grid'},auxiliary_1:{name:'Delta Max',soc:'sensor.a_soc',ac_input_power:'sensor.a_in',ac_output_power:'sensor.a_out'},auxiliary_2:{name:'River Max',soc:'sensor.b_soc',input_power:'sensor.b_in',output_power:'sensor.b_out'},main:{name:'Delta 2 Max',soc:'sensor.m_soc',ac_input_power:'sensor.m_ac',solar_input_power:'sensor.m_pv',solar_input_power_2:'sensor.m_pv2',output_power:'sensor.m_out'},consumers:[],appearance:{grid_color:'#2996ff',auxiliary_1_color:'green',auxiliary_2_color:'orange',main_color:'#e22'}};
   window.card=document.createElement('suris-ecoflow-flow-card');card.setConfig(config);card.hass={states};document.querySelector('#host').append(card);
   for(const [name,value]of Object.entries({'--ha-card-background':'linear-gradient(135deg, #ece7f2, #b9d9ed)','--primary-text-color':'#172239','--secondary-text-color':'#4d5666','--divider-color':'#888d9b'}))card.style.setProperty(name,value);
   window.refresh=()=>{card.hass={states:{...states}}};
@@ -78,7 +78,7 @@ const root = path.resolve(__dirname, '..');
   await page.setViewportSize({width,height:1000});await page.waitForTimeout(80);
   assert(await page.evaluate(()=>{const row=card._values['home.power'].parentElement,label=row.querySelector('.label');label.textContent='Споживання';card._values['home.power'].textContent='12,35 kW';card._fitRows();const a=label.getBoundingClientRect(),b=card._values['home.power'].getBoundingClientRect();return getComputedStyle(label).whiteSpace==='nowrap'&&a.right<=b.left+1&&b.right<=row.getBoundingClientRect().right+1}));
  }
- await page.evaluate(()=>{card._values['home.power'].parentElement.querySelector('.label').textContent='Вхід';refresh()});
+ await page.evaluate(()=>{card._values['home.power'].parentElement.querySelector('.label').textContent='Споживання';refresh()});
  // Reproduce the two-line Home heading from the installed mobile dashboard.
  await page.evaluate(()=>{config.home.name='Споживання дому';card.setConfig(config);refresh()});
  for(const count of [0,3,6]){
